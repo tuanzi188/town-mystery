@@ -1,0 +1,140 @@
+/**
+ * 新手引导冒烟（真实函数）：
+ *   1) 未看过 + 第 1 关 → 弹 3 张引导卡（含 跳过/下一步/开始探索 按钮）+ 写 tutorialSeen
+ *   2) 已看过 + 第 1 关 → 不弹
+ *   3) 未看过 + 第 2/9 关 → 不弹
+ *   4) migrateIfNeeded（DATA_VERSION 升级）→ tutorialSeen 不被清
+ *
+ * 用法：node tutorial_smoke.js
+ */
+const fs = require("fs");
+const path = require("path");
+
+const HTML_PATH = path.join(__dirname, "index.html");
+const html = fs.readFileSync(HTML_PATH, "utf8");
+const scriptStart = html.indexOf("<script>") + "<script>".length;
+const scriptEnd = html.lastIndexOf("</script>");
+const scriptCode = html.slice(scriptStart, scriptEnd);
+
+function makeStub() {
+  const stub = {};
+  ["addEventListener", "removeEventListener", "appendChild", "removeChild", "setAttribute", "getAttribute", "hasAttribute", "dataset", "style", "parentNode", "querySelector", "querySelectorAll"].forEach((k) => {
+    if (k === "dataset") stub.dataset = {};
+    else if (k === "style") stub.style = {};
+    else if (k === "parentNode") stub.parentNode = null;
+    else stub[k] = () => {};
+  });
+  stub.classList = { add() {}, remove() {}, toggle() {}, contains: () => false };
+  return stub;
+}
+const documentMock = {
+  addEventListener() {}, removeEventListener() {},
+  body: makeStub(),
+  createElement: () => makeStub(),
+  createElementNS: () => makeStub(),
+  elementFromPoint: () => null,
+  getElementById: () => makeStub(),
+  querySelector: () => null,
+  querySelectorAll: () => [],
+};
+const localStorageMock = (() => {
+  const s = {};
+  return {
+    getItem: (k) => (k in s ? s[k] : null),
+    setItem: (k, v) => { s[k] = String(v); },
+    removeItem: (k) => { delete s[k]; },
+    clear: () => { Object.keys(s).forEach((k) => delete s[k]); },
+    _dump: () => ({ ...s }),
+  };
+})();
+const windowMock = { innerWidth: 1024, innerHeight: 768, addEventListener() {} };
+const CSSMock = { escape: (s) => String(s).replace(/[^a-zA-Z0-9_-]/g, "\\$&") };
+
+// 替换 localStorage 为带 _dump 的 mock
+const wrapped = `
+"use strict";
+const document = arguments[0];
+const window = arguments[1];
+const localStorage = arguments[2];
+const CSS = arguments[3];
+const requestAnimationFrame = arguments[4];
+const navigator = arguments[5];
+${scriptCode}
+return { App, LevelData, Modal, StorageUtil, GameFlow };
+`;
+
+let pass = 0, fail = 0;
+const log = (ok, msg) => { if (ok) { pass++; } else { fail++; console.error("  ✗", msg); } };
+
+// 抓弹窗：替换 Modal.show 拦截（引导卡经 Modal.show 渲染，按钮数组 btns）
+function makeContext() {
+  const alerts = [];
+  const ctx = (new Function(wrapped))(documentMock, windowMock, localStorageMock, CSSMock, () => {}, { userAgent: "tutorial-smoke" });
+  ctx.Modal.show = (title, text, btns) => {
+    const labels = (btns || []).map((b) => b.label);
+    alerts.push({ title, text, labels });
+    // 模拟玩家逐张点「下一步 / 开始探索」：递归弹出后续卡片
+    const next = (btns || []).find((b) => b.label === "下一步" || b.label === "开始探索");
+    if (next) {
+      try { next.onClick(); } catch (e) { /* 忽略内部错误 */ }
+    }
+  };
+  return { ctx, alerts };
+}
+
+// === 场景 1：未看过 + L1 → 弹 3 张 + 写标记 ===
+localStorageMock.clear();
+{
+  const { ctx, alerts } = makeContext();
+  ctx.App.currentLevel = 1;
+  log(ctx.StorageUtil.readTutorialSeen() === false, "场景 1：初始 tutorialSeen=false");
+  ctx.GameFlow.maybeShowTutorial();
+  log(alerts.length === 3, `场景 1：弹窗数应为 3（实际 ${alerts.length}）`);
+  log(alerts[0] && alerts[0].title === "🌸 欢迎来到小镇疑云", `场景 1：第 1 张标题正确（${alerts[0] && alerts[0].title}）`);
+  log(alerts[1] && alerts[1].title === "🎮 四条核心操作", `场景 1：第 2 张标题正确（${alerts[1] && alerts[1].title}）`);
+  log(alerts[2] && alerts[2].title === "💡 卡壳了怎么办", `场景 1：第 3 张标题正确（${alerts[2] && alerts[2].title}）`);
+  log(alerts[0] && alerts[0].labels.join() === "跳过,下一步", `场景 1：第 1 张按钮为 跳过/下一步（${alerts[0] && alerts[0].labels.join()}）`);
+  log(alerts[1] && alerts[1].labels.join() === "上一步,跳过,下一步", `场景 1：第 2 张按钮为 上一步/跳过/下一步（${alerts[1] && alerts[1].labels.join()}）`);
+  log(alerts[2] && alerts[2].labels.join() === "上一步,跳过,开始探索", `场景 1：第 3 张按钮为 上一步/跳过/开始探索（${alerts[2] && alerts[2].labels.join()}）`);
+  log(ctx.StorageUtil.readTutorialSeen() === true, "场景 1：看完后 tutorialSeen=true");
+}
+
+// === 场景 2：已看过 + L1 → 不弹 ===
+{
+  localStorageMock.clear();
+  // 模拟玩家看过引导：直接写 localStorage
+  localStorageMock.setItem("townMystery_tutorialSeen", "true");
+  const { ctx, alerts } = makeContext();
+  ctx.App.currentLevel = 1;
+  log(ctx.StorageUtil.readTutorialSeen() === true, "场景 2：前置已写 tutorialSeen=true");
+  ctx.GameFlow.maybeShowTutorial();
+  log(alerts.length === 0, `场景 2：已看过则不弹（实际 ${alerts.length}）`);
+}
+
+// === 场景 3：未看过 + 非 L1 → 不弹 ===
+{
+  localStorageMock.clear();
+  const { ctx, alerts } = makeContext();
+  ctx.App.currentLevel = 2;
+  ctx.GameFlow.maybeShowTutorial();
+  log(alerts.length === 0, `场景 3：L2 未看过也不弹（实际 ${alerts.length}）`);
+  // L9 困难关也试一下
+  ctx.App.currentLevel = 9;
+  ctx.GameFlow.maybeShowTutorial();
+  log(alerts.length === 0, `场景 3：L9 未看过也不弹（实际 ${alerts.length}）`);
+}
+
+// === 场景 4：migrateIfNeeded 升级 → tutorialSeen 不清 ===
+{
+  localStorageMock.clear();
+  // 模拟旧版本：先写 tutorialSeen=true，再制造版本落后
+  localStorageMock.setItem("townMystery_tutorialSeen", "true");
+  localStorageMock.setItem("townMystery_dataVersion", "0");
+  // 重新加载 ctx 读取当前最新 DATA_VERSION
+  const { ctx } = makeContext();
+  ctx.StorageUtil.migrateIfNeeded();
+  log(ctx.StorageUtil.readTutorialSeen() === true, "场景 4：migrateIfNeeded 后 tutorialSeen 仍为 true");
+}
+
+console.log(`\n=== 总结：通过 ${pass} 项 / 失败 ${fail} 项 ===`);
+process.exit(fail > 0 ? 1 : 0);

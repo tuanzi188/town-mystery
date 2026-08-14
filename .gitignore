@@ -1,0 +1,10 @@
+# 运行时 / 工具链产物
+node_modules/
+*.log
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# 本机测试产物（每次跑 verify/simulate_solve/runtime_sanity 都会重写）
+result.txt
