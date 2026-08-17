@@ -241,6 +241,10 @@ input{font-family:inherit;}
 .clue-speak.ev-owner{
   background:#fbeed2;color:#8a6d3b;border:1px dashed #e2cfa6;
 }
+/* 反向物证：与嫌疑人命中但语义是为其脱罪（如 L6 c9 替赵姨洗白） */
+.clue-speak.ev-owner--clear{
+  background:#e7eef7;color:#4d6b91;border:1px dashed #b8c8de;
+}
 /* 卡片被拖起时的样式 */
 .clue-card.dragging{opacity:.6;transform:scale(1.04);box-shadow:0 10px 22px rgba(90,80,60,.2);}
 /* 卡片标红（冲突） */
@@ -496,6 +500,118 @@ input{font-family:inherit;}
   100%{opacity:1;transform:translateY(0) scale(1);}
 }
 
+/* —— 走访弹窗 沉浸感增强：逐句揭幕 / 走访次数开场 / 引导追问 / 内嵌线索 chip —— */
+@keyframes dl-line-in{
+  0%{opacity:0;transform:translateY(5px);}
+  100%{opacity:1;transform:translateY(0);}
+}
+@keyframes dl-prompt-in{
+  0%{opacity:0;transform:translateY(3px);}
+  100%{opacity:1;transform:translateY(0);}
+}
+.dl-line{
+  display:block;
+  animation:dl-line-in .45s ease-out both;
+  white-space:pre-line;
+}
+.dl-statement{
+  font-size:14px;line-height:1.85;color:var(--text);
+  margin:2px 0 6px;
+}
+.dl-statement .dl-line + .dl-line{margin-top:2px;}
+/* 走访次数小标签 */
+.bio-visit-tag{
+  display:inline-block;margin-left:6px;font-size:11px;color:#8a7a5c;
+  background:#ece5d3;padding:1px 8px;border-radius:8px;letter-spacing:.5px;
+  vertical-align:middle;
+}
+/* 场景化开场白：斜体 + 缩进 */
+.dl-opening{
+  font-size:13px;color:#6a6253;font-style:italic;line-height:1.7;
+  padding:6px 0 8px;border-bottom:1px dashed #d8d0bf;margin-bottom:6px;
+  animation:dl-line-in .5s ease-out both;
+}
+.dl-opening::before{content:"· ";color:var(--accent);font-style:normal;}
+/* 跳过揭幕按钮 */
+.walk-skip{
+  display:inline-block;font-size:12px;color:var(--text-sub);
+  background:transparent;border:1px dashed var(--card-line);
+  border-radius:14px;padding:2px 10px;margin-top:4px;cursor:pointer;
+  transition:background .15s,color .15s;
+}
+.walk-skip:hover{background:var(--soft);color:var(--accent-deep);}
+/* 引导行：「你看着TA……」「TA 似乎没再多说……」 */
+.dl-prompt{
+  font-size:13px;color:#6a6253;font-style:italic;line-height:1.7;
+  padding:8px 0 4px;margin-top:10px;
+  border-top:1px dashed #d8d0bf;
+  animation:dl-prompt-in .4s ease-out both;
+}
+.dl-prompt::before{content:"👁 ";font-style:normal;}
+/* 追问按钮（仍是单条入口，不一次性展开） */
+.dl-next-fu{
+  display:block;width:100%;text-align:left;
+  padding:10px 12px;border-radius:10px;
+  background:var(--soft);border:1px solid var(--card-line);color:var(--accent-deep);
+  font-size:13px;line-height:1.55;cursor:pointer;
+  margin-top:6px;transition:transform .12s,background .15s;
+  animation:dl-prompt-in .35s ease-out both;
+}
+.dl-next-fu:hover{background:#e2ecdf;transform:translateY(-1px);}
+.dl-next-fu .fu-tag{margin-right:6px;}
+/* 已完成所有追问的结束行 */
+.dl-done{
+  font-size:12px;color:var(--text-sub);text-align:center;
+  padding:8px 0 4px;letter-spacing:1px;
+  animation:dl-prompt-in .4s ease-out both;
+}
+.dl-done::before{content:"· ";color:var(--accent);}
+.dl-done::after{content:" ·";color:var(--accent);}
+/* 对白区：每次追问的回答作为一条新对白 */
+.dl-dialog{
+  margin-top:6px;display:flex;flex-direction:column;gap:6px;
+}
+.dl-q{
+  font-size:12px;color:#8a7a5c;font-style:italic;line-height:1.6;
+  padding:2px 0 0;letter-spacing:.5px;
+  animation:dl-prompt-in .35s ease-out both;
+}
+.dl-q::before{content:"你 · ";}
+.dl-a{
+  font-size:14px;line-height:1.85;color:var(--text);
+  padding:8px 12px;border-radius:10px;background:var(--card);
+  border-left:3px solid var(--accent);
+  animation:dl-prompt-in .4s ease-out both;
+  white-space:pre-line;
+}
+/* 内嵌线索 chip：贴在对白末尾，不破坏沉浸感 */
+.dl-clue-chip{
+  display:inline-flex;align-items:center;gap:3px;
+  padding:1px 8px;margin:2px 3px 0 0;font-size:12px;line-height:1.5;
+  background:rgba(255,240,200,.85);border:1px dashed #c0a978;
+  border-radius:10px;color:#6b4f1a;cursor:help;
+  vertical-align:baseline;
+  transition:background .15s,border-color .15s;
+}
+.dl-clue-chip:hover{background:#fbecb9;border-color:#a68650;}
+.dl-clue-chip.evidence{background:rgba(255,232,180,.95);border-color:#b88a3a;color:#5a3f10;}
+.dl-clue-chip.fake{background:#f0ecec;border-color:#b9a8a8;color:#7a4a4a;}
+/* chip 紧贴上一句，在对白末尾另起一行 */
+.dl-clue-row{
+  display:flex;flex-wrap:wrap;gap:2px;margin-top:6px;
+  padding-top:6px;border-top:1px dotted var(--card-line);
+  animation:dl-prompt-in .4s ease-out both;
+}
+.dl-clue-row::before{
+  content:"💭 你记下：";font-size:12px;color:#8a7a5c;width:100%;
+  margin-bottom:2px;letter-spacing:.5px;
+}
+/* 口供区下方原本的 walk-clue-list 改为隐藏：线索已全部上提到对白中 */
+.bio-body .walk-clue-list{display:none;}
+.bio-body .walk-clue-list:empty{display:none;}
+/* 旧版 fu-list（追问列表）整体隐藏：改用「继续询问」单条入口 */
+.bio-body .fu-list{display:none;}
+
 /* —— 跨关人物关系（LorePanel） —— */
 #lore-mask .town-map-box{max-width:560px;}
 .lore-progress{font-size:12px;color:var(--text-sub);text-align:center;margin-bottom:10px;}
@@ -639,6 +755,8 @@ input{font-family:inherit;}
   .clues-pool{flex:1 1 auto;min-height:0;border-radius:var(--radius);}
   .case-header h2{font-size:16px;}
   .clue-card{width:calc(50% - 6px);}
+  /* 移动端时间轴卡尺寸与线索池一致（覆盖 desktop 的 180px 硬宽） */
+  .timeline-track .clue-card{width:calc(50% - 6px);}
   /* 底部栏换行 */
   .bottom-bar{flex-wrap:wrap;justify-content:center;}
   .action-btn{flex:1;padding:11px 8px;font-size:13px;}
@@ -1052,13 +1170,20 @@ const StorageUtil = {
 };
 
 /* ============================================================
-   模块一·补：走访对话系统（DialogSystem，混合模式专属）
+   模块一·补：走访对话系统（DialogSystem，混合模式专属 · 沉浸感增强 v2）
    说明：
-   - 点击居民头像 → 弹出单层口供弹窗（复用线索文案，无多分支）
-   - 交谈后：记录入 dialog_L{关}，解锁该居民绑定的线索卡片入池
-   - 仅增量；不触碰 DragManager / ValidateUtil / 推理校验逻辑。
+   - 弹窗打开 → 走访次数开场白（首次/再次/三次+/熟客）→ 口供按句末标点逐句淡入（~700ms/句）→
+     完成后展示引导行与「继续询问」按钮。
+   - 追问入口：单条「继续询问」按钮，每点一次吐出一条；不再一次列出全部。
+   - 线索呈现：完全融入对白末尾的 chip（💡 普通 / 🔑 物证 / 🤥 干扰），不再单列 walk-clue-list。
+   - 反复走访：每次有新开场；已问过的追问不再显示。
+   - 兼容性：保留原 _unlockBoundClue / _markSpoken / close 行为；进度条统计、存档键、
+     ValidateUtil 门槛均不变。
    ============================================================ */
 const DialogSystem = {
+  /** 逐句揭幕定时器：close 或 _finishReveal 时清理，避免内存泄漏 */
+  _revealTimer: null,
+  _skipRequested: false,
   /** 取某居民追问分支：resident 自带 followups 优先；其次查 TOWN_FOLLOWUPS（外部数据用 typeof 防御）。
    *  无任何分支（如替罪羊）返回 null，走"一键全给"兼容逻辑。 */
   _followupsOf(resident) {
@@ -1084,7 +1209,107 @@ const DialogSystem = {
   _readAsked() {
     return StorageUtil.readAskedFollowups(App.currentLevel);
   },
-  /** 线索条目标签：按类型标注（干扰/物证/目击/自白/口供） */
+  /** 走访次数（即将写入后的 1-based 计数，用于决定开场白与标签） */
+  _getVisitCount(resident) {
+    const talked = StorageUtil.readDialogRecord(App.currentLevel) || [];
+    const idx = talked.indexOf(resident.id);
+    return idx === -1 ? 1 : idx + 2;
+  },
+  /** 走访次数小标签文字 */
+  _visitTagText(count) {
+    if (count <= 1) return "首次走访";
+    if (count === 2) return "再次造访";
+    if (count === 3) return "第三次走访";
+    return "熟客 · 第" + count + "次";
+  },
+  /** 场景化开场白（首次不渲染开场块） */
+  _openingFor(resident, count) {
+    const name = (resident && resident.name) || "对方";
+    if (count <= 1) return "";
+    if (count === 2) return "你又来到 " + name + " 家。TA 抬头看了你一眼，像是认出了你——但没先开口。";
+    if (count === 3) return "你第三次推门进来。" + name + " 似乎已经习惯了你这位访客，朝你点点头，目光闪了一下。";
+    return "你再次上门。" + name + " 见到你，表情复杂，沉默片刻才开了腔。";
+  },
+  /** 切分句子：按句末标点 。！？!?…；; 拆分，保留原标点，过滤空白 */
+  _splitSentences(text) {
+    if (!text) return [];
+    return String(text).split(/(?<=[。！？!?…]|[；;])/g).map(function (s) { return s.trim(); }).filter(Boolean);
+  },
+  /** 渲染内嵌线索 chip：贴在对白末尾，hover 显示完整线索文本 */
+  _renderEmbeddedClueChips(cids) {
+    if (!cids || !cids.length) return "";
+    const esc = ClueCards.escapeHtml;
+    const chips = cids.map(function (cid) {
+      const c = App.clueMap[cid];
+      if (!c) return "";
+      let label, extra = "";
+      if (c.type === "fake") { label = "🤥 " + esc(c.text); extra = " fake"; }
+      else if (c.isEvidence) { label = "🔑 " + esc(c.text); extra = " evidence"; }
+      else { label = "💡 " + esc(c.text); }
+      return '<span class="dl-clue-chip' + extra + '" title="' + esc(c.text) + '">' + label + '</span>';
+    }).join("");
+    return chips ? '<div class="dl-clue-row">' + chips + '</div>' : "";
+  },
+  /** 渲染已问对白（dl-dialog 整段），不显示未问的 */
+  _renderFollowupDialog(resident, followups, asked) {
+    if (!followups) return "";
+    const esc = ClueCards.escapeHtml;
+    const items = [];
+    for (let i = 0; i < followups.length; i++) {
+      if (!asked.has(this._askKey(resident.id, i))) continue;
+      const fu = followups[i];
+      if (!fu) continue;
+      const topic = this._topicOf(fu.q) || "继续追问";
+      const a = fu.a || "";
+      items.push(
+        '<p class="dl-q">' + esc(topic) + '</p>' +
+        '<div class="dl-a">' + esc(a) + this._renderEmbeddedClueChips(fu.cids) + '</div>'
+      );
+    }
+    return items.length ? '<div class="dl-dialog">' + items.join("") + '</div>' : "";
+  },
+  /** 渲染「继续询问」单条入口；全部问完则渲染结束行 */
+  _renderNextFollowupPrompt(resident, followups, asked) {
+    if (!followups) return "";
+    const esc = ClueCards.escapeHtml;
+    let nextIdx = -1;
+    for (let i = 0; i < followups.length; i++) {
+      if (!asked.has(this._askKey(resident.id, i))) { nextIdx = i; break; }
+    }
+    if (nextIdx === -1) {
+      const name = (resident && resident.name) || "TA";
+      return '<p class="dl-done">' + esc(name) + ' 似乎没再多说</p>';
+    }
+    const fu = followups[nextIdx];
+    const topic = this._topicOf(fu.q) || "继续追问";
+    return '<button type="button" class="dl-next-fu" data-fu="' + nextIdx + '">' +
+      '<span class="fu-tag">追问</span>' + esc(topic) + '</button>';
+  },
+  /** 口供全显后挂的"对话 / 引导 / 继续询问 / 隐藏心事"区 */
+  _renderAfterStatement(resident, followups, asked) {
+    const esc = ClueCards.escapeHtml;
+    const secretHtml = this._renderSecretHtml(resident);
+    if (followups) {
+      const dialogHtml = this._renderFollowupDialog(resident, followups, asked);
+      const promptHtml = this._renderNextFollowupPrompt(resident, followups, asked);
+      return dialogHtml +
+        '<p class="dl-prompt">你看着 ' + esc(resident.name || "TA") + '，试探着往下问……</p>' +
+        promptHtml + secretHtml;
+    }
+    // 无追问分支的居民（如替罪羊）：保留原"一键线索" + 提示行
+    const walkHtml = this._renderWalkCluesHtml(resident);
+    return walkHtml +
+      '<p class="bio-lock-sub walk-tip">以上线索已加入下方线索池：浅米色为有效线索，可拖入下方时间轴排序；灰色「干扰」线索请留在池中。</p>' +
+      secretHtml;
+  },
+  /** 已通关本关才显示 secret（避免剧透） */
+  _renderSecretHtml(resident) {
+    if (!BioArchive.isLevelCleared() || !resident.secret) return "";
+    const esc = ClueCards.escapeHtml;
+    return '<div class="bio-secret-box"><p class="bio-sec-title">· 隐藏心事</p>' +
+      '<p class="bio-text bio-secret">' + esc(resident.secret) + '</p></div>';
+  },
+  /** 线索条目标签：按类型标注（干扰/物证/目击/自白/口供）——仅无追问分支时使用 */
   _walkClueItemHtml(c) {
     const esc = ClueCards.escapeHtml;
     let tag, extraCls = "";
@@ -1096,83 +1321,69 @@ const DialogSystem = {
     return '<div class="walk-clue-item"><span class="walk-clue-tag' + extraCls + '">' + tag +
       '</span><span class="walk-clue-text">' + esc(c.text) + "</span></div>";
   },
-  /** 渲染追问分支区：已问项展示对应线索文本，未问项渲染为可点击问题按钮
-   *  设计原则：不做任何"关键/必问/旁证"视觉区分——玩家必须靠追问文本和线索文本自己判断
-   *  这是有意的"沉浸式推理"设计，让玩家通过分析问出关键证据，而不是被角标牵着走 */
-  _renderFollowupsHtml(resident, followups) {
+  /** 启动口供逐句揭幕：第一句立即出现，后续每 ~700ms 追加一句；
+   *  点"跳过"则一次性补齐并露出追问区；元素缺失时降级为一次性渲染 */
+  _startStatementReveal(box, sentences, followups, asked, resident) {
     const esc = ClueCards.escapeHtml;
-    const asked = new Set(this._readAsked());
-    let html = '<p class="bio-sec-title">· 追问</p><div class="fu-list">';
-    followups.forEach((fu, i) => {
-      const key = this._askKey(resident.id, i);
-      const topic = this._topicOf(fu.q) || "继续追问";
-      if (asked.has(key)) {
-         html += '<div class="fu-item asked" data-fu="' + i + '">' +
-           '<div class="fu-head"><span class="fu-done">已问 ✓</span>' + esc(topic) + "</div>" +
-           (fu.a ? '<p class="fu-answer">' + esc(fu.a) + "</p>" : "") +
-           ((fu.cids || []).map((cid) => {
-             const c = App.clueMap[cid];
-             return c ? this._walkClueItemHtml(c) : "";
-           }).join("")) +
-           "</div>";
-       } else {
-        html += '<button type="button" class="fu-item btn" data-fu="' + i + '">' +
-          '<span class="fu-tag">追问</span>' + esc(topic) + "</button>";
-      }
-    });
-    return html + "</div>";
-  },
-  /** 构建走访弹窗 body（口供 + 追问分支 / 一键线索 + 提示行），供 open 与追问刷新复用 */
-  _buildBodyHtml(resident, followups) {
-    const esc = ClueCards.escapeHtml;
-    const talkText = resident.talk || resident.bio || resident.name + "不愿多说，像是在隐瞒什么。";
-    // secret 彩蛋：仅当已通关本关才展示，避免剧透
-    const unlocked = BioArchive.isLevelCleared();
-    const secretHtml = unlocked && resident.secret
-      ? '<div class="bio-secret-box"><p class="bio-sec-title">· 隐藏心事</p>' +
-        '<p class="bio-text bio-secret">' + esc(resident.secret) + "</p></div>"
-      : "";
-    let bodyHtml = '<p class="bio-sec-title">· 口供</p>' +
-      '<p class="bio-text">' + esc(talkText) + "</p>";
-    if (followups) {
-      bodyHtml += this._renderFollowupsHtml(resident, followups);
-      const asked = new Set(this._readAsked());
-      const left = followups.length - followups.filter((fu, i) => asked.has(this._askKey(resident.id, i))).length;
-      bodyHtml += '<p class="bio-lock-sub walk-tip">追问能套出更多口供。' +
-        (left > 0
-          ? "还有 <b>" + left + "</b> 个话题未追问，可随时再点这位居民补问。"
-          : "该居民的话题已全部问完，线索已齐。") + "</p>";
-    } else {
-      bodyHtml += this._renderWalkCluesHtml(resident);
-      bodyHtml += '<p class="bio-lock-sub walk-tip">以上线索已加入下方线索池：浅米色为有效线索，可拖入下方时间轴排序；灰色「干扰」线索请留在池中。</p>';
+    const stmt = box.querySelector("#dl-statement");
+    const after = box.querySelector("#dl-after-statement");
+    if (!stmt || !after) {
+      this._finishReveal(box, followups, asked, resident);
+      return;
     }
-    return bodyHtml + secretHtml;
+    this._clearRevealTimer();
+    this._skipRequested = false;
+    if (!sentences.length) {
+      stmt.innerHTML = '<span class="dl-line">（TA 沉默着，没接话。）</span>';
+      this._finishReveal(box, followups, asked, resident);
+      return;
+    }
+    stmt.innerHTML = '<span class="dl-line">' + esc(sentences[0]) + '</span>';
+    if (sentences.length <= 1) {
+      this._finishReveal(box, followups, asked, resident);
+      return;
+    }
+    const skipBtn = box.querySelector("#dl-skip");
+    if (skipBtn) skipBtn.hidden = false;
+    let i = 1;
+    const self = this;
+    const tick = function () {
+      if (self._skipRequested) { self._finishReveal(box, followups, asked, resident); return; }
+      if (i >= sentences.length) { self._finishReveal(box, followups, asked, resident); return; }
+      stmt.insertAdjacentHTML("beforeend", '<span class="dl-line">' + esc(sentences[i]) + '</span>');
+      i++;
+      self._revealTimer = setTimeout(tick, 700);
+    };
+    self._revealTimer = setTimeout(tick, 700);
   },
-  /** 绑定弹窗事件：关闭 + 追问按钮（body 重建后需重新绑定） */
-  _bindBioEvents(box, resident, followups) {
-    const closeBtn = box.querySelector("#bio-close");
-    if (closeBtn) closeBtn.addEventListener("click", () => this.close());
-    box.querySelectorAll(".fu-item.btn").forEach((btn) => {
-      btn.addEventListener("click", () => {
+  /** 立即完成揭幕：补齐剩余句子 + 露出追问区 + 绑定事件 */
+  _finishReveal(box, followups, asked, resident) {
+    this._clearRevealTimer();
+    const after = box.querySelector("#dl-after-statement");
+    if (after && after.hidden) {
+      after.hidden = false;
+      after.innerHTML = this._renderAfterStatement(resident, followups, asked);
+      this._bindAfterEvents(after, resident, followups);
+    }
+    const skipBtn = box.querySelector("#dl-skip");
+    if (skipBtn) skipBtn.hidden = true;
+  },
+  /** 绑定 after-statement 区域的事件（继续询问） */
+  _bindAfterEvents(after, resident, followups) {
+    const self = this;
+    after.querySelectorAll(".dl-next-fu").forEach(function (btn) {
+      btn.addEventListener("click", function () {
         const idx = Number(btn.dataset.fu);
         if (Number.isNaN(idx)) return;
-        this._askFollowup(resident, followups, idx);
+        self._askFollowup(resident, followups, idx);
       });
     });
   },
-  /** 刷新弹窗 body（追问后不整窗重开，只重绘内容区并高亮新解锁对白） */
-  _refreshBody(box, resident, followups, freshEl) {
-    const body = box.querySelector(".bio-body");
-    if (!body) return;
-    body.innerHTML = this._buildBodyHtml(resident, followups);
-    this._bindBioEvents(box, resident, followups);
-    // 给刚问出的对白追加出场动画：闪烁高亮 → 渐入
-    if (freshEl) {
-      const fresh = body.querySelector(freshEl);
-      if (fresh) fresh.classList.add("fu-fresh");
-    }
+  /** 清理逐句揭幕定时器 */
+  _clearRevealTimer() {
+    if (this._revealTimer) { clearTimeout(this._revealTimer); this._revealTimer = null; }
   },
-  /** 打开走访弹窗：具备追问分支 → 分支交互（逐问解锁线索）；否则保留"一键全给" */
+  /** 打开走访弹窗：开场白 + 口供逐句 + 引导 + 继续询问 */
   open(resident) {
     if (!resident) return;
     const esc = ClueCards.escapeHtml;
@@ -1180,28 +1391,45 @@ const DialogSystem = {
     const mask = document.getElementById("bio-mask");
     if (!box || !mask) return;
     const followups = this._followupsOf(resident);
+    const asked = new Set(this._readAsked());
+    const visitCount = this._getVisitCount(resident);
+    const visitTag = this._visitTagText(visitCount);
+    const talkText = resident.talk || resident.bio || (resident.name || "TA") + " 不愿多说，像是在隐瞒什么。";
+    const sentences = this._splitSentences(talkText);
+    const opening = this._openingFor(resident, visitCount);
+    const openingHtml = opening ? '<p class="dl-opening">' + esc(opening) + '</p>' : "";
     box.innerHTML =
       '<div class="bio-head">' +
         '<span class="bio-avatar">' + AvatarFactory.build(resident, { size: 52 }) + "</span>" +
         '<div class="bio-id">' +
-          '<h3 class="bio-name">' + esc(resident.name || "无名居民") + "</h3>" +
+          '<h3 class="bio-name">' + esc(resident.name || "无名居民") +
+            '<span class="bio-visit-tag">' + visitTag + '</span></h3>' +
           '<span class="bio-tag">' + esc(resident.tagShort || "身份未知") + "</span>" +
         "</div>" +
         '<button type="button" class="bio-close" aria-label="关闭" id="bio-close">×</button>' +
       "</div>" +
-      '<div class="bio-body">' + this._buildBodyHtml(resident, followups) + "</div>";
-    this._bindBioEvents(box, resident, followups);
+      '<div class="bio-body">' +
+        openingHtml +
+        '<p class="bio-sec-title">· 口供</p>' +
+        '<div class="dl-statement" id="dl-statement" data-total="' + sentences.length + '"></div>' +
+        '<button type="button" class="walk-skip" id="dl-skip" hidden>跳过揭幕</button>' +
+        '<div class="dl-after-statement" id="dl-after-statement" hidden></div>' +
+      "</div>";
+    const self = this;
+    const closeBtn = box.querySelector("#bio-close");
+    if (closeBtn) closeBtn.addEventListener("click", function () { self.close(); });
+    const skipBtn = box.querySelector("#dl-skip");
+    if (skipBtn) skipBtn.addEventListener("click", function () { self._skipRequested = true; });
     mask.classList.add("show");
-    // 标记已交谈（进度条口径不变）
     this._markSpoken(resident);
-    // 有追问分支时不再一键解锁；无分支时原逻辑一次全给
+    // 无追问分支的居民（如替罪羊）：保留原"一键全给"行为，立即解锁绑定的全部线索
     if (!followups) this._unlockBoundClue(resident);
+    this._startStatementReveal(box, sentences, followups, asked, resident);
   },
-  /** 回答某条追问：解锁对应线索入池 + 记录已追问 + 刷新弹窗（不整窗重开） */
+  /** 回答某条追问：解锁对应线索 + 记录已追问 + 局部刷新 after-statement */
   _askFollowup(resident, followups, idx) {
     const fu = followups[idx];
     if (!fu || !Array.isArray(fu.cids)) return;
-    const wasAsked = this._readAsked().indexOf(this._askKey(resident.id, idx)) !== -1;
     this._unlockBoundClue(resident, fu.cids);
     const asked = this._readAsked();
     const key = this._askKey(resident.id, idx);
@@ -1209,11 +1437,13 @@ const DialogSystem = {
       asked.push(key);
       StorageUtil.writeAskedFollowups(App.currentLevel, asked);
     }
-    // 不整窗重开：仅刷 body，避免弹窗闪烁；新问出的对白加高亮
     const box = document.getElementById("bio-box");
     if (box) {
-      this._refreshBody(box, resident, followups,
-        wasAsked ? null : '.fu-item.asked[data-fu="' + idx + '"]');
+      const after = box.querySelector("#dl-after-statement");
+      if (after) {
+        after.innerHTML = this._renderAfterStatement(resident, followups, new Set(asked));
+        this._bindAfterEvents(after, resident, followups);
+      }
     }
   },
   /** 渲染一键线索区：无追问分支的居民一次解锁全部绑定线索（原逻辑） */
@@ -1281,8 +1511,10 @@ const DialogSystem = {
       toast.classList.remove("show");
     }, 2400);
   },
-  /** 关闭走访弹窗 */
+  /** 关闭走访弹窗：清理揭幕定时器，避免内存泄漏与状态错乱 */
   close() {
+    this._clearRevealTimer();
+    this._skipRequested = false;
     const mask = document.getElementById("bio-mask");
     if (mask) mask.classList.remove("show");
   },
@@ -1396,8 +1628,9 @@ const ClueCards = {
       if (clue.isEvidence) {
         // 物证同时显示「物证」徽标 + 归属居民身份标签（evidenceOwnerTag），方便玩家在困难关快速匹配
         const ownerTag = clue.evidenceOwnerTag ? this.escapeHtml(clue.evidenceOwnerTag) : "";
+        const dirCls = clue.evidenceDirection === "clear" ? " ev-owner--clear" : "";
         speak = '<span class="clue-speak ev">物证</span>' +
-          (ownerTag ? '<span class="clue-speak ev-owner" data-ev-owner="' + ownerTag + '">对应：' + ownerTag + "</span>" : "");
+          (ownerTag ? '<span class="clue-speak ev-owner' + dirCls + '" data-ev-owner="' + ownerTag + '">对应：' + ownerTag + "</span>" : "");
       } else {
         const owner = App.clueOwner ? App.clueOwner[clue.id] : null;
         if (owner) speak = '<span class="clue-speak">' + this.escapeHtml(owner) + "</span>";
@@ -2354,6 +2587,10 @@ const Bgm = {
     this.gameplay = new Audio("audio/gameplay.mp3");
     this.gameplay.loop = true;
     this.gameplay.preload = "auto";
+    // 资源加载/解码失败时给出控制台提示（部署到无音频资源的子路径时便于排查）
+    const warnOnErr = (label) => (e) => console.warn(`[Bgm] ${label} 音频加载失败：`, e && e.message || e);
+    this.menu.addEventListener("error", warnOnErr("menu.mp3"));
+    this.gameplay.addEventListener("error", warnOnErr("gameplay.mp3"));
     // 任何位置的首次点击都作为启动信号（只触发一次）
     document.addEventListener("click", () => Bgm.unlock(), { once: true });
   },
@@ -2363,7 +2600,7 @@ const Bgm = {
     if (this.started) return;
     this.started = true;
     const target = this.current || this.menu;
-    target.play().catch(() => {});
+    target.play().catch((e) => console.warn("[Bgm] 解锁播放失败（用户尚未交互或被浏览器拦截）：", e && e.message || e));
   },
 
   /** 按页面切换曲目：menu/archive 播 menu.mp3，其余播 gameplay.mp3 */
@@ -2373,7 +2610,7 @@ const Bgm = {
     if (this.current === target) return; // 同一曲目内跳转保持连贯，不重播
     if (this.current) this.current.pause();
     this.current = target;
-    if (this.started) target.play().catch(() => {});
+    if (this.started) target.play().catch((e) => console.warn("[Bgm] 切换曲目播放失败：", e && e.message || e));
   },
 };
 
@@ -2792,7 +3029,7 @@ const LevelData = [
       { id: "c13", text: "驿站门口那盏监控探头 17:40 那段拍到：老周那件灰布袋挡住了他的胸口以上，帽子的轮廓被布袋遮住了一大半——能看到的帽檐下似乎有几根白发，但也有可能是布袋口漏出来的几缕毛线。", type: "valid", timeMin: 1060, timeText: "17:40 物证", isEvidence: true, evidenceOwnerTag: "退休老木匠" }
     ],
     conflictPairs: [],
-    solution: { r1: ["c1", "c4", "c7"], r2: ["c2", "c8"], r3: ["c3", "c10"], r4: ["c5", "c6", "c9"] },
+    solution: { r1: ["c1", "c4", "c7"], r2: ["c2", "c8"], r3: ["c3", "c10"], r4: ["c5", "c6", "c9", "c13"] },
     hints: [
       "凶手说「一直在木工房」，可驿站门口却掉了木屑和半颗灰旧棉袄的纽扣——木屑味只有去过现场的人才沾。",
       "小红看见的「鸭舌帽+白头发+步子快」的老头，和老周平日出门的样子有什么差别？",
@@ -2859,7 +3096,7 @@ const LevelData = [
       { id: "c6", text: "赵姨：雪球整晚跟我睡在卧室，九点喂过之后就没再叫过，更没出门。", type: "valid", timeMin: 0, timeText: "21:00~次日", isWitness: true, exclude: "r4" },
       { id: "c7", text: "吴先生：早晨六点我出门时看见摆件旁的应急灯还亮着——夜里我听见声响后，灯大概亮了一会儿。", type: "valid", timeMin: 360, timeText: "6:00", isWitness: true, involve: ["r2"], conflictGroup: "G-lie-2", conflictType: "lie" },
       { id: "c8", text: "走廊监控（楼道公共摄像头）拍到一个粉色衣袖的人影在 0:28 进了走廊，0:32 出。", type: "valid", timeMin: 30, timeText: "0:28~0:32", isEvidence: true, evidenceOwnerTag: "社区护士" },
-      { id: "c9", text: "监控里那团白色的小动物是隔壁楼的流浪猫——雪球那天晚上戴的项圈是红色，两只猫项圈颜色不一样。", type: "valid", isEvidence: true, evidenceOwnerTag: "养猫的邻居" },
+      { id: "c9", text: "监控里那团白色的小动物是隔壁楼的流浪猫——雪球那天晚上戴的项圈是红色，两只猫项圈颜色不一样。", type: "valid", isEvidence: true, evidenceOwnerTag: "养猫的邻居", evidenceDirection: "clear" },
       { id: "c10", text: "林姐：那只白猫的毛色我看得清清楚楚，就是雪球——赵姨家养了七年的猫我认得。", type: "valid", conflictGroup: "G-lie-2", conflictType: "lie" },
       { id: "c11", text: "物业通知：本楼应急灯因线路老化，本周将统一更换。", type: "fake" },
       { id: "c12", text: "赵姨：今年雪球七岁，相当于人的五十多岁。", type: "fake" },
@@ -2943,7 +3180,7 @@ const LevelData = [
       { id: "c13", text: "喷漆空罐上那枚带泥的男孩指纹经比对是右手中指——小彤是左撇子（她写字用左手、画画也用左手），所以罐口那枚指纹根本不是小彤的。", type: "valid", timeMin: 960, timeText: "16:00 物证", isEvidence: true, evidenceOwnerTag: "六年级学生" }
     ],
     conflictPairs: [],
-    solution: { r1: ["c1", "c7"], r2: ["c3", "c4", "c5"], r3: ["c2", "c8"], r4: ["c6"] },
+    solution: { r1: ["c1", "c7"], r2: ["c3", "c4", "c5", "c10", "c13"], r3: ["c2", "c8"], r4: ["c6"] },
     hints: [
       "大刘和苏姐都看见了那个穿蓝外套、身高 1.4 米的男孩——小彤穿的是粉色卫衣。",
       "喷漆罐上那枚带泥的男孩指纹，是从围墙上取下来的。",
@@ -3017,7 +3254,7 @@ const LevelData = [
       { id: "c13", text: "小区东门那盏智能监控 7:00 那段拍到：广场上停着一辆绿色小龟车，车牌尾号其实是 075（属另一家外卖站的小哥）——阿成的车尾号是 037；冯叔 7:00 看的那辆车不是阿成的。", type: "valid", timeMin: 420, timeText: "7:00 物证", isEvidence: true, evidenceOwnerTag: "外卖骑手" }
     ],
     conflictPairs: [],
-    solution: { r1: ["c1", "c7"], r2: ["c3", "c4", "c5", "c9", "c13"], r3: ["c2", "c8"], r4: ["c6", "c10"] },
+    solution: { r1: ["c1", "c7"], r2: ["c3", "c4", "c5", "c10", "c13"], r3: ["c2", "c8"], r4: ["c6"] },
     hints: [
       "凶手说「电动车刚充完电」，可冯叔七点就看见他的车还停在小东门——他根本没法骑。",
       "链条上那层油是「外卖骑手专供」——小乐一个高三学生不会用这种油。",
@@ -3093,11 +3330,11 @@ const LevelData = [
       { id: "c14", text: "清洁阿姨：今天楼道里有一只野猫跑过去好几趟。", type: "fake" },
       { id: "c15", text: "小马：十点二十八我回宿舍接电话，根本没下楼——你问老孙他十点一刻也没听见我下楼。", type: "valid", timeMin: 628, timeText: "自称 22:28", isSuspectStatement: true, conflictGroup: "G-lie-3", conflictType: "lie" },
       { id: "c16", text: "物业群通知：今晚十点起，小区电梯例行停运维保一小时。", type: "fake" },
-      { id: "c17", text: "小马：十点二十我去楼下打水，正好看见老李抱着收音机从门卫室出来，往宿舍楼下走——我当他是拿去修，就没当回事。", type: "valid", timeMin: 620, timeText: "22:20", isWitness: true, pointsTo: "r1" },
+      { id: "c17", text: "小马：十点二十我去楼下打水，正好看见老李抱着收音机从门卫室出来，往宿舍楼下走——我当他是拿去修，就没当回事。", type: "valid", timeMin: 620, timeText: "22:20", isSuspectStatement: true, pointsTo: "r1", conflictGroup: "G-lie-1", conflictType: "lie" },
       { id: "c18", text: "门卫室那盏监控（带红外）22:15~22:30 那段拍到：走廊里根本没出现「黑外套年轻人」的身影；倒是窗台上那只常驻的野猫（纯黑色、身形瘦长）从 22:18~22:26 一直在窗台晒太阳。", type: "valid", timeMin: 622, timeText: "22:22 物证", isEvidence: true, evidenceOwnerTag: "刚毕业的外地租客" }
     ],
     conflictPairs: [],
-    solution: { r1: ["c1", "c7", "c12"], r2: ["c3", "c4", "c9", "c10", "c11", "c15", "c17"], r3: ["c2", "c8"], r4: ["c5", "c6"] },
+    solution: { r1: ["c1", "c7", "c12"], r2: ["c3", "c4", "c9", "c10", "c11", "c15"], r3: ["c2", "c8"], r4: ["c5", "c6"] },
     hints: [
       "凶手一段自白说「十点二十在工位赶 bug」，另一段又说「十点一刻去门卫室要水」——两段时间对不上。",
       "窗台上那枚指纹+黑棉絮，只可能来自那条黑外套——凶手说「自己穿的是灰卫衣」。",
@@ -3195,7 +3432,7 @@ const LevelData = [
   },
   /* ---- 第 11 关：困难·终极（半真半假缜密型 + 重度连环谎言 + 嫁祸甩锅 + 多条间接目击 + 4 条干扰） ---- */
   {
-    title: "最后的真相", difficulty: "困难", orderSensitive: true,
+    title: "最后的真相", difficulty: "困难",
     background: "社区活动室的投影仪不翼而飞，当晚有四人来过活动室，每人各执一词，谁都拿不出不在场证明。",
     goal: "判断是谁拿走了投影仪。",
     culpritId: "r4", // 凶手：老蔡
@@ -3289,7 +3526,9 @@ const GameFlow = {
   getLevelConfig() {
     const raw = LevelData[App.currentLevel - 1];
     if (!raw) return null;
-    const cfg = JSON.parse(JSON.stringify(raw));
+    // 浅拷贝一层：阻止 future 启用 conflictPairs 时对 LevelData 数组的字段赋值污染
+    // （关卡数据本身只读，没有更深层 mutate，无需深拷贝）
+    const cfg = { ...raw };
     (cfg.conflictPairs || []).forEach((pair, idx) => {
       const group = "auto_" + idx;
       pair.forEach((cid) => {
@@ -4788,6 +5027,10 @@ const Achievement = {
   Menu.showPage("page-menu");
   // 初始化背景音乐（两路 Audio + 首次点击解锁）
   Bgm.init();
+  // 全局快捷键：ESC 关闭当前 Modal（close 幂等，无遮罩时无副作用）
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") Modal.close();
+  });
   // 接入底层拖拽交互（Pointer Events 统一方案，鼠标 / 触屏通用）
   GameFlow.setupDrag();
 })();
