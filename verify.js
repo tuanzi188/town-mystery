@@ -169,6 +169,18 @@ LevelData.forEach((lv, idx) => {
   const evidenceCount = (lv.clues || []).filter((c) => c.isEvidence).length;
   log(evidenceCount >= 1, `isEvidence 物证 ≥ 1（实际 ${evidenceCount}）`);
 
+  // 12b) 时间轴区间覆盖：每关至少 2 条 [timeMin, timeMax] 区间线索，其中至少 1 条 isWitness。
+  //      支撑 detectTimeOverlap「多人具备作案时间」与 detectTimeRangePairing「同时窗/时间互斥」，
+  //      防止"机制有、数据无"的静默空转（历史缺陷：L3-L11 曾全部缺失区间线索）。
+  const rangeClues = (lv.clues || []).filter((c) =>
+    typeof c.timeMin === "number" && typeof c.timeMax === "number");
+  log(rangeClues.length >= 2, `时间轴区间线索（timeMin+timeMax）≥ 2（实际 ${rangeClues.length}）`);
+  const rangeWitness = rangeClues.filter((c) => c.isWitness === true);
+  log(rangeWitness.length >= 1, `区间线索中至少 1 条 isWitness（实际 ${rangeWitness.length}）`);
+  rangeClues.forEach((c) => {
+    log(c.timeMax > c.timeMin, `区间线索 ${c.id} 满足 timeMax > timeMin（${c.timeMin} vs ${c.timeMax}）`);
+  });
+
   console.log(`  关卡线索总数: ${(lv.clues || []).length}, 居民数: ${(lv.residents || []).length}, fake 干扰: ${fakeIds.size}`);
 });
 

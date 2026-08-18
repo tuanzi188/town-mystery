@@ -104,10 +104,18 @@ function getLevelRule(cfg, currentLevel) {
   };
 }
 
-// 决定性证据候选
+// 决定性证据候选（与 index.html 中 GameFlow._killerKeyIds 保持一致：
+//   ① 凶手 solution 中标记 isEvidence 的物证；② pointsTo 凶手的 isEvidence 物证。
+//   仿真用——避免与运行时判定口径漂移）
 function killerKeyIds(cfg, clueMap) {
-  const key = new Set((cfg.solution && cfg.solution[cfg.culpritId]) || []);
-  (cfg.clues || []).forEach((c) => { if (c.pointsTo === cfg.culpritId) key.add(c.id); });
+  const key = new Set();
+  (cfg.solution && cfg.solution[cfg.culpritId] || []).forEach((cid) => {
+    const c = clueMap[cid];
+    if (c && c.isEvidence === true) key.add(cid);
+  });
+  (cfg.clues || []).forEach((c) => {
+    if (c.pointsTo === cfg.culpritId && c.isEvidence === true) key.add(c.id);
+  });
   return key;
 }
 
@@ -167,12 +175,13 @@ LevelData.forEach((lv, idx) => {
   const solRes = checkSolution(lv, slots, clueMap);
   log(solRes.ok, `第 ${num} 关：卡槽匹配（${solRes.ok ? "ok" : solRes.message}）`);
 
-  // 8) 指认凶手 + 决定性证据
-  const keyIds = Array.from(killerKeyIds(lv, clueMap));
+  // 8) 指认凶手 + 决定性证据（与运行时 _handleAccusation 一致：ev 在 keySet 即为正确）
+  const keySet = killerKeyIds(lv, clueMap);
+  const keyIds = Array.from(keySet);
   log(keyIds.length >= 1, `第 ${num} 关：决定性证据候选 ≥ 1（${keyIds.length}: ${keyIds.slice(0, 3).join(",")}）`);
   const culprit = lv.culpritId;
   const evId = keyIds[0];
-  const evOk = !!evId && (lv.solution[culprit] || []).includes(evId);
+  const evOk = !!evId && keySet.has(evId);
   log(culprit && evOk, `第 ${num} 关：指认 ${culprit} + 证据 ${evId} 双对`);
 
   // 9) 干扰线索数量（要够多）

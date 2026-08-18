@@ -264,6 +264,7 @@ input{font-family:inherit;}
 .clue-list{display:flex;flex-wrap:wrap;gap:8px;}
 /* 线索卡片通用样式（浅米色有效 / 浅灰色干扰） */
 .clue-card{
+  position:relative; /* 供 case-toggle 绝对定位；不影响拖拽 */
   width:150px;min-height:64px;padding:8px 10px;border-radius:10px;
   border:1px solid var(--card-line);box-shadow:var(--shadow);
   font-size:12px;line-height:1.5;cursor:grab;user-select:none;
@@ -472,6 +473,8 @@ input{font-family:inherit;}
 }
 .cp-pill.warn{background:#fbf1e3;color:var(--warn);border-color:#ecd9bd;}
 .cp-pill.danger{background:#fbeae6;color:var(--danger);border-color:#eec7bf;}
+/* 已完成态：绿色实底，与进行中/告警视觉明确区分 */
+.cp-pill.done{background:var(--accent);color:#fff;border-color:var(--accent);}
 .cp-pill .cp-num{font-weight:600;}
 /* 底部栏第二行：功能按钮 */
 .bb-row{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;width:100%;max-width:680px;}
@@ -517,6 +520,73 @@ input{font-family:inherit;}
 .clue-review-list .review-icon{flex:none;font-size:13px;line-height:1.6;}
 .clue-review-list .review-icon.decoy{color:var(--danger);}
 .clue-review-list.decoy-list li{background:#fbf1e3;border:1px solid #ecd9bd;}
+.clue-review-list .review-icon.flawed{color:#c96a5f;}
+.clue-review-list .review-icon.role-core{color:#c96a5f;}
+.clue-review-list .review-icon.role-aux{color:#5f8f6d;}
+.clue-review-list .review-icon.role-red{color:#d98a5f;}
+.clue-review-list .review-icon.role-amb{color:#9a9184;}
+.clue-review-list.core-list li{background:#fbeeea;border:1px solid #ecc8c0;}
+.clue-review-list.aux-list li{background:#eef3ec;border:1px solid #cfe1d5;}
+.clue-review-list.red-list li{background:#fbf1e3;border:1px solid #ecd9bd;}
+.clue-review-list.amb-list li{background:#f4f1ea;border:1px solid #e8e2d4;}
+
+/* —— 证据链 (case file) UI —— */
+/* 卡片右上角 ⊕ 按钮：把线索加入 / 移出证据链 */
+.clue-case-toggle{
+  position:absolute;top:5px;right:5px;
+  width:22px;height:22px;border-radius:50%;
+  background:var(--card);border:1px solid var(--card-line);
+  color:var(--text-sub);font-size:13px;line-height:1;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:background .15s,color .15s,transform .12s;
+  z-index:2;padding:0;
+}
+.clue-case-toggle:hover{background:var(--soft);color:var(--accent-deep);transform:scale(1.08);}
+.clue-case-toggle.in-case{background:var(--accent);color:#fff;border-color:transparent;}
+.clue-case-toggle.in-case:hover{background:var(--accent-deep);}
+.clue-card.in-case{border-color:var(--accent);box-shadow:0 0 0 2px var(--soft);}
+/* 底部「证据链」计数条 */
+.case-file-bar{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  width:100%;max-width:680px;
+  padding:6px 12px;border-radius:10px;
+  background:var(--card);border:1px solid var(--card-line);
+  font-size:12px;color:var(--accent-deep);
+}
+.case-file-bar .cfb-left{display:flex;align-items:center;gap:8px;min-width:0;flex:1;}
+.case-file-bar .cfb-count{font-weight:bold;font-size:14px;}
+.case-file-bar .cfb-hint{color:var(--text-sub);font-size:11px;}
+.case-file-bar .cfb-clear{
+  background:none;border:none;color:var(--text-sub);
+  font-size:12px;cursor:pointer;padding:2px 6px;
+}
+.case-file-bar .cfb-clear:hover{color:var(--danger);}
+/* 指认弹窗里的证据链 pill 列表 */
+.case-file-pills{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;max-height:200px;overflow-y:auto;}
+.case-file-pill{
+  display:inline-flex;align-items:center;gap:5px;
+  font-size:12px;line-height:1.4;padding:5px 8px;border-radius:8px;
+  background:var(--card);border:1px solid var(--card-line);
+  color:var(--text);
+}
+.case-file-pill .cfp-remove{
+  cursor:pointer;color:var(--text-sub);font-size:14px;line-height:1;
+  display:inline-flex;align-items:center;justify-content:center;
+  width:16px;height:16px;border-radius:50%;
+  background:none;border:none;padding:0;
+}
+.case-file-pill .cfp-remove:hover{color:#fff;background:var(--danger);}
+.cf-empty{color:var(--text-sub);font-size:12px;font-style:italic;}
+/* verdict 徽标 */
+.verdict-badge{
+  display:inline-block;padding:8px 18px;border-radius:999px;
+  font-size:15px;letter-spacing:3px;font-weight:bold;
+  margin:10px 0;
+}
+.verdict-badge.perfect{background:#e2ecdf;color:var(--accent-deep);border:1px solid #b6d4be;}
+.verdict-badge.standard{background:#eef3ec;color:var(--accent-deep);border:1px solid #c8dbcd;}
+.verdict-badge.flawed{background:#fbf1e3;color:#a05a2a;border:1px solid #ecd9bd;}
+.verdict-badge.insufficient{background:#f4f1ea;color:#7a7363;border:1px solid #d8d2c4;}
 .modal-btns{display:flex;gap:10px;margin-top:18px;justify-content:center;}
 .modal-btn{
   flex:1;padding:10px 0;border-radius:10px;font-size:14px;
@@ -1111,11 +1181,11 @@ input{font-family:inherit;}
       <p class="case-goal" id="case-goal">推理目标将在加载关卡后显示……</p>
     </header>
 
-    <!-- 分区二 + 三：左侧居民卡槽区 / 右侧线索卡片池 -->
+    <!-- 分区二 + 三：左侧居民列表 / 右侧线索卡片池 -->
     <main class="game-main">
       <section class="residents-panel" id="residents-panel">
-        <h3 class="panel-title">居民卡槽</h3>
-        <!-- 居民卡槽由 JS 渲染 -->
+        <h3 class="panel-title">小镇居民</h3>
+        <!-- 居民列表由 JS 渲染 -->
       </section>
       <section class="clues-pool" id="clues-pool">
         <p class="pool-hint">轻点居民头像可交谈解锁口供；把带时间的目击 / 自白线索拖入下方时间轴排序。浅米色为有效线索，浅灰色为干扰线索（请勿拖入时间轴）。</p>
@@ -1143,6 +1213,13 @@ input{font-family:inherit;}
     <!-- 分区四：底部功能按钮栏（第一行：调查进度；第二行：操作按钮） -->
     <footer class="bottom-bar">
       <div class="case-progress" id="case-progress"><!-- 调查进度由 GameFlow.renderProgress 渲染 --></div>
+      <div class="case-file-bar" id="case-file-bar">
+        <div class="cfb-left">
+          <span class="cfb-count" id="cfb-count">📂 证据链 (0)</span>
+          <span class="cfb-hint" id="cfb-hint">点线索卡片右上角 ⊕ 收集证据；至少 3 条才能指认</span>
+        </div>
+        <button class="cfb-clear" id="cfb-clear" type="button">清空</button>
+      </div>
       <div class="bb-row">
         <button class="action-btn primary" id="btn-accuse">指认凶手</button>
         <button class="action-btn" id="btn-hint">获取提示</button>
@@ -1378,7 +1455,7 @@ const StorageUtil = {
     }
     if (!valid) {
       return {
-        pool: [], hintCount, mapPlace: {}, timeline: [], locked: [],
+        pool: [], hintCount, mapPlace: {}, timeline: [], locked: [], caseFile: [],
       };
     }
     // 旧档：尝试从 slots 推断 pool（兼容老玩家）；新档：以 pool 为准
@@ -1396,6 +1473,7 @@ const StorageUtil = {
     // 标准化字段 + 透传额外字段（如 accuseFails / overlapWarned），避免读档丢失运行时数据
     return Object.assign({
       pool, hintCount, mapPlace, timeline, locked: strArr(raw.locked),
+      caseFile: strArr(raw.caseFile),
     }, raw);
   },
   /** 写入当前关卡状态 */
@@ -1406,7 +1484,7 @@ const StorageUtil = {
   clearLevelState(level) {
     this.write("levelState_" + level, {
       pool: [], hintCount: 0,
-      mapPlace: {}, timeline: [], locked: [],
+      mapPlace: {}, timeline: [], locked: [], caseFile: [],
     });
   },
   /**
@@ -1597,10 +1675,10 @@ const DialogSystem = {
     }
     // 无追问分支的居民（如替罪羊）：保留原"一键线索" + 提示行
     const walkHtml = this._renderWalkCluesHtml(resident);
-    // 替罪羊明确提示：无可解锁线索，避免玩家以为"我点错了"
+    // 替罪羊明确提示：仅一条自辩线索（与左侧列表"次要人物 · 自辩线索"口径一致）
     const isScapegoat = this._isScapegoat(resident);
     const scapegoatTip = isScapegoat
-      ? '<p class="bio-lock-sub walk-tip-scapegoat">这位是次要人物，没有可解锁的线索；你可以在「档案」里查看 TA 的生平。</p>'
+      ? '<p class="bio-lock-sub walk-tip-scapegoat">这位是次要人物，只留下一条自辩线索；你可以在「档案」里查看 TA 的生平。</p>'
       : "";
     return walkHtml + scapegoatTip +
       '<p class="bio-lock-sub walk-tip">以上线索已加入下方线索池：浅米色为有效线索，可拖入下方时间轴排序；灰色「干扰」线索请留在池中。</p>' +
@@ -1781,7 +1859,7 @@ const DialogSystem = {
         '<p class="bio-sec-title">· 口供</p>' +
         '<div class="dl-statement" id="dl-statement" data-total="' + sentences.length + '"></div>' +
         '<div class="dl-progress" id="dl-progress" data-state="reveal">' +
-          '<span class="dl-progress-label">TA 正在回忆 · <b>1</b> / ' + sentences.length + ' 句</span>' +
+          '<span class="dl-progress-label">TA 正在回忆…</span>' +
           '<div class="dl-progress-bar"><div class="dl-progress-fill" id="dl-progress-fill" style="width:0%"></div></div>' +
         '</div>' +
         '<button type="button" class="walk-skip" id="dl-skip" hidden>跳过揭幕</button>' +
@@ -1819,8 +1897,10 @@ const DialogSystem = {
       }
     }
   },
-  /** 渲染一键线索区：无追问分支的居民一次解锁全部绑定线索（原逻辑） */
+  /** 渲染一键线索区：无追问分支的居民一次解锁全部绑定线索（原逻辑）
+   *  替罪羊除外：其自辩线索已在口供对白中呈现，不重复展示列表（避免"· 走访所得线索"空标题） */
   _renderWalkCluesHtml(resident) {
+    if (this._isScapegoat(resident)) return "";
     const walkCids = Array.isArray(resident.bindClue)
       ? resident.bindClue
       : (resident.bindClue ? [resident.bindClue] : []);
@@ -1982,6 +2062,22 @@ const Modal = {
       if (extraBtn) extraBtn.addEventListener("click", onExtra);
     }
   },
+  /** 就地替换当前弹窗内容（标题/正文/番外区），不重新打开，保留 onClose 与按钮。
+   *  用于"提示第二步"等场景，避免新开弹窗覆盖导致原 onClose 丢失。 */
+  replaceContent(title, text, extraHtml) {
+    this._init();
+    this.titleEl.textContent = title;
+    this.textEl.textContent = text;
+    if (this.extraEl) {
+      if (extraHtml) {
+        this.extraEl.innerHTML = extraHtml;
+        this.extraEl.style.display = "block";
+      } else {
+        this.extraEl.innerHTML = "";
+        this.extraEl.style.display = "none";
+      }
+    }
+  },
   /** 确认弹窗：两个按钮，回调 onOk / onCancel */
   confirm(title, text, onOk, onCancel, onClose) {
     this._render(title, text, "", [
@@ -2049,15 +2145,18 @@ const ClueCards = {
     }
     return { typeCls: "", badge: "", badgeIcon: "📁", badgeText: "口供" };
   },
-  /** 按线索类型构建卡片元素：type === "fake" 为浅灰色干扰线索，其余按 isEvidence/isSuspectStatement/isWitness 分层。 */
+  /** 按线索类型构建卡片元素：type === "fake" 为浅灰色干扰线索，其余按 isEvidence/isSuspectStatement/isWitness 分层。
+   *  卡片右上角加 ⊕ 按钮：把线索加入/移出 CaseFile 证据链（独立于卡槽/时间轴）。 */
   buildCard(clue, lockedIds) {
     const isFake = clue.type === "fake";
     const locked = lockedIds && lockedIds.indexOf(clue.id) !== -1;
     const cls = this.classify(clue);
+    const inCase = (typeof CaseFile !== "undefined") && CaseFile.has(clue.id);
     const el = document.createElement("div");
     el.className = "clue-card" + (isFake ? " fake" : " valid") +
       (cls.typeCls ? " " + cls.typeCls : "") +
-      (locked ? " locked" : "");
+      (locked ? " locked" : "") +
+      (inCase ? " in-case" : "");
     el.dataset.clueId = clue.id;
     el.dataset.type = clue.type;
     el.dataset.clueKind = cls.typeCls || (isFake ? "fake" : "statement");
@@ -2084,11 +2183,16 @@ const ClueCards = {
       const owner = App.clueOwner ? App.clueOwner[clue.id] : null;
       if (owner) speak = '<span class="clue-speak">' + this.escapeHtml(owner) + "</span>";
     }
+    // ⊕ 按钮：把线索加入/移出 CaseFile 证据链。点击事件由 GameFlow 统一代理（事件委托）。
+    const caseBtn = '<button type="button" class="clue-case-toggle' + (inCase ? " in-case" : "") +
+      '" data-cid="' + this.escapeHtml(clue.id) + '" title="' + (inCase ? "从证据链移除" : "加入证据链") +
+      '" aria-label="' + (inCase ? "从证据链移除" : "加入证据链") + '">' + (inCase ? "✓" : "⊕") + "</button>";
     el.innerHTML =
+      caseBtn +
       speak +
       '<p class="clue-text">' + this.escapeHtml(clue.text) + "</p>" +
       '<span class="clue-type">' + (isFake ? "干扰线索" : "有效线索") +
-        '<span class="clue-lock-mark">🔒 已锁定</span></span>';
+        (locked ? '<span class="clue-lock-mark">🔒 已锁定</span>' : "") + "</span>";
     return el;
   },
   /** 给本轮新加入池子的线索卡片加上「入卷」动画（fly-in + 短暂高亮）。
@@ -2107,6 +2211,100 @@ const ClueCards = {
       }
     });
   },
+};
+
+/* ============================================================
+   模块三·补：证据链 (CaseFile) — 玩家自主收集的「指认证据」池
+   - 状态：App.layout.caseFile = [cid, ...]，由 StorageUtil 持久化
+   - 操作：toggle/clear/render，三件套与 ClueCards 互不耦合
+   - 与 evaluateCase 联动：玩家点击「指认凶手」时，若 caseFile.length >= 3，
+     弹窗展示证据链并由 _handleAccusation 调 evaluateCase 出 verdict
+   ============================================================ */
+const CaseFile = {
+  /** 读取当前证据链（保证是字符串数组） */
+  get() {
+    const arr = (App.layout && App.layout.caseFile) || [];
+    return Array.isArray(arr) ? arr.filter((x) => typeof x === "string") : [];
+  },
+  /** 是否包含某条线索 */
+  has(cid) { return this.get().indexOf(cid) !== -1; },
+  /** 切换单条线索的「在/不在证据链」状态。
+   *  返回最新 caseFile 数组。已脱离线索池的 cid（玩家原本锁后被系统剔除）不写入。 */
+  toggle(cid) {
+    if (!cid || !App.clueMap || !App.clueMap[cid]) return this.get();
+    const list = this.get();
+    const idx = list.indexOf(cid);
+    let next;
+    if (idx === -1) {
+      next = list.concat([cid]);
+    } else {
+      next = list.slice();
+      next.splice(idx, 1);
+    }
+    App.layout.caseFile = next;
+    StorageUtil.writeLevelState(App.currentLevel, App.layout);
+    this._syncDom(cid);
+    this.render();
+    return next;
+  },
+  /** 清空全部 */
+  clear() {
+    if (!App.layout) return;
+    App.layout.caseFile = [];
+    StorageUtil.writeLevelState(App.currentLevel, App.layout);
+    document.querySelectorAll(".clue-card.in-case").forEach((el) => el.classList.remove("in-case"));
+    document.querySelectorAll(".clue-case-toggle.in-case").forEach((b) => {
+      b.classList.remove("in-case");
+      b.textContent = "⊕";
+    });
+    this.render();
+  },
+  /** 同步单张卡片 + 切换按钮的视觉态（在 toggle 内部调用） */
+  _syncDom(cid) {
+    const card = document.querySelector('.clue-card[data-clue-id="' + CSS.escape(cid) + '"]');
+    if (card) card.classList.toggle("in-case", this.has(cid));
+    const btn = document.querySelector('.clue-case-toggle[data-cid="' + CSS.escape(cid) + '"]');
+    if (btn) {
+      const on = this.has(cid);
+      btn.classList.toggle("in-case", on);
+      btn.textContent = on ? "✓" : "⊕";
+      btn.title = on ? "从证据链移除" : "加入证据链";
+    }
+  },
+  /** 刷新底部计数条 / 按钮可用态。Modal 不在时安全。 */
+  render() {
+    const countEl = document.getElementById("cfb-count");
+    const hintEl = document.getElementById("cfb-hint");
+    if (!countEl || !hintEl) return;
+    const n = this.get().length;
+    countEl.textContent = "📂 证据链 (" + n + ")";
+    if (n === 0) hintEl.textContent = "点线索卡片右上角 ⊕ 收集证据；至少 3 条才能指认";
+    else if (n < 3) hintEl.textContent = "至少还要再选 " + (3 - n) + " 条线索才能提交";
+    else hintEl.textContent = "已收集 " + n + " 条，可以提交指认";
+    const accuseBtn = document.getElementById("btn-accuse");
+    if (accuseBtn) {
+      // 不强制禁用——玩家可继续选/调整；_checkMix 与 _showCulpritPicker 内部会校验
+      accuseBtn.classList.toggle("primary", n >= 3);
+    }
+  },
+  /** 渲染指认弹窗里的「证据链」展示。返回 HTML 字符串。 */
+  renderPillsHtml() {
+    const esc = ClueCards.escapeHtml;
+    const list = this.get();
+    if (!list.length) {
+      return '<p class="cf-empty">（证据链为空）— 关闭此弹窗，点线索卡片 ⊕ 添加</p>';
+    }
+    return '<div class="case-file-pills">' + list.map((cid) => {
+      const c = (App.levelData && App.levelData.clues || []).find((x) => x.id === cid);
+      const text = c ? esc(c.text) : esc(cid);
+      return '<span class="case-file-pill" data-pill-cid="' + esc(cid) + '">' +
+        '<span title="' + text + '">' + text + '</span>' +
+        '<button type="button" class="cfp-remove" data-rm-cid="' + esc(cid) + '" title="移除">×</button>' +
+        '</span>';
+    }).join("") + '</div>';
+  },
+  /** 校验证据链长度；返回 true 表示可以进入指认弹窗 */
+  canAccuse() { return this.get().length >= 3; },
 };
 
 /* ============================================================
@@ -2850,6 +3048,8 @@ const DragManager = {
     if (this.dragging) return;
     const target = e.target;
     if (!(target instanceof Element)) return;
+    // ⊕ 按钮是证据链切换入口，不应触发拖拽
+    if (target.closest && target.closest(".clue-case-toggle")) return;
     const card = target.closest(".clue-card");
     if (!card) return;
     if (card.dataset.locked === "1") return; // 已锁定线索不可拖动
@@ -2966,6 +3166,16 @@ const DragManager = {
       return;
     }
     if (target) {
+      // 干扰/无时间信息线索拖入时间轴：即时抖动 + 轻提示（不再静默忽略）
+      if (target.type === "timeline") {
+        const clue = App.clueMap[cardId];
+        if (!clue || typeof clue.timeMin !== "number") {
+          this._shakeFail(card);
+          this._showInvalidTimelineTip();
+          this._resetConfirm();
+          return;
+        }
+      }
       const wasTimeline = target.type === "timeline";
       this._moveCard(cardId, target);
       GameFlow.commitLayout(); // 存档 → 重渲染 → 刷新冲突标红
@@ -3087,6 +3297,16 @@ const DragManager = {
     card.addEventListener("animationend", clear);
   },
 
+  /** 干扰/无时间线索拖入时间轴的轻提示（复用全局 toast-tip） */
+  _showInvalidTimelineTip() {
+    const t = document.getElementById("toast-tip");
+    if (!t) return;
+    t.textContent = "⛔ 这条线索没有时间信息，不能放入时间轴";
+    t.classList.add("show");
+    clearTimeout(this._invalidToastTimer);
+    this._invalidToastTimer = setTimeout(() => t.classList.remove("show"), 2200);
+  },
+
   /** 清理目标卡槽 / 地图地点高亮（slot-target 已无作用，保留调用兼容） */
   _clearSlotHighlight() {
     document.querySelectorAll(".slots.slot-target").forEach((s) => s.classList.remove("slot-target"));
@@ -3118,7 +3338,7 @@ const Bgm = {
   /** 初始化：创建两路音频对象，并注册首次点击解锁 */
   init() {
     if (typeof Audio !== "function") return; // 非浏览器环境（测试 / 受限容器）跳过音乐
-    this.menu = new Audio("menu.mp3");
+    this.menu = new Audio("audio/menu.mp3");
     this.menu.loop = true;
     this.menu.preload = "auto";
     this.gameplay = new Audio("audio/gameplay.mp3");
@@ -3244,7 +3464,7 @@ const Menu = {
 
 /* ============================================================
    模块七：关卡数据（11 关完整 JSON）
-   难度分布：1-3 新手（无干扰）/ 4-8 普通（1 条干扰）/ 9-11 困难（2 条干扰）
+   难度分布：1-3 新手（干扰 1~2 条）/ 4-8 普通（干扰 2 条）/ 9-11 困难（干扰 3~4 条）
    每关字段：title, difficulty, background, goal, residents, clues, solution, hints, truth
    - clues 中 conflictPairs 定义互斥线索对，由 getLevelConfig 转为 conflictGroup
    - solution 为 { 居民id: [线索id] } 的正确分配映射
@@ -3369,14 +3589,14 @@ const LevelData = [
       }
     ],
     clues: [
-      { id: "c1", text: "赵奶奶：我七点整在阳台晾衣服，瞄见楼下花坛里有道圆滚滚的小身影一钻——我没下楼，假装没看见。", type: "valid", timeMin: 420, timeText: "7:00", isWitness: true, conflictGroup: "G-lie-1", conflictType: "lie" },
+      { id: "c1", text: "赵奶奶：我七点整在阳台晾衣服，瞄见楼下花坛里有道圆滚滚的小身影一钻——我没下楼，假装没看见。", type: "valid", timeMin: 420, timeMax: 430, timeText: "7:00~7:10", isWitness: true, conflictGroup: "G-lie-1", conflictType: "lie" },
       { id: "c2", text: "阿明：八点我下夜班路过花坛，靠外侧蹲下系过鞋带——鞋底是干净的，我一点都没踩进去。", type: "valid", timeMin: 480, timeText: "8:00", exclude: "r3" },
       { id: "c3", text: "小胖：七点到七点二十我一直在家吃早饭，绝对没出过门。", type: "valid", timeMin: 420, timeMax: 440, timeText: "自称 7:00~7:20", isSuspectStatement: true, conflictGroup: "G-lie-1", conflictType: "lie" },
       { id: "c4", text: "小胖：七点半我下楼追球时看见小乐从花坛那边跑出来，一看就是他踩的——我鞋底可干净。", type: "valid", timeMin: 450, timeText: "7:30", isSuspectStatement: true, conflictGroup: "G-lie-2", conflictType: "lie" },
       { id: "c5", text: "花坛新鲜脚印：泥土里压出一枚 36 码的圆头球鞋印，鞋底花纹像小学生穿的那种廉价蓝布鞋；旁边还有一道被球砸出的浅坑。", type: "valid", timeMin: 448, timeText: "约 7:28", isEvidence: true, evidenceOwnerTag: "小学高年级男童", pointsTo: "r2" },
       { id: "c6", text: "花坛边捡到一枚 5 号橙色小橡皮球，表面印着「三年级男子组·亚军」几个字。", type: "valid", timeMin: 448, timeText: "约 7:28", isEvidence: true, evidenceOwnerTag: "小学高年级男童" },
       { id: "c7", text: "小乐：那天我一直在西边空地拍球，根本没靠近过花坛——要不信你去问赵奶奶。", type: "valid", timeMin: 450, timeText: "7:30", exclude: "r4", conflictGroup: "G-lie-2", conflictType: "lie" },
-      { id: "c8", text: "赵奶奶：我在三楼阳台上看下去，模模糊糊看着像是有个圆滚滚的小身影从花坛里钻出来——穿的像是件蓝外套，我以为是楼下常来玩的小胖，可那会儿天没全亮，我没敢认死。", type: "valid", timeMin: 425, timeText: "约 7:05", isWitness: true, conflictGroup: "G-mis-1", conflictType: "misunderstand" },
+      { id: "c8", text: "赵奶奶：我在三楼阳台上看下去，模模糊糊看着像是有个圆滚滚的小身影从花坛里钻出来——穿的像是件蓝外套，我以为是楼下常来玩的小胖，可那会儿天没全亮，我没敢认死。", type: "valid", timeMin: 425, timeMax: 430, timeText: "约 7:05~7:10", isWitness: true, conflictGroup: "G-mis-1", conflictType: "misunderstand" },
       { id: "c9", text: "小乐：那天我穿的是件红色卫衣，邻居都夸过那件衣服鲜亮——圆滚滚的轮廓那会儿我正蹲在花坛里抓一只钻进去的野猫。", type: "valid", conflictGroup: "G-mis-1", conflictType: "misunderstand" },
       { id: "c10", text: "便利店收银台旁边贴着一张「本店无外卖配送」的告示。", type: "fake" },
       { id: "c11", text: "花坛围栏外泥地上留着一串野猫的爪印，爪印方向从围栏外通向花坛内——7:05 那会儿，那只常在小区转悠的橘白野猫正巧钻进了花坛。", type: "valid", timeMin: 425, timeText: "约 7:05 物证", isEvidence: true, evidenceOwnerTag: "小学高年级男童" }
@@ -3437,11 +3657,11 @@ const LevelData = [
       }
     ],
     clues: [
-      { id: "c1", text: "刘姐：中午我看见橘猫从东边巷子跑进阿伟家车库里——再没出来。", type: "valid", timeMin: 720, timeText: "12:00", isWitness: true, pointsTo: "r2" },
-      { id: "c2", text: "小蕊：下午我路过阿伟家楼下，听见他阳台里'喵'了一声——但我没看清是不是团子。", type: "valid", timeMin: 900, timeText: "15:00", isWitness: true, involve: ["r2"] },
+      { id: "c1", text: "刘姐：中午我看见橘猫从东边巷子跑进阿伟家车库里——再没出来。", type: "valid", timeMin: 720, timeMax: 725, timeText: "12:00~12:05", isWitness: true, pointsTo: "r2" },
+      { id: "c2", text: "小蕊：下午我路过阿伟家楼下，听见他阳台里'喵'了一声——但我没看清是不是团子。", type: "valid", timeMin: 900, timeMax: 902, timeText: "15:00~15:02", isWitness: true, involve: ["r2"] },
       { id: "c3", text: "阿伟：中午我在工位上写代码，压根没回家，团子跑哪儿去我不知道。", type: "valid", timeMin: 720, timeText: "自称 12:00", isSuspectStatement: true, conflictGroup: "G-lie-1", conflictType: "lie" },
       { id: "c4", text: "阿伟：下午我回来取 U 盘，瞧见小蕊蹲在我家车库里逗猫——是她在喂，跟我没关系。", type: "valid", timeMin: 900, timeText: "15:00", isSuspectStatement: true, conflictGroup: "G-lie-2", conflictType: "lie" },
-      { id: "c5", text: "陈伯：下午我去阿伟公司剪枝，亲眼瞧见他车库里蹲着只橘猫，他正拿火腿肠喂。", type: "valid", timeMin: 900, timeText: "15:00", isWitness: true, conflictGroup: "G-lie-1", conflictType: "lie", pointsTo: "r2" },
+      { id: "c5", text: "陈伯：下午我去阿伟公司剪枝，亲眼瞧见他车库里蹲着只橘猫，他正拿火腿肠喂。", type: "valid", timeMin: 900, timeMax: 920, timeText: "15:00~15:20", isWitness: true, conflictGroup: "G-lie-1", conflictType: "lie", pointsTo: "r2" },
       { id: "c6", text: "车库门口地上散落着几粒猫粮，袋子上印着'程序员阿伟专用，勿动'。", type: "valid", timeMin: 720, timeText: "约 12:30", isEvidence: true, evidenceOwnerTag: "程序员铲屎官" },
       { id: "c7", text: "刘姐：傍晚我没再在小区里看见团子。", type: "valid", timeMin: 1080, timeText: "18:00" },
       { id: "c8", text: "小蕊：我从头到尾就没进过阿伟家车库——他污蔑我。", type: "valid", timeMin: 900, timeText: "15:00", exclude: "r3", conflictGroup: "G-lie-2", conflictType: "lie" },
@@ -3511,14 +3731,14 @@ const LevelData = [
       }
     ],
     clues: [
-      { id: "c1", text: "陈伯：五点五十分我在屋里听见了花盆摔碎的声音——响得特别脆，像是大盆。", type: "valid", timeMin: 1020, timeText: "17:50", isWitness: true },
-      { id: "c2", text: "小敏：五点四十五我出门上班，路过三楼楼道，亲眼看见阿杰拎着一只大箱子撞上花盆——他看了一眼就蹲下去收碎片。", type: "valid", timeMin: 1015, timeText: "17:45", isWitness: true, conflictGroup: "G-lie-1", conflictType: "lie", pointsTo: "r2" },
+      { id: "c1", text: "陈伯：五点五十分我在屋里听见了花盆摔碎的声音——响得特别脆，像是大盆。", type: "valid", timeMin: 1020, timeMax: 1025, timeText: "17:50~17:55", isWitness: true },
+      { id: "c2", text: "小敏：五点四十五我出门上班，路过三楼楼道，亲眼看见阿杰拎着一只大箱子撞上花盆——他看了一眼就蹲下去收碎片。", type: "valid", timeMin: 1015, timeMax: 1017, timeText: "17:45~17:47", isWitness: true, conflictGroup: "G-lie-1", conflictType: "lie", pointsTo: "r2" },
       { id: "c3", text: "阿杰：五点我就在楼下驿站分拣，那会儿压根没上楼——后来听说老李家搬纸箱撞了花盆，跟我无关。", type: "valid", timeMin: 1000, timeText: "自称 17:00", isSuspectStatement: true, conflictGroup: "G-lie-1", conflictType: "lie" },
       { id: "c4", text: "阿杰：五点五十五我上楼拿客户退货，亲眼看见老李在四楼拎着纸箱往下走——肯定是他碰的。", type: "valid", timeMin: 1025, timeText: "17:55", isSuspectStatement: true, conflictGroup: "G-lie-2", conflictType: "lie" },
       { id: "c5", text: "碎瓷片上压着一张揉皱的快递单，单号尾号 4517，发件人是镇上某电器商城。", type: "valid", timeMin: 1015, timeText: "17:45~17:50", isEvidence: true, evidenceOwnerTag: "快递站小哥" },
       { id: "c6", text: "三楼花盆底座下压着一卷透明胶带，胶带芯上印着「极速达快递·易碎品专用」几个字。", type: "valid", timeMin: 1015, timeText: "17:45~17:50", isEvidence: true, evidenceOwnerTag: "快递站小哥" },
-      { id: "c7", text: "阿芳：傍晚六点我下楼取快递，瞧见阿杰蹲在三楼楼道里收碎瓷片——瞧见我来了才装作没事走开。", type: "valid", timeMin: 1080, timeText: "18:00", isWitness: true, pointsTo: "r2" },
-      { id: "c8", text: "陈伯：摔花盆那响声我听着是'哐啷'两下——不像是一个人路过碰倒的声音。", type: "valid", timeMin: 1020, timeText: "17:50", isWitness: true, involve: ["r2"] },
+      { id: "c7", text: "阿芳：傍晚六点我下楼取快递，瞧见阿杰蹲在三楼楼道里收碎瓷片——瞧见我来了才装作没事走开。", type: "valid", timeMin: 1080, timeMax: 1083, timeText: "18:00~18:03", isWitness: true, pointsTo: "r2" },
+      { id: "c8", text: "陈伯：摔花盆那响声我听着是'哐啷'两下——不像是一个人路过碰倒的声音。", type: "valid", timeMin: 1020, timeMax: 1022, timeText: "17:50~17:52", isWitness: true, involve: ["r2"] },
       { id: "c9", text: "老李：我那天根本不在家，更没下楼搬箱子——这锅我不背。", type: "valid", timeMin: 1025, timeText: "17:55", exclude: "r5", conflictGroup: "G-lie-2", conflictType: "lie" },
       { id: "c10", text: "阿芳：楼道那盆花我每周换一次水，今天我没换。", type: "fake" },
       { id: "c11", text: "物业通知：本周起 4 号楼电梯每周三上午 10 点至 12 点例行保养。", type: "fake" }
@@ -3544,7 +3764,7 @@ const LevelData = [
     goal: "判断是谁拿走了快递。",
     culpritId: "r4", // 凶手：老周
     ext: {
-      diffLevel: 2, checkEvidence: true, evidenceKeys: ["c6"],
+      diffLevel: 2, checkEvidence: true, evidenceKeys: ["c6", "c13"],
       decoyEvidence: ["驿站门口又飘来几片干木屑，看不出是哪来的——看似与木匠有关，可它没有紧贴老周那件灰外套的关联，谁走过都可能沾上，无法直接定罪。"],
       endingStory: "老周第二天揣着那个快递盒亲自上门道歉，还顺手帮店老板修好了驿站门口吱呀作响的木门。店老板没收他的赔款，只说「你常来坐坐就好」。两人后来成了下棋的牌友。",
       hintGroup: {
@@ -3579,13 +3799,13 @@ const LevelData = [
       }
     ],
     clues: [
-      { id: "c1", text: "店老板：下午四点我进库房数件，那个快递还在架子上。", type: "valid", timeMin: 960, timeText: "16:00", isWitness: true },
-      { id: "c2", text: "阿强：傍晚六点我按了手印拿了自己的件，根本没拿别人东西——我手指头沾着机油，洗过还有味。", type: "valid", timeMin: 1080, timeText: "18:00", isWitness: true, exclude: "r2" },
-      { id: "c3", text: "小红：傍晚前我亲眼看见老周把一个箱子塞进了他那只灰布袋——他低着头，戴着鸭舌帽，步子特别快。", type: "valid", timeMin: 1060, timeText: "17:40", isWitness: true, conflictGroup: "G-lie-1", conflictType: "lie", pointsTo: "r4" },
+      { id: "c1", text: "店老板：下午四点我进库房数件，那个快递还在架子上。", type: "valid", timeMin: 960, timeMax: 970, timeText: "16:00~16:10", isWitness: true },
+      { id: "c2", text: "阿强：傍晚六点我按了手印拿了自己的件，根本没拿别人东西——我手指头沾着机油，洗过还有味。", type: "valid", timeMin: 1080, timeMax: 1082, timeText: "18:00~18:02", isWitness: true, exclude: "r2" },
+      { id: "c3", text: "小红：傍晚前我亲眼看见老周把一个箱子塞进了他那只灰布袋——他低着头，戴着鸭舌帽，步子特别快。", type: "valid", timeMin: 1060, timeMax: 1065, timeText: "17:40~17:45", isWitness: true, conflictGroup: "G-lie-1", conflictType: "lie", pointsTo: "r4" },
       { id: "c4", text: "店老板：傍晚我回店时架子上少了一个快递——就是下午还在架上那个。", type: "valid", timeMin: 1090, timeText: "18:10" },
       { id: "c5", text: "老周：下午我一直在木工房赶一个花架，压根没出过门。", type: "valid", timeMin: 950, timeText: "自称 15:50", isSuspectStatement: true, conflictGroup: "G-lie-1", conflictType: "lie" },
       { id: "c6", text: "驿站门口地上捡到一片新鲜木屑，旁边还压着老周那件灰外套的半颗布纽扣。", type: "valid", timeMin: 1058, timeText: "约 17:38", isEvidence: true, evidenceOwnerTag: "退休老木匠" },
-      { id: "c7", text: "店老板：傍晚那阵我闻到了木屑味儿——平时店门口没有的。", type: "valid", timeMin: 1080, timeText: "18:00", isWitness: true, involve: ["r4"] },
+      { id: "c7", text: "店老板：傍晚那阵我闻到了木屑味儿——平时店门口没有的。", type: "valid", timeMin: 1080, timeMax: 1083, timeText: "18:00~18:03", isWitness: true, involve: ["r4"] },
       { id: "c8", text: "阿强：傍晚我按完手印，手上沾了印泥，洗了三遍才洗掉。", type: "valid", timeMin: 1080, timeText: "18:00" },
       { id: "c9", text: "老周：我没戴鸭舌帽，那阵风大，我戴的是顶旧棉帽——小红看错了。", type: "valid", timeMin: 1060, timeText: "17:40", isSuspectStatement: true, conflictGroup: "G-mis-1", conflictType: "misunderstand" },
       { id: "c10", text: "小红：我模模糊糊看着那人好像戴了顶深色帽子，帽檐下像是有几根白头发——可驿站门口那盏路灯太亮，我眼睛花，没敢认死。", type: "valid", conflictGroup: "G-mis-1", conflictType: "misunderstand" },
@@ -3649,22 +3869,22 @@ const LevelData = [
       }
     ],
     clues: [
-      { id: "c1", text: "吴先生：凌晨十二点半我听见楼上传来'哐'的一声——声音像是什么大件东西摔下来。", type: "valid", timeMin: 30, timeText: "0:30", isWitness: true, conflictGroup: "G-lie-1", conflictType: "lie" },
+      { id: "c1", text: "吴先生：凌晨十二点半我听见楼上传来'哐'的一声——声音像是什么大件东西摔下来。", type: "valid", timeMin: 30, timeMax: 32, timeText: "0:30~0:32", isWitness: true, conflictGroup: "G-lie-1", conflictType: "lie" },
       { id: "c2", text: "小宇：我十一点就上床了，一觉睡到天亮——夜里什么也没听见。", type: "valid", timeMin: 1380, timeText: "23:00", isWitness: true, exclude: "r3" },
       { id: "c3", text: "林姐：我值完班回家一上床就睡着了，整夜都没起夜——应该是赵姨的猫撞的，雪球夜里最爱闹。", type: "valid", timeMin: 30, timeText: "0:30", isSuspectStatement: true, conflictGroup: "G-lie-1", conflictType: "lie" },
       { id: "c4", text: "林姐：我下楼倒水时看见赵姨的雪球从摆件旁窜过去——肯定是它撞的。", type: "valid", timeMin: 30, timeText: "0:35", isSuspectStatement: true, conflictGroup: "G-lie-2", conflictType: "lie" },
       { id: "c5", text: "摆件底座下压着一根粉色短纤维，纤维断口整齐——是护士服工装常用的涤纶面料。", type: "valid", timeMin: 30, timeText: "0:30", isEvidence: true, evidenceOwnerTag: "社区护士" },
       { id: "c6", text: "赵姨：雪球整晚跟我睡在卧室，九点喂过之后就没再叫过，更没出门。", type: "valid", timeMin: 0, timeText: "21:00~次日", isWitness: true, exclude: "r4" },
-      { id: "c7", text: "吴先生：早晨六点我出门时看见摆件旁的应急灯还亮着——夜里我听见声响后，灯大概亮了一会儿。", type: "valid", timeMin: 360, timeText: "6:00", isWitness: true, involve: ["r2"], conflictGroup: "G-lie-2", conflictType: "lie" },
-      { id: "c8", text: "走廊监控（楼道公共摄像头）拍到一个粉色衣袖的人影在 0:28 进了走廊，0:32 出。", type: "valid", timeMin: 30, timeText: "0:28~0:32", isEvidence: true, evidenceOwnerTag: "社区护士" },
+      { id: "c7", text: "吴先生：早晨六点我出门时看见摆件旁的应急灯还亮着——夜里我听见声响后，灯大概亮了一会儿。", type: "valid", timeMin: 360, timeMax: 362, timeText: "6:00~6:02", isWitness: true, involve: ["r2"], conflictGroup: "G-lie-2", conflictType: "lie" },
+      { id: "c8", text: "走廊监控（楼道公共摄像头）拍到一个粉色衣袖的人影在 0:28 进了走廊，0:32 出。", type: "valid", timeMin: 30, timeMax: 32, timeText: "0:28~0:32", isEvidence: true, evidenceOwnerTag: "社区护士" },
       { id: "c9", text: "监控里那团白色的小动物是隔壁楼的流浪猫——雪球那天晚上戴的项圈是红色，两只猫项圈颜色不一样。", type: "valid", isEvidence: true, evidenceOwnerTag: "养猫的邻居", evidenceDirection: "clear" },
       { id: "c10", text: "林姐：那只白猫的毛色我看得清清楚楚，就是雪球——赵姨家养了七年的猫我认得。", type: "valid", conflictGroup: "G-lie-2", conflictType: "lie" },
       { id: "c11", text: "物业通知：本楼应急灯因线路老化，本周将统一更换。", type: "fake" },
       { id: "c12", text: "赵姨：今年雪球七岁，相当于人的五十多岁。", type: "fake" },
-      { id: "c13", text: "吴先生：听见声响后我开床头灯，模模糊糊看见走廊尽头有个穿深色衣服的人影往楼梯口拐——个头像是三楼的小宇，但我没敢认死，第二天才知道是林姐下夜班回来。", type: "valid", timeMin: 30, timeText: "0:30", isWitness: true, conflictGroup: "G-mis-1", conflictType: "misunderstand" },
-      { id: "c14", text: "走廊应急灯有自动感应记录：整夜只在 0:28~0:32 触发过两次（粉衣袖人影那会儿），其余时段都是静止状态——夜里没别人走过走廊。", type: "valid", timeMin: 30, timeText: "0:30 物证", isEvidence: true, evidenceOwnerTag: "社区护士" },
+      { id: "c13", text: "吴先生：听见声响后我开床头灯，模模糊糊看见走廊尽头有个穿深色衣服的人影往楼梯口拐——个头像是三楼的小宇，但我没敢认死，第二天才知道是林姐下夜班回来。", type: "valid", timeMin: 30, timeMax: 31, timeText: "0:30~0:31", isWitness: true, conflictGroup: "G-mis-1", conflictType: "misunderstand" },
+      { id: "c14", text: "走廊应急灯有自动感应记录：整夜只在 0:28~0:32 触发过两次（粉衣袖人影那会儿），其余时段都是静止状态——夜里没别人走过走廊。", type: "valid", timeMin: 30, timeMax: 32, timeText: "0:28~0:32 物证", isEvidence: true, evidenceOwnerTag: "社区护士" },
       { id: "c15", text: "小宇：那天我穿的是那件浅灰睡衣——吴先生看的那个人不可能是我，浅灰跟深色外套差太远，他大概把林姐那件深蓝外套看成我的睡衣了。", type: "valid", timeMin: 30, timeText: "0:30", isWitness: true, conflictGroup: "G-mis-1", conflictType: "misunderstand" },
-      { id: "c16", text: "林姐：凌晨十二点半我下楼倒水，撞见小宇蹲在摆件旁摆弄了两下才上楼——见我来了，他跑得飞快。", type: "valid", timeMin: 30, timeText: "0:35", isWitness: true, pointsTo: "r3" }
+      { id: "c16", text: "林姐：凌晨十二点半我下楼倒水，撞见小宇蹲在摆件旁摆弄了两下才上楼——见我来了，他跑得飞快。", type: "valid", timeMin: 30, timeMax: 31, timeText: "0:30~0:31", isWitness: true, pointsTo: "r3" }
     ],
     conflictPairs: [],
     solution: { r1: ["c1", "c7"], r2: ["c3", "c4", "c5", "c8", "c16"], r3: ["c2"], r4: ["c6", "c9"] },
@@ -3687,7 +3907,7 @@ const LevelData = [
     goal: "判断是谁涂的鸦。",
     culpritId: "r2", // 凶手：小凯
     ext: {
-      diffLevel: 2, checkEvidence: true, evidenceKeys: ["c5"],
+      diffLevel: 2, checkEvidence: true, evidenceKeys: ["c5", "c10", "c13"],
       decoyEvidence: ["围墙后垃圾桶里又翻出一截用过的粉笔头——看似是画画的孩子留下的，可涂鸦用的是喷漆，粉笔头与本案无关，无法证明是小凯喷的。"],
       endingStory: "小凯第二天拎着颜料桶和刷子，把围墙重新刷白，又画了一幅小镇的风景画。小彤也来帮忙，两人一人画一半。如今那面墙成了小区孩子们的「画展」，大刘巡逻时总要多看两眼。",
       hintGroup: {
@@ -3722,13 +3942,13 @@ const LevelData = [
       }
     ],
     clues: [
-      { id: "c1", text: "大刘：下午四点我巡逻时亲眼看见小凯拿着喷漆罐在围墙前画画——他一看见我就把罐子藏到身后跑了。", type: "valid", timeMin: 960, timeText: "16:00", isWitness: true, pointsTo: "r2", conflictGroup: "G-lie-2", conflictType: "lie" },
+      { id: "c1", text: "大刘：下午四点我巡逻时亲眼看见小凯拿着喷漆罐在围墙前画画——他一看见我就把罐子藏到身后跑了。", type: "valid", timeMin: 960, timeMax: 965, timeText: "16:00~16:05", isWitness: true, pointsTo: "r2", conflictGroup: "G-lie-2", conflictType: "lie" },
       { id: "c2", text: "小彤：我没碰过喷漆罐，整整一下午我都在家里写作业——要不信你去我家看作业。", type: "valid", timeMin: 960, timeText: "16:00", isWitness: true, exclude: "r3", conflictGroup: "G-lie-1", conflictType: "lie" },
       { id: "c3", text: "小凯：是小彤画的，我只是路过时在墙边蹲下系鞋带——我书包里可没有喷漆罐。", type: "valid", timeMin: 960, timeText: "16:00", isSuspectStatement: true, conflictGroup: "G-lie-1", conflictType: "lie" },
       { id: "c4", text: "小凯：放学后我直接回家了，根本没在围墙那边待过——你看我手上的颜料都没有。", type: "valid", timeMin: 980, timeText: "自称 16:20", isSuspectStatement: true, conflictGroup: "G-lie-2", conflictType: "lie" },
       { id: "c5", text: "围墙后垃圾桶里翻出一只喷漆空罐，罐身印着「极速达建材·橘色」——罐口附近有一枚带泥的男孩指纹。", type: "valid", timeMin: 960, timeText: "16:00", isEvidence: true, evidenceOwnerTag: "六年级学生" },
-      { id: "c6", text: "苏姐：下午四点半我收摊时瞥见一个穿蓝外套的男孩在围墙前弯腰——他身上有一股刺鼻的喷漆味儿。", type: "valid", timeMin: 990, timeText: "16:30", isWitness: true, involve: ["r2"] },
-      { id: "c7", text: "大刘：那孩子身高大概 1 米 4 左右，圆脸，跑得飞快——我喊了他两声，他头也不回跑得更快了。", type: "valid", timeMin: 960, timeText: "16:00", isWitness: true },
+      { id: "c6", text: "苏姐：下午四点半我收摊时瞥见一个穿蓝外套的男孩在围墙前弯腰——他身上有一股刺鼻的喷漆味儿。", type: "valid", timeMin: 990, timeMax: 993, timeText: "16:30~16:33", isWitness: true, involve: ["r2"] },
+      { id: "c7", text: "大刘：那孩子身高大概 1 米 4 左右，圆脸，跑得飞快——我喊了他两声，他头也不回跑得更快了。", type: "valid", timeMin: 960, timeMax: 962, timeText: "16:00~16:02", isWitness: true },
       { id: "c8", text: "小彤：那天下午我好像是穿了件粉卫衣——可回家我妈说我那会儿穿的是红 T 恤，我自己也记不清了。", type: "valid", timeMin: 960, timeText: "16:00", conflictGroup: "G-mis-1", conflictType: "misunderstand" },
       { id: "c9", text: "小凯：那天我穿的是件蓝色校服外套，跑起来挺显眼的。", type: "valid", conflictGroup: "G-mis-1", conflictType: "misunderstand" },
       { id: "c10", text: "大刘：围墙那几处喷漆飞溅点都集中在 1.4 米以上——不像是五年级女生够得到的高度。", type: "valid", timeMin: 960, timeText: "16:00", isEvidence: true, evidenceOwnerTag: "六年级学生" },
@@ -3748,7 +3968,7 @@ const LevelData = [
       "物证（喷漆罐指纹+飞溅点高度）只可能指向「身高 1.4 米以上的男生」。",
       "被嫁祸的人穿的衣服颜色和凶手完全不一样，目击描述没对上。"
     ],
-    truth: "是小凯涂的鸦——大刘四点巡逻亲眼看见他拿着喷漆罐、见到人就跑，苏姐四点半又瞥见一个穿蓝外套、1.4 米的男孩在围墙前弯腰；喷漆罐上那枚带泥指纹和飞溅点高度都指向「六年级男生」。可小凯先说「是小彤画的」，又改口「放学后我直接回家了」——可他那天穿的是蓝外套不是粉卫衣，小彤一直穿粉卫衣在家里写作业。她被赖上的那盒新蜡笔，从头到尾都在书包里。"
+    truth: "是小凯涂的鸦——大刘四点巡逻亲眼看见他拿着喷漆罐、见到人就跑，苏姐四点半又瞥见一个穿蓝外套、1.4 米的男孩在围墙前弯腰；喷漆罐上那枚带泥指纹和飞溅点高度都指向「六年级男生」。可小凯先说「是小彤画的」，又改口「放学后我直接回家了」——可他那天穿的是蓝外套不是粉卫衣；小彤那天确实穿着粉卫衣在家写作业，只是被她妈一句「红 T 恤」说得自己也犯了迷糊。她被赖上的那盒新蜡笔，从头到尾都在书包里。"
   },
   /* ---- 第 8 关：普通（隐瞒在场型 + 嫁祸轻量 + 干扰 2 条 + 物证 + 间接目击） ---- */
   {
@@ -3757,7 +3977,7 @@ const LevelData = [
     goal: "判断是谁骑走了自行车。",
     culpritId: "r2", // 凶手：阿成
     ext: {
-      diffLevel: 2, checkEvidence: true, evidenceKeys: ["c5"],
+      diffLevel: 2, checkEvidence: true, evidenceKeys: ["c5", "c13"],
       decoyEvidence: ["车棚角落里又翻出一块擦车的旧抹布，上面沾着机油——看似是骑过车的人擦的，可这块抹布是修车摊常年备着的，谁都能用，无法直接锁定是阿成。"],
       endingStory: "阿成隔天买了根新链条，亲手给老王的车换上，还教他保养的窍门。老王嘴上嫌他多事，却把车座垫得软软的，专门留给阿成休息时靠一靠。两人从此常约着一起晨骑。",
       hintGroup: {
@@ -3792,13 +4012,13 @@ const LevelData = [
       }
     ],
     clues: [
-      { id: "c1", text: "老王：早上八点我下楼取车，发现车被骑走过——但中午又回来了，链条上还多了层油。", type: "valid", timeMin: 480, timeText: "8:00", isWitness: true, conflictGroup: "G-lie-1", conflictType: "lie" },
+      { id: "c1", text: "老王：早上八点我下楼取车，发现车被骑走过——但中午又回来了，链条上还多了层油。", type: "valid", timeMin: 480, timeMax: 482, timeText: "8:00~8:02", isWitness: true, conflictGroup: "G-lie-1", conflictType: "lie" },
       { id: "c2", text: "小乐：我一整天都没碰过那辆车——我五点半起床后一直在家背书，连院子都没下。", type: "valid", timeMin: 480, timeText: "8:00", isWitness: true, exclude: "r3", conflictGroup: "G-lie-2", conflictType: "lie" },
       { id: "c3", text: "阿成：早上八点我在家补觉，我的电动车刚充完电一晚没出门——这事我压根不知道。", type: "valid", timeMin: 480, timeText: "自称 8:00", isSuspectStatement: true, conflictGroup: "G-lie-1", conflictType: "lie" },
       { id: "c4", text: "阿成：中午我从外面跑单回来，听小乐说他早上骑老王的车去上学——你看链条上的油是他自己上的。", type: "valid", timeMin: 540, timeText: "9:00", isSuspectStatement: true, conflictGroup: "G-lie-2", conflictType: "lie" },
       { id: "c5", text: "链条上那层油是「防雨型链条油」——瓶身印着「外卖骑手专供·极速达」，是镇上外卖站统一发放的。", type: "valid", timeMin: 480, timeText: "8:00", isEvidence: true, evidenceOwnerTag: "外卖骑手" },
-      { id: "c6", text: "冯叔：早上七点我打太极时看见阿成的电动车还停在小东门——他平时七点半就出门跑单了。", type: "valid", timeMin: 420, timeText: "7:00", isWitness: true, involve: ["r2"] },
-      { id: "c7", text: "老王：链条上的油一擦就化，是新型链条油——和我以前用的老黄油完全不一样。", type: "valid", timeMin: 480, timeText: "8:00", isWitness: true },
+      { id: "c6", text: "冯叔：早上七点我打太极时看见阿成的电动车还停在小东门——他平时七点半就出门跑单了。", type: "valid", timeMin: 420, timeMax: 425, timeText: "7:00~7:05", isWitness: true, involve: ["r2"] },
+      { id: "c7", text: "老王：链条上的油一擦就化，是新型链条油——和我以前用的老黄油完全不一样。", type: "valid", timeMin: 480, timeMax: 483, timeText: "8:00~8:03", isWitness: true },
       { id: "c8", text: "小乐：高考前我从没碰过家里任何一辆车——书都看不过来。", type: "valid", timeMin: 480, timeText: "8:00" },
       { id: "c9", text: "阿成：我的电动车那晚刚换完电瓶，七点前一直在家——冯叔看花眼了。", type: "valid", timeMin: 420, timeText: "7:00", isSuspectStatement: true, conflictGroup: "G-mis-1", conflictType: "misunderstand" },
       { id: "c10", text: "冯叔：阿成的电动车是辆绿色的小龟车，车牌尾号好像是 037……也可能是我看花眼了，记成 073 也说不定——我老花眼加白内障，实在看不清那一串数字。", type: "valid", conflictGroup: "G-mis-1", conflictType: "misunderstand" },
@@ -3828,7 +4048,7 @@ const LevelData = [
     goal: "判断是谁拿走了收音机。",
     culpritId: "r2", // 凶手：小马
     ext: {
-      diffLevel: 3, needInterview: true, checkTimeline: true, checkEvidence: true, evidenceKeys: ["c9"],
+      diffLevel: 3, needInterview: true, checkTimeline: true, checkEvidence: true, evidenceKeys: ["c9", "c18"],
       decoyEvidence: ["门卫室窗台的花盆里又插着一根烧烤签，签上还沾着烤焦的肉末——看似当晚有人来过，可那是老孙白天烧烤摊收摊随手丢的，与收音机失窃无关，无法证明是小马。"],
       endingStory: "第二天一早，小马把那台收音机放回门卫室桌上，底下压着半张汇款回执——他那天把机子连夜寄去了县城的旧货店，换来的钱全转回了家。汇款回执的「附言」一栏，写着「给妹妹买药」。老李看完，把那张回执折好，又添了一点钱，重新塞回小马口袋：「妹妹的病要紧，叔这台破机子不值什么，先拿去用。」小马后来常替老李值半小时夜班，让他能歇口气。门卫室里从此多了一副旧棋，两人夜班时轮流摆桌——谁也没再提那天的事。",
       hintGroup: {
@@ -3863,14 +4083,14 @@ const LevelData = [
       }
     ],
     clues: [
-      { id: "c1", text: "老李：十点我锁门时收音机还在桌上——播的正好是戏曲频道，音量开得特别大。", type: "valid", timeMin: 600, timeText: "22:00", isWitness: true },
-      { id: "c2", text: "老孙：十点一刻我路过门卫室，看见一个穿黑外套的年轻人从里面出来——步子很快，没看清脸。", type: "valid", timeMin: 615, timeText: "22:15", isWitness: true, involve: ["r2"], conflictGroup: "G-lie-2", conflictType: "lie" },
+      { id: "c1", text: "老李：十点我锁门时收音机还在桌上——播的正好是戏曲频道，音量开得特别大。", type: "valid", timeMin: 600, timeMax: 605, timeText: "22:00~22:05", isWitness: true },
+      { id: "c2", text: "老孙：十点一刻我路过门卫室，看见一个穿黑外套的年轻人从里面出来——步子很快，没看清脸。", type: "valid", timeMin: 615, timeMax: 618, timeText: "22:15~22:18", isWitness: true, involve: ["r2"], conflictGroup: "G-lie-2", conflictType: "lie" },
       { id: "c3", text: "小马：十点二十我根本不在门卫室——那时我在工位上赶一个 bug，根本没下楼。", type: "valid", timeMin: 620, timeText: "自称 22:20", isSuspectStatement: true, conflictGroup: "G-lie-1", conflictType: "lie" },
       { id: "c4", text: "小马：十点一刻我去门卫室问老李要水喝，进去看了一眼就走了——那会儿收音机还在大声播戏曲。", type: "valid", timeMin: 615, timeText: "22:15", isSuspectStatement: true, conflictGroup: "G-lie-2", conflictType: "lie" },
-      { id: "c5", text: "清洁阿姨：十点二十我进出门卫室擦桌子，收音机还在大声播戏曲——我十点二十五就出来了。", type: "valid", timeMin: 620, timeText: "22:20", isWitness: true, conflictGroup: "G-lie-1", conflictType: "lie" },
-      { id: "c6", text: "清洁阿姨：我出来时还撞见一个穿黑外套的年轻人慌慌张张从楼梯口往上跑。", type: "valid", timeMin: 625, timeText: "22:25", isWitness: true, involve: ["r2"], conflictGroup: "G-lie-3", conflictType: "lie" },
-      { id: "c7", text: "老李：我十点二十听见门卫室里有响动，以为是清洁阿姨，没在意——等十点半再去看，收音机已经不在桌上了。", type: "valid", timeMin: 630, timeText: "22:30", isWitness: true },
-      { id: "c8", text: "老孙：那个穿黑外套的年轻人右耳戴了只无线耳机——我路过时耳机里正放英文歌。", type: "valid", timeMin: 615, timeText: "22:15", isWitness: true, involve: ["r2"] },
+      { id: "c5", text: "清洁阿姨：十点二十我进出门卫室擦桌子，收音机还在大声播戏曲——我十点二十五就出来了。", type: "valid", timeMin: 620, timeMax: 625, timeText: "22:20~22:25", isWitness: true, conflictGroup: "G-lie-1", conflictType: "lie" },
+      { id: "c6", text: "清洁阿姨：我出来时还撞见一个穿黑外套的年轻人慌慌张张从楼梯口往上跑。", type: "valid", timeMin: 625, timeMax: 626, timeText: "22:25~22:26", isWitness: true, involve: ["r2"], conflictGroup: "G-lie-3", conflictType: "lie" },
+      { id: "c7", text: "老李：我十点二十听见门卫室里有响动，以为是清洁阿姨，没在意——等十点半再去看，收音机已经不在桌上了。", type: "valid", timeMin: 630, timeMax: 632, timeText: "22:30~22:32", isWitness: true },
+      { id: "c8", text: "老孙：那个穿黑外套的年轻人右耳戴了只无线耳机——我路过时耳机里正放英文歌。", type: "valid", timeMin: 615, timeMax: 617, timeText: "22:15~22:17", isWitness: true, involve: ["r2"] },
       { id: "c9", text: "门卫室窗台上捡到一根黑色外套的棉絮纤维，纤维里还夹着一枚清晰的指纹。", type: "valid", timeMin: 625, timeText: "22:25", isEvidence: true },
       { id: "c10", text: "小马：清洁阿姨那阵其实经常来门卫室蹭热水——她才有机会碰那台机，我下班都十点半了。", type: "valid", timeMin: 620, timeText: "22:20" },
       { id: "c11", text: "小马：我那天穿的是件灰卫衣——老孙看错了。", type: "valid", timeMin: 615, timeText: "22:15", isSuspectStatement: true, conflictGroup: "G-mis-1", conflictType: "misunderstand" },
@@ -3880,10 +4100,10 @@ const LevelData = [
       { id: "c15", text: "小马：十点二十八我回宿舍接电话，根本没下楼——你问老孙他十点一刻也没听见我下楼。", type: "valid", timeMin: 628, timeText: "自称 22:28", isSuspectStatement: true, conflictGroup: "G-lie-3", conflictType: "lie" },
       { id: "c16", text: "物业群通知：今晚十点起，小区电梯例行停运维保一小时。", type: "fake" },
       { id: "c17", text: "小马：十点二十我去楼下打水，正好看见老李抱着收音机从门卫室出来，往宿舍楼下走——我当他是拿去修，就没当回事。", type: "valid", timeMin: 620, timeText: "22:20", isSuspectStatement: true, pointsTo: "r1", conflictGroup: "G-lie-1", conflictType: "lie" },
-      { id: "c18", text: "门卫室那盏监控（带红外）22:15~22:30 那段拍到：走廊里根本没出现「黑外套年轻人」的身影；倒是窗台上那只常驻的野猫（纯黑色、身形瘦长）从 22:18~22:26 一直在窗台晒太阳。", type: "valid", timeMin: 622, timeText: "22:22 物证", isEvidence: true, evidenceOwnerTag: "刚毕业的外地租客", pointsTo: "r2" }
+      { id: "c18", text: "门卫室那盏监控（带红外）22:15~22:30 那段拍到：走廊里根本没出现「黑外套年轻人」的身影；倒是窗台上那只常驻的野猫（纯黑色、身形瘦长）从 22:18~22:26 一直在窗台晒太阳。", type: "valid", timeMin: 622, timeMax: 630, timeText: "22:15~22:30 物证", isEvidence: true, evidenceOwnerTag: "刚毕业的外地租客", pointsTo: "r2" }
     ],
     conflictPairs: [],
-    solution: { r1: ["c1", "c7", "c12"], r2: ["c3", "c4", "c9", "c10", "c11", "c15"], r3: ["c2", "c8"], r4: ["c5", "c6"] },
+    solution: { r1: ["c1", "c7", "c12"], r2: ["c3", "c4", "c9", "c10", "c11", "c15", "c18"], r3: ["c2", "c8"], r4: ["c5", "c6"] },
     hints: [
       "凶手一段自白说「十点二十在工位赶 bug」，另一段又说「十点一刻去门卫室要水」——两段时间对不上。",
       "窗台上那枚指纹+黑棉絮，只可能来自那条黑外套——凶手说「自己穿的是灰卫衣」。",
@@ -3903,7 +4123,7 @@ const LevelData = [
     goal: "判断是谁留下了这串带泥的赤脚脚印。",
     culpritId: "r4", // 凶手：阿海
     ext: {
-      diffLevel: 3, needInterview: true, checkTimeline: true, checkEvidence: true, evidenceKeys: ["c9"],
+      diffLevel: 3, needInterview: true, checkTimeline: true, checkEvidence: true, evidenceKeys: ["c9", "c21"],
       decoyEvidence: ["楼道口又捡到一把沾着泥的旧伞，伞骨断了一根——看似是雨夜出门的人落下的，可那是住楼上的阿婆晾在平台忘收的，任谁经过都可能碰到，无法直接锁定是阿海。"],
       endingStory: "阿海第二天提着水果挨家道谢，还帮阿琳修好了总漏水的门锁。大勇见他会修东西，拉着他在汽修厂门口支了张小桌，教他认零件。那晚的泥脚印，反倒成了两家人第一次正式打招呼的由头。",
       hintGroup: {
@@ -3938,31 +4158,31 @@ const LevelData = [
       }
     ],
     clues: [
-      { id: "c1", text: "老韩：二十三点五十五我看见一个男人从外面走回小区，左脚穿着拖鞋，右脚却光着，手里还拎着一双沾满泥的雨鞋。", type: "valid", timeMin: 1435, timeText: "23:55", isWitness: true, involve: ["r4"], conflictGroup: "G-lie-1", conflictType: "lie" },
-      { id: "c2", text: "阿琳：二十三点四十听见有人从走廊跑过——声音是拖鞋拍地，不是皮鞋，也不是雨鞋。", type: "valid", timeMin: 1420, timeText: "23:40", isWitness: true, involve: ["r4"] },
+      { id: "c1", text: "老韩：二十三点五十五我看见一个男人从外面走回小区，左脚穿着拖鞋，右脚却光着，手里还拎着一双沾满泥的雨鞋。", type: "valid", timeMin: 1435, timeMax: 1437, timeText: "23:55~23:57", isWitness: true, involve: ["r4"], conflictGroup: "G-lie-1", conflictType: "lie" },
+      { id: "c2", text: "阿琳：二十三点四十听见有人从走廊跑过——声音是拖鞋拍地，不是皮鞋，也不是雨鞋。", type: "valid", timeMin: 1420, timeMax: 1422, timeText: "23:40~23:42", isWitness: true, involve: ["r4"] },
       { id: "c3", text: "大勇：我整晚没下过楼——汽修厂活儿没干完，我就在家趴着等媳妇儿下班。", type: "valid", timeMin: 1440, timeText: "整夜", isWitness: true },
       { id: "c4", text: "阿海：我凌晨一点才回的小区——回来时穿的是黄雨衣，开着伞，绝不可能留下赤脚泥印。", type: "valid", timeMin: 1500, timeText: "自称 01:00", isSuspectStatement: true, conflictGroup: "G-lie-1", conflictType: "lie" },
-      { id: "c5", text: "老韩：雨夜岗亭灯一直亮着，谁进谁出我这儿看得一清二楚。", type: "valid", timeMin: 1380, timeText: "23:00~次日", isWitness: true },
+      { id: "c5", text: "老韩：雨夜岗亭灯一直亮着，谁进谁出我这儿看得一清二楚。", type: "valid", timeMin: 1380, timeMax: 1440, timeText: "23:00~0:00", isWitness: true },
       { id: "c6", text: "大勇：那天雨下得稀里哗啦，下到半夜才停。", type: "valid" },
-      { id: "c7", text: "阿琳：走廊的声控灯我听见亮过两次。", type: "valid", timeMin: 1420, timeText: "23:40", isWitness: true },
-      { id: "c8", text: "物业查岗记录：那天晚上 23:45 大勇的电动车还停在一楼充电桩上，充电指示灯亮着。", type: "valid", timeMin: 1425, timeText: "23:45 查岗", isWitness: true, conflictGroup: "G-lie-2", conflictType: "lie" },
+      { id: "c7", text: "阿琳：走廊的声控灯我听见亮过两次。", type: "valid", timeMin: 1420, timeMax: 1423, timeText: "23:40~23:43", isWitness: true },
+      { id: "c8", text: "物业查岗记录：那天晚上 23:45 大勇的电动车还停在一楼充电桩上，充电指示灯亮着。", type: "valid", timeMin: 1425, timeMax: 1427, timeText: "23:45~23:47", isWitness: true, conflictGroup: "G-lie-2", conflictType: "lie" },
       { id: "c9", text: "走廊那串泥脚印是赤脚的，左右脚深浅明显不同——左脚更深，鞋底还夹着一枚压扁的「水电工专用胶带」。", type: "valid", timeMin: 1425, timeText: "23:45 物证", isEvidence: true, pointsTo: "r4" },
       { id: "c10", text: "阿海：二十三点四十我从外面回来时，正好看见大勇也下楼了——他穿的也是拖鞋，跑得比我快。", type: "valid", timeMin: 1420, timeText: "23:40", isSuspectStatement: true, conflictGroup: "G-lie-2", conflictType: "lie" },
       { id: "c11", text: "阿海：我穿的是黄雨衣，里面还有双干袜子——根本不可能光脚。", type: "valid", timeMin: 1435, timeText: "23:55", isSuspectStatement: true, conflictGroup: "G-lie-3", conflictType: "lie" },
-      { id: "c12", text: "老韩：那人回来那会儿是赤脚踩在岗亭前的水泥地上的——我开窗问他，他愣了愣才说「鞋陷泥里了」。", type: "valid", timeMin: 1435, timeText: "23:55", isWitness: true, involve: ["r4"], conflictGroup: "G-lie-3", conflictType: "lie" },
-      { id: "c13", text: "阿琳：我那会儿听见脚步声是从我家门口跑过去的——到了楼梯口才停下。", type: "valid", timeMin: 1420, timeText: "23:40", isWitness: true, involve: ["r4"] },
+      { id: "c12", text: "老韩：那人回来那会儿是赤脚踩在岗亭前的水泥地上的——我开窗问他，他愣了愣才说「鞋陷泥里了」。", type: "valid", timeMin: 1435, timeMax: 1436, timeText: "23:55~23:56", isWitness: true, involve: ["r4"], conflictGroup: "G-lie-3", conflictType: "lie" },
+      { id: "c13", text: "阿琳：我那会儿听见脚步声是从我家门口跑过去的——到了楼梯口才停下。", type: "valid", timeMin: 1420, timeMax: 1421, timeText: "23:40~23:41", isWitness: true, involve: ["r4"] },
       { id: "c14", text: "阿海：我那天在汽修厂和大勇一起吃了夜宵——他鞋上比我泥还多。", type: "valid", timeMin: 1500, timeText: "次日 凌晨", isSuspectStatement: true, conflictGroup: "G-lie-4", conflictType: "lie" },
       { id: "c15", text: "大勇：那天吃夜宵是和阿海一起——他点的炒粉，我点的白粥，鞋都没脱。", type: "valid", timeMin: 1500, timeText: "次日 凌晨", isSuspectStatement: true, conflictGroup: "G-lie-4", conflictType: "lie" },
       { id: "c16", text: "老韩：那天雨伞被借走了一把——第二天阿海还回来。", type: "fake" },
       { id: "c17", text: "阿琳：我那天没开小台灯。", type: "fake" },
       { id: "c18", text: "大勇：我那天睡了整觉。", type: "fake" },
       { id: "c19", text: "老韩：岗亭外面拴着一只小狗。", type: "fake" },
-      { id: "c20", text: "老韩：开窗问那人那会儿，雨夜路灯昏黄，我模模糊糊看着他那件黄雨衣像三楼小王的那件——后来才知道那是阿海自己那件。", type: "valid", timeMin: 1435, timeText: "23:55", isWitness: true, conflictGroup: "G-mis-1", conflictType: "misunderstand" },
+      { id: "c20", text: "老韩：开窗问那人那会儿，雨夜路灯昏黄，我模模糊糊看着他那件黄雨衣像三楼小王的那件——后来才知道那是阿海自己那件。", type: "valid", timeMin: 1435, timeMax: 1437, timeText: "23:55~23:57", isWitness: true, conflictGroup: "G-mis-1", conflictType: "misunderstand" },
       { id: "c21", text: "三楼小王那件黄雨衣整夜都挂在门口衣架上、雨衣面是干的——所以那晚 23:55 老韩看见的黄雨衣人不可能是小王。", type: "valid", timeMin: 1435, timeText: "23:55 物证", isEvidence: true, evidenceOwnerTag: "水电工" },
       { id: "c22", text: "小王：那天晚上我整夜都在家，那件黄雨衣整晚挂在门口衣架上没出过门——老韩 23:55 看见的那个穿黄雨衣的人肯定不是我，他把我那件和阿海那件看混了。", type: "valid", timeMin: 1435, timeText: "23:55", isWitness: true, conflictGroup: "G-mis-1", conflictType: "misunderstand" }
     ],
     conflictPairs: [],
-    solution: { r1: ["c1", "c5", "c12"], r2: ["c2", "c7", "c13"], r3: ["c3", "c6", "c8"], r4: ["c4", "c9", "c10", "c11", "c14"] },
+    solution: { r1: ["c1", "c5", "c12"], r2: ["c2", "c7", "c13"], r3: ["c3", "c6", "c8"], r4: ["c4", "c9", "c10", "c11", "c14", "c21"] },
     hints: [
       "凶手说「凌晨一点才回」，可老韩 23:55 就看见他回到小区——时间整整错开了一小时。",
       "凶手说「穿黄雨衣不可能光脚」，可老韩亲眼看见他光脚踩在岗亭前的水泥地上，愣了半天才说「鞋陷泥里了」。",
@@ -4017,20 +4237,20 @@ const LevelData = [
       }
     ],
     clues: [
-      { id: "c1", text: "方姐：八点我锁门时投影仪还在架子上——那台机灯还亮着，我特地把亮度调小才走的。", type: "valid", timeMin: 480, timeText: "20:00", isWitness: true },
-      { id: "c2", text: "小柯：八点半我推开活动室门，投影仪已经不见了，桌面上只剩一张椅子挪开过的湿脚印。", type: "valid", timeMin: 510, timeText: "20:30", isWitness: true },
-      { id: "c3", text: "丁丁：八点一刻我看见一个穿灰工装的老汉拎着个黑箱子从活动室出来——箱子比平时沉，他一手托底、一手提把。", type: "valid", timeMin: 495, timeText: "20:15", isWitness: true, involve: ["r4"], conflictGroup: "G-lie-3", conflictType: "lie" },
+      { id: "c1", text: "方姐：八点我锁门时投影仪还在架子上——那台机灯还亮着，我特地把亮度调小才走的。", type: "valid", timeMin: 480, timeMax: 483, timeText: "8:00~8:03", isWitness: true },
+      { id: "c2", text: "小柯：八点半我推开活动室门，投影仪已经不见了，桌面上只剩一张椅子挪开过的湿脚印。", type: "valid", timeMin: 510, timeMax: 512, timeText: "8:30~8:32", isWitness: true },
+      { id: "c3", text: "丁丁：八点一刻我看见一个穿灰工装的老汉拎着个黑箱子从活动室出来——箱子比平时沉，他一手托底、一手提把。", type: "valid", timeMin: 495, timeMax: 497, timeText: "8:15~8:17", isWitness: true, involve: ["r4"], conflictGroup: "G-lie-3", conflictType: "lie" },
       { id: "c4", text: "老蔡：我八点一刻进去修插座，修完就关门走了——投影仪从头到尾我都没动过，它太重我一个人搬不动。", type: "valid", timeMin: 495, timeText: "20:15", isSuspectStatement: true, conflictGroup: "G-lie-1", conflictType: "lie" },
-      { id: "c5", text: "方姐：八点我去锁门时，插座面板上那个松动的小螺丝我已经拧紧了——那位维修工根本不需要再去修。", type: "valid", timeMin: 480, timeText: "20:00", isWitness: true, conflictGroup: "G-lie-1", conflictType: "lie" },
-      { id: "c6", text: "丁丁：八点一刻我看见那个穿灰工装的老汉出门后，特地绕到活动室窗户外瞄了一眼——投影仪的位置空了。", type: "valid", timeMin: 495, timeText: "20:15", isWitness: true, involve: ["r4"] },
-      { id: "c7", text: "丁丁：八点半我又看见那个穿灰工装的老汉，把黑箱子放进了他停在楼下的电动三轮里。", type: "valid", timeMin: 510, timeText: "20:30", isWitness: true, involve: ["r4"] },
-      { id: "c8", text: "小柯：我八点二十就在活动室门口抽烟——没看见任何人拎箱子进出。", type: "valid", timeMin: 500, timeText: "20:20", isWitness: true, conflictGroup: "G-lie-2", conflictType: "lie" },
+      { id: "c5", text: "方姐：八点我去锁门时，插座面板上那个松动的小螺丝我已经拧紧了——那位维修工根本不需要再去修。", type: "valid", timeMin: 480, timeMax: 482, timeText: "8:00~8:02", isWitness: true, conflictGroup: "G-lie-1", conflictType: "lie" },
+      { id: "c6", text: "丁丁：八点一刻我看见那个穿灰工装的老汉出门后，特地绕到活动室窗户外瞄了一眼——投影仪的位置空了。", type: "valid", timeMin: 495, timeMax: 496, timeText: "8:15~8:16", isWitness: true, involve: ["r4"] },
+      { id: "c7", text: "丁丁：八点半我又看见那个穿灰工装的老汉，把黑箱子放进了他停在楼下的电动三轮里。", type: "valid", timeMin: 510, timeMax: 512, timeText: "8:30~8:32", isWitness: true, involve: ["r4"] },
+      { id: "c8", text: "小柯：我八点二十就在活动室门口抽烟——没看见任何人拎箱子进出。", type: "valid", timeMin: 500, timeMax: 502, timeText: "8:20~8:22", isWitness: true, conflictGroup: "G-lie-2", conflictType: "lie" },
       { id: "c9", text: "一只黑箱子的底部，沾着几道新鲜的投影仪外壳塑料划痕——划痕里还嵌着半截投影仪散热孔的金属网。", type: "valid", timeMin: 530, timeText: "20:50 物证", isEvidence: true, pointsTo: "r4" },
       { id: "c10", text: "老蔡：我走的时候，小柯还在活动室里翻他落下的笔记本——他比我晚走至少五分钟。", type: "valid", timeMin: 495, timeText: "20:15", isSuspectStatement: true, conflictGroup: "G-lie-2", conflictType: "lie" },
       { id: "c11", text: "老蔡：我从进屋到离开，前后不超过三分钟——根本没时间动投影仪。", type: "valid", timeMin: 495, timeText: "20:15", isSuspectStatement: true, conflictGroup: "G-lie-3", conflictType: "lie" },
-      { id: "c12", text: "方姐：八点我锁门之后没再回去过——可我那天特意在门把手上系了根红绳，绳子是整的。", type: "valid", timeMin: 480, timeText: "20:00", isWitness: true },
-      { id: "c13", text: "小柯：八点一刻我确实在活动室门口转了一圈——可门把手上那根红绳是整的，根本没人开过门。", type: "valid", timeMin: 495, timeText: "20:15", isWitness: true, conflictGroup: "G-mis-1", conflictType: "misunderstand" },
-      { id: "c14", text: "丁丁：八点一刻那人的确是位穿灰工装的老汉——不是什么黑外套，我看得很清楚。", type: "valid", timeMin: 495, timeText: "20:15", isWitness: true, conflictGroup: "G-mis-1", conflictType: "misunderstand" },
+      { id: "c12", text: "方姐：八点我锁门之后没再回去过——可我那天特意在门把手上系了根红绳，绳子是整的。", type: "valid", timeMin: 480, timeMax: 481, timeText: "8:00~8:01", isWitness: true },
+      { id: "c13", text: "小柯：八点一刻我确实在活动室门口转了一圈——可门把手上那根红绳是整的，根本没人开过门。", type: "valid", timeMin: 495, timeMax: 497, timeText: "8:15~8:17", isWitness: true, conflictGroup: "G-mis-1", conflictType: "misunderstand" },
+      { id: "c14", text: "丁丁：八点一刻那人的确是位穿灰工装的老汉——不是什么黑外套，我看得很清楚。", type: "valid", timeMin: 495, timeMax: 497, timeText: "8:15~8:17", isWitness: true, conflictGroup: "G-mis-1", conflictType: "misunderstand" },
       { id: "c15", text: "老蔡：我那天穿的是灰工装——丁丁把黑箱子看成黑外套了。", type: "valid", timeMin: 495, timeText: "20:15", isSuspectStatement: true, conflictGroup: "G-mis-1", conflictType: "misunderstand" },
       { id: "c16", text: "方姐：活动室窗帘是拉开的。", type: "fake" },
       { id: "c17", text: "小柯：活动室空调开着。", type: "fake" },
@@ -4194,6 +4414,8 @@ const GameFlow = {
     this._syncHintButton();
     ValidateUtil.syncConflictMarks();
     this.renderProgress();
+    // 证据链：渲染底部计数条 + 同步所有已收卡片的 in-case 态
+    CaseFile.render();
   },
 
   /** 渲染底部调查进度条（走访 / 证词矛盾 / 关键物证），帮玩家确认"是否已具备指认条件"。
@@ -4267,6 +4489,17 @@ const GameFlow = {
     });
     App.layout.timeline = App.layout.timeline.filter((id) => !!App.clueMap[id]);
     App.layout.locked = App.layout.locked.filter((id) => !!App.clueMap[id]);
+    // 证据链：清洗悬空 id（关卡换了/线索被剔除）；与 _showCulpritPicker 联动，必须用去重后的数组
+    if (Array.isArray(App.layout.caseFile)) {
+      const seen = new Set();
+      App.layout.caseFile = App.layout.caseFile.filter((id) => {
+        if (typeof id !== "string" || seen.has(id) || !App.clueMap[id]) return false;
+        seen.add(id);
+        return true;
+      });
+    } else {
+      App.layout.caseFile = [];
+    }
     // 线索池由走访解锁驱动，不自动补全，保持「未交谈不泄露线索」
   },
 
@@ -4298,8 +4531,8 @@ const GameFlow = {
       block.className = "resident-block";
       const spoke = StorageUtil.readDialogRecord(App.currentLevel).indexOf(r.id) !== -1;
       const tagMatch = r.tagShort && evOwnerTags.has(r.tagShort);
-      // 替罪羊判定：居民无 bindClue 视为次要人物（仅档案/口供，无线索入池）
-      const isScapegoat = !r.bindClue || (Array.isArray(r.bindClue) && !r.bindClue.length) || (typeof r.bindClue === "string" && !r.bindClue);
+      // 替罪羊判定：isScapegoat 显式字段优先，否则看是否无 bindClue（仅档案/口供，无线索入池）
+      const isScapegoat = r.isScapegoat === true || !r.bindClue || (Array.isArray(r.bindClue) && !r.bindClue.length) || (typeof r.bindClue === "string" && !r.bindClue);
       // 线索获取进度：bindClue 中有多少条已被收集（pool + timeline）
       const bindList = Array.isArray(r.bindClue) ? r.bindClue : (r.bindClue ? [r.bindClue] : []);
       const totalClues = bindList.length;
@@ -4307,7 +4540,11 @@ const GameFlow = {
       // 提示行：根据「是否替罪羊 / 是否已走访 / 已获取比例」生成不同文案
       let hintHtml = "";
       if (isScapegoat) {
-        hintHtml = '<div class="resident-hint hint-scapegoat">次要人物 · 无线索</div>';
+        // 替罪羊：可能带 1 条自辩线索（如 L4 老李），与走访弹窗"只留下一条自辩线索"口径一致
+        const bindList2 = Array.isArray(r.bindClue) ? r.bindClue : (r.bindClue ? [r.bindClue] : []);
+        hintHtml = bindList2.length
+          ? '<div class="resident-hint hint-scapegoat">次要人物 · 自辩线索</div>'
+          : '<div class="resident-hint hint-scapegoat">次要人物 · 无线索</div>';
       } else if (!spoke) {
         // 未走访：显眼地告诉玩家"点我获取线索"
         hintHtml = '<div class="resident-hint hint-unvisited">💬 点击交谈获取线索</div>';
@@ -4320,7 +4557,7 @@ const GameFlow = {
       }
       block.innerHTML =
         '<div class="resident-head' + (isScapegoat ? " resident-scapegoat" : "") + '" data-resident="' + ClueCards.escapeHtml(r.id) + '"' +
-        (isScapegoat ? ' title="次要人物，无可解锁线索"' : ' title="查看人物档案"') + '>' +
+        (isScapegoat ? ' title="次要人物，仅自辩线索"' : ' title="查看人物档案"') + '>' +
           '<span class="avatar">' + AvatarFactory.build(r, { size: 34 }) + "</span>" +
           (spoke ? '<span class="speak-badge" title="已交谈"></span>' : "") +
           '<span class="resident-name">' + ClueCards.escapeHtml(r.name) + "</span>" +
@@ -4583,114 +4820,77 @@ const GameFlow = {
     return key;
   },
 
-  /** 生成决定性证据选项：正确项（凶手关键线索 + 目击指认）全保留，
-   *  混入「看似相关实则无效」的专用干扰证据（ext.decoyEvidence，id 前缀 decoy-），
-   *  再以其余居民的线索作普通干扰项洗牌补齐，最多 5 条。
-   *  返回项统一为 { id, text, isDecoy }，供指认弹窗渲染与判定复用。 */
-  _evidenceOptions(cfg) {
-    const clueById = {};
-    (cfg.clues || []).forEach((c) => { clueById[c.id] = c; });
-    const keySet = this._killerKeyIds(cfg);
-    const killerIds = Array.from(keySet)
-      .map((cid) => ({ id: cid, text: clueById[cid] ? clueById[cid].text : cid, isDecoy: false }));
-    const decoys = [];
-    // 专用干扰证据：看似相关、实则无效（id 以 decoy- 开头，无对应线索）
-    ((cfg.ext && cfg.ext.decoyEvidence) || []).forEach((d, i) => {
-      decoys.push({ id: "decoy-" + i, text: d, isDecoy: true });
-    });
-    // 普通干扰项：其余居民的 solution 线索（洗牌补位）
-    Object.keys(cfg.solution || {}).forEach((rid) => {
-      (cfg.solution[rid] || []).forEach((cid) => {
-        if (!keySet.has(cid) && clueById[cid]) decoys.push({ id: cid, text: clueById[cid].text, isDecoy: false });
-      });
-    });
-    // 正确项全部保留；干扰项用 Fisher-Yates 洗牌按需补齐，
-    // 保证至少一枚「专用干扰证据」出现在选项中（不受洗牌影响）。
-    const anyDecoy = decoys.find((d) => d.isDecoy);
-    const shuffled = GameFlow._shuffle(decoys.slice());
-    const maxTotal = App.currentLevel >= 9
-      ? Math.max(7, killerIds.length + 2)
-      : Math.max(5, killerIds.length + 1);
-    const shown = killerIds.concat(shuffled).slice(0, maxTotal);
-    if (anyDecoy && !shown.some((x) => x.isDecoy)) {
-      shown.pop();
-      shown.push(anyDecoy);
-    }
-    return shown;
-  },
-  /**
-   * Fisher-Yates 原地洗牌：均匀分布 + 可复现（传入种子即可重现）。
-   * 避免 Array.sort(Math.random) 比较子不一致 + 不可复现的两个反模式。
-   * @template T
-   * @param {T[]} arr 输入数组（不修改原数组）
-   * @param {number} [seed] 可选种子；不传则用 Math.random
-   * @returns {T[]} 洗牌后的新数组
-   */
-  _shuffle(arr, seed) {
-    const out = arr.slice();
-    const n = out.length;
-    if (n < 2) return out;
-    // 简易可复现 RNG（mulberry32）；无 seed 时回退到 Math.random
-    let s = (typeof seed === "number" && seed >= 0) ? (seed >>> 0) : 0;
-    const rand = s
-      ? function () { s |= 0; s = (s + 0x6D2B79F5) | 0; let t = Math.imul(s ^ (s >>> 15), 1 | s); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }
-      : function () { return Math.random(); };
-    for (let i = n - 1; i > 0; i--) {
-      const j = Math.floor(rand() * (i + 1));
-      const tmp = out[i]; out[i] = out[j]; out[j] = tmp;
-    }
-    return out;
-  },
-
-  /** 指认结果判定（仅 1 次机会）：
-   *  - 凶手 + 证据都对 → 通关
-   *  - 凶手对、证据错（首次）→ 给一次换证据的机会（不重置、不记失败）
-   *    · 包含「专用干扰证据（decoy- 前缀）」也走换证据路径，但弹窗中已标 .decoy + ⚠ 提示
+  /** 指认结果判定（v2 证据链版）：
    *  - 凶手错 → 整局失败（重置）
-   *  - 证据重选再错 → 整局失败（重置）
+   *  - 凶手对 + verdict = perfect/standard → 通关（弹标准结局 + verdict 徽标）
+   *  - 凶手对 + verdict = flawed/insufficient → _promptCaseFileRetry（让玩家调整证据链，不算失败）
+   *  - 证据重选模式（retry）下，verdict 必须 perfect/standard 才通关；否则整局失败
    *  @param {Object} [opts] { retry }：true 表示处于证据重选二次机会 */
   _handleAccusation(cfg, selectedId, evId, opts) {
     const opt = opts || {};
-    const evOk = this._killerKeyIds(cfg).has(evId);
-    if (opt.retry) {
-      // 证据重选机会：只判证据，选对即通关，再错即整局失败
-      if (evOk) { this._onLevelClear(cfg); } else { this._onAccuseFail(cfg, selectedId); }
-      return;
-    }
     if (selectedId !== cfg.culpritId) {
       this._onAccuseFail(cfg, selectedId);
       return;
     }
-    if (evOk) {
-      this._onLevelClear(cfg);
+    // 凶手人选正确——评估证据链
+    const lvId = "L" + App.currentLevel;
+    const submitted = CaseFile.get();
+    const result = (typeof evaluateCase === "function")
+      ? evaluateCase(lvId, submitted)
+      : { verdict: "insufficient", counts: { core: 0, aux: 0, red: 0, amb: 0 } };
+    const v = result.verdict;
+    if (v === "perfect" || v === "standard") {
+      this._onLevelClear(cfg, result);
       return;
     }
-    // 人选对了、证据没对（含普通干扰项 + 专用 decoy 干扰项）→ 唯一一次换证据机会
-    this._promptEvidenceRetry(cfg, selectedId, evId);
+    if (opt.retry) {
+      this._onAccuseFail(cfg, selectedId);
+      return;
+    }
+    this._promptCaseFileRetry(cfg, selectedId, result);
   },
 
-  /** 证据重选引导：提示凶手人选已锁定，重开指认弹窗（仅能换证据，再错即失败）。
-   *  困难关(9-11)清空时间轴作为「调查时效性」代价，并附警示文案。
-   *  @param {string} [lastEvId] 玩家上次选错的证据 id（含 decoy- 前缀）；用于针对性提示 */
-  _promptEvidenceRetry(cfg, rid, lastEvId) {
+  /** 证据链未达标的轻量提示：凶手已选对，但证据链有瑕疵或缺铁证。
+   *  玩家可选择「返回调整」关闭弹窗回主界面，或「忽略瑕疵」直接结案（拿 standard 结局）。 */
+  _promptCaseFileRetry(cfg, rid, result) {
     const resident = (cfg.residents || []).find((r) => r.id === rid);
-    const isHard = App.currentLevel >= 9;
-    const wasDecoy = typeof lastEvId === "string" && lastEvId.indexOf("decoy-") === 0;
-    let extraMsg = "";
-    if (isHard) {
-      App.layout.timeline = [];
-      StorageUtil.writeLevelState(App.currentLevel, App.layout);
-      this.renderTimeline();
-      extraMsg = "\n\n⚠️ 因证据重选，时间轴已被清空——你需要重新排列时间线。";
-    }
-    if (wasDecoy) {
-      // 玩家刚选了"看似相关实则无效"的 decoy 干扰：明确告知这是陷阱
-      extraMsg += "\n\n⚠️ 上一条是「干扰证据」：看似相关，但已被排除。决定性证据要能直接坐实 TA。";
-    }
-    Modal.alert("人选对了，证据没找对",
-      "「" + (resident ? resident.name : "此人") + "」确实是凶手，但这条证据还不足以定罪。\n\n" +
-      "这是本案最后一次机会：请换一条更有力的决定性证据。" + extraMsg,
-      () => this._showCulpritPicker(cfg, { lockedRid: rid }));
+    const name = resident ? resident.name : "此人";
+    const v = result.verdict;
+    const c = result.counts;
+    const VERDICT_MSG = {
+      flawed: {
+        title: "证据有杂质",
+        text: "凶手人选对了，但你的证据链里混入了「干扰」——再翻翻每条线索的来源。\n\n" +
+              "当前：🔴 铁证 " + c.core + " 条 · 🟢 旁证 " + c.aux + " 条 · 🟡 干扰 " + c.red + " 条",
+      },
+      insufficient: {
+        title: "铁证不足",
+        text: "凶手人选对了，但证据链里缺少直接定罪的「铁证」——凶手通常会有自白撒谎或被目击。\n\n" +
+              "当前：🔴 铁证 " + c.core + " 条 · 🟢 旁证 " + c.aux + " 条 · 🟡 干扰 " + c.red + " 条",
+      },
+    };
+    const msg = VERDICT_MSG[v] || VERDICT_MSG.insufficient;
+    const titleEl = document.getElementById("modal-title");
+    const textEl = document.getElementById("modal-text");
+    const extraEl = document.getElementById("modal-extra");
+    const btnsEl = document.getElementById("modal-btns");
+    const mask = document.getElementById("modal-mask");
+    if (!titleEl || !textEl || !extraEl || !btnsEl || !mask) return;
+    titleEl.textContent = "⚠️ " + msg.title;
+    textEl.textContent = "「" + name + "」确实是凶手。" + msg.text + "\n\n返回主界面调整证据链，或忽略瑕疵直接结案。";
+    extraEl.style.display = "none";
+    extraEl.innerHTML = "";
+    btnsEl.innerHTML =
+      '<button type="button" class="modal-btn" id="casefile-back">返回调整</button>' +
+      '<button type="button" class="modal-btn primary" id="casefile-accept">忽略瑕疵 · 直接结案</button>';
+    mask.classList.add("show");
+    const back = document.getElementById("casefile-back");
+    const accept = document.getElementById("casefile-accept");
+    if (back) back.addEventListener("click", () => Modal.close());
+    if (accept) accept.addEventListener("click", () => {
+      Modal.close();
+      this._onLevelClear(cfg, result);
+    });
   },
 
   /** 指认失败：本局累计失败次数（重置时清零）→ 渐进提示 / 排除法专属提示 / 高亮关键证据。
@@ -4747,20 +4947,16 @@ const GameFlow = {
   },
 
   /** 失败后重开本局：保留走访记录（dialog 状态）+ 仅清布局与本局失败计数。
-   *  玩家不会因为"指认失败"而失去已收集的口供证据；只清空时间轴/线索池/锁定/本局失败数。 */
+   *  玩家不会因为"指认失败"而失去已收集的口供证据；只清空时间轴/线索池/锁定/本局失败数/证据链。 */
   _restartLevel() {
     // 保留 StorageUtil.readDialogRecord 的内容（走访已交谈的人）；只清布局相关字段
     const prev = StorageUtil.readLevelState(App.currentLevel);
-    const dialogIds = StorageUtil.readDialogRecord(App.currentLevel);
     StorageUtil.writeLevelState(App.currentLevel, {
-      pool: [], mapPlace: {}, timeline: [], locked: [],
+      pool: [], mapPlace: {}, timeline: [], locked: [], caseFile: [],
       hintCount: prev && typeof prev.hintCount === "number" ? prev.hintCount : 0,
       accuseFails: 0,
     });
-    // 走访记录保留（如果之前有）——重置不影响"我走访过哪些人"
-    if (!dialogIds || !dialogIds.length) {
-      StorageUtil.writeDialogRecord(App.currentLevel, []);
-    }
+    // 走访记录天然保留在独立 key（townMystery_dialog_L{n}）中，无需在此重写
     this.loadLevelPlaceholder();
   },
 
@@ -4911,35 +5107,9 @@ const GameFlow = {
     return (h < 10 ? "0" + h : h) + ":" + (mm < 10 ? "0" + mm : mm);
   },
 
-  /** 由线索 id 反查其所属居民的姓名（用于提示文案） */
-  _speakerName(cfg, cid) {
-    const sol = cfg.solution || {};
-    for (const rid of Object.keys(sol)) {
-      if (Array.isArray(sol[rid]) && sol[rid].includes(cid)) {
-        const res = (cfg.residents || []).find((r) => r.id === rid);
-        return res ? res.name : "某人";
-      }
-    }
-    return "某人";
-  },
-
-  /** 证据链失败提示：引用前置事件，生成游戏内话术 */
-  _requiresCopy(cfg, clue, reqClue) {
-    const speaker = this._speakerName(cfg, clue.id);
-    const reqSpeaker = this._speakerName(cfg, reqClue.id);
-    const reqShort = (reqClue.text || "").replace(/^[^：:]*[：:]\s*/, "");
-    return "「" + speaker + "」这句证词成立的前提，需要先确认【" +
-      reqSpeaker + "所述：" + reqShort + "】。请检查你的线索摆放。";
-  },
-
-  /** 时序失败提示：引用居民名，提示按时间先后重新摆放 */
-  _orderCopy(cfg, rid) {
-    const res = (cfg.residents || []).find((r) => r.id === rid);
-    return "「" + (res ? res.name : "该居民") + "」的几次目击有先后顺序，请按时间从早到晚重新摆放在时间轴上。";
-  },
-
-  /** 通关处理：真相弹窗 + 更新解锁进度 + 解锁本关居民档案 */
-  _onLevelClear(cfg) {
+  /** 通关处理：真相弹窗 + 更新解锁进度 + 解锁本关居民档案
+   *  v2：可选 result 参数（来自 evaluateCase），用于在通关弹窗里显示 verdict 徽标。 */
+  _onLevelClear(cfg, result) {
     const progress = StorageUtil.readProgress();
     // 增量：通关自动解锁本关居民档案（首次解锁时弹出轻提示）
     const newlyUnlocked = BioArchive.unlockLevel(cfg);
@@ -4953,6 +5123,21 @@ const GameFlow = {
     // 番外：每关 ext.endingStory 温情小故事，最后一关展示小镇终章总结
     const story = cfg.ext && cfg.ext.endingStory;
     let extraHtml = "";
+    if (result && result.verdict) {
+      const v = result.verdict;
+      const VERDICT_TEXT = {
+        perfect: "🔴 铁案",
+        standard: "🟢 标准结案",
+        flawed: "🟡 证据有瑕疵",
+        insufficient: "⚪ 铁证不足",
+      };
+      const badge = '<div class="verdict-badge ' + v + '">' + (VERDICT_TEXT[v] || v) + '</div>';
+      const c = result.counts || { core: 0, aux: 0, red: 0, amb: 0 };
+      const breakdown = '<p style="font-size:12px;color:var(--text-sub);margin:0 0 6px;">' +
+        '本次证据链：🔴 铁证 ' + c.core + ' 条 · 🟢 旁证 ' + c.aux + ' 条 · 🟡 干扰 ' + c.red + ' 条' +
+        (c.amb ? ' · ⚪ 中立 ' + c.amb + ' 条' : '') + '</p>';
+      extraHtml += badge + breakdown;
+    }
     if (story) {
       extraHtml = '<span class="modal-extra-title">· ' + (isLast ? "小镇终章" : "小镇小番外") + "</span>" +
         "<p>" + ClueCards.escapeHtml(story) + "</p>";
@@ -4976,14 +5161,44 @@ const GameFlow = {
   },
 
   /**
-   * 构造"本关关键证据 + decoy 干扰"清单（仅在通关时展示）。
-   * - 关键证据：凶手 solution 线索 + pointsTo 凶手的目击线索（🔑 物证 / 🗣 自白 / 👁 目击）
-   * - decoy 干扰：ext.decoyEvidence 列表（⚠ 干扰）
-   * 让玩家通关后能"复盘"——哪些线索是真正定罪的、哪些是陷阱。
+   * 构造"本关线索角色复盘"清单（仅在通关时展示）。
+   * - 优先使用 town_data.js 的 TOWN_CLUE_ROLES，把所有线索按 4 种 role 分组展示：
+   *     🔴 致命铁证 core / 🟢 旁证 aux / 🟡 干扰 red / ⚪ 中立 amb
+   * - 若 TOWN_CLUE_ROLES 不可用（数据缺失），回退到旧的"关键 + decoy"两栏布局。
+   * 让玩家通关后能"复盘"——哪些线索是真正定罪的、哪些是陷阱、哪些是旁证。
    * @returns {string} HTML 字符串
    */
   _buildClueReview(cfg) {
     const esc = ClueCards.escapeHtml;
+    const stripPrefix = (text) => String(text || "").replace(/^[^：:]*[：:]\s*/, "");
+    const lvId = "L" + App.currentLevel;
+    const roles = (typeof TOWN_CLUE_ROLES !== "undefined") ? TOWN_CLUE_ROLES[lvId] : null;
+
+    if (roles) {
+      const ROLE_META = {
+        core: { icon: "🔴", name: "致命铁证" },
+        aux:  { icon: "🟢", name: "旁证 / 自证" },
+        red:  { icon: "🟡", name: "干扰 / 陷阱" },
+        amb:  { icon: "⚪", name: "中立线索" },
+      };
+      const sections = [];
+      ["core", "aux", "red", "amb"].forEach((role) => {
+        const cids = roles[role] || [];
+        if (!cids.length) return;
+        const items = cids.map((cid) => {
+          const c = (cfg.clues || []).find((x) => x.id === cid);
+          if (!c) return "";
+          return '<li><span class="review-icon role-' + role + '">' + ROLE_META[role].icon + '</span>' + esc(stripPrefix(c.text)) + '</li>';
+        }).join("");
+        if (!items) return;
+        sections.push(
+          '<span class="modal-extra-title">· ' + ROLE_META[role].name + ' (' + cids.length + ')</span>' +
+          '<ul class="clue-review-list ' + role + '-list">' + items + '</ul>'
+        );
+      });
+      if (sections.length) return sections.join("");
+    }
+
     const keySet = this._killerKeyIds(cfg);
     const decoys = (cfg.ext && cfg.ext.decoyEvidence) || [];
     if (!keySet.size && !decoys.length) return "";
@@ -4994,7 +5209,6 @@ const GameFlow = {
       if (c.isWitness) return "👁";
       return "📁";
     };
-    const stripPrefix = (text) => String(text || "").replace(/^[^：:]*[：:]\s*/, "");
     const keysHtml = Array.from(keySet).map((cid) => {
       const c = (cfg.clues || []).find((x) => x.id === cid);
       if (!c) return "";
@@ -5044,7 +5258,8 @@ const GameFlow = {
       : "";
     Modal.alertExtra(label + " " + App.layout.hintCount + " / 2", displayText, extraHtml, () => {
       if (isFirst && allTalked && step2) {
-        Modal.alert("提示 直指", step2);
+        // 就地替换为「直指凶手」提示（不再新开弹窗覆盖，避免原 onClose 丢失）
+        Modal.replaceContent("提示 直指", step2);
       }
     });
   },
@@ -5662,6 +5877,23 @@ const Achievement = {
   document.getElementById("btn-accuse").addEventListener("click", () => GameFlow.accuseCulprit());
   document.getElementById("btn-hint").addEventListener("click", () => GameFlow.getHint());
   document.getElementById("btn-reset").addEventListener("click", () => GameFlow.resetLevel());
+  // 证据链 UI：清空按钮 + 卡片 ⊕ 按钮事件委托
+  const clearBtn = document.getElementById("cfb-clear");
+  if (clearBtn) clearBtn.addEventListener("click", () => {
+    if (CaseFile.get().length === 0) return;
+    Modal.confirm("清空证据链", "确定要清空已收集的 " + CaseFile.get().length + " 条证据吗？",
+      () => CaseFile.clear(), null);
+  });
+  // 委托到 game page 容器上，避免每个卡片单独绑事件
+  const casePage = document.getElementById("page-case");
+  if (casePage) casePage.addEventListener("click", (e) => {
+    const t = e.target;
+    if (!t || !t.classList || !t.classList.contains("clue-case-toggle")) return;
+    e.stopPropagation();
+    e.preventDefault();
+    const cid = t.dataset.cid;
+    if (cid) CaseFile.toggle(cid);
+  });
   // 常驻「新手指引」：随时重看引导，不写已看标记
   document.getElementById("btn-tutorial").addEventListener("click", () => GameFlow.showTutorialCards(false));
   // 弹窗遮罩点击空白处关闭
@@ -5718,7 +5950,24 @@ const Achievement = {
   // 启动背景音乐（两路 Audio + 首次点击解锁）
   Bgm.init();
   Bgm._refreshMuteButton();
-  // 全局快捷键：ESC 关闭"最上层"的遮罩弹窗（按 z-index 倒序找第一个 .show 的 mask）
+  // 监听 mask 打开顺序：class 出现 .show 时打时间戳，供 ESC 关闭"真正最后打开"的弹窗
+  // （多个 mask 的 z-index 相同，DOM 顺序 ≠ 打开顺序，必须按打开先后关闭；无 MutationObserver 的环境退化按原顺序）
+  const maskOrderSeq = { n: 0 };
+  if (typeof MutationObserver === "function") {
+    const maskOrderWatcher = new MutationObserver((muts) => {
+      muts.forEach((m) => {
+        if (m.type === "attributes" && m.attributeName === "class" && m.target.classList.contains("show")) {
+          m.target.dataset.openOrder = String(++maskOrderSeq.n);
+        }
+      });
+    });
+    ["modal-mask", "bio-mask", "lore-mask", "chronicle-mask", "town-map-mask", "achievement-mask"]
+      .forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) maskOrderWatcher.observe(el, { attributes: true, attributeFilter: ["class"] });
+      });
+  }
+  // 全局快捷键：ESC 关闭"最后打开"的遮罩弹窗（按打开顺序倒序取第一个 .show 的 mask）
   document.addEventListener("keydown", (e) => {
     if (e.key !== "Escape") return;
     const maskClosers = [
@@ -5733,11 +5982,11 @@ const Achievement = {
       .map((m) => {
         const el = document.getElementById(m.id);
         if (!el || !el.classList.contains("show")) return null;
-        const z = parseInt((getComputedStyle(el).zIndex || "0"), 10) || 0;
-        return { ...m, z };
+        const order = parseInt(el.dataset.openOrder || "0", 10) || 0;
+        return { ...m, order };
       })
       .filter(Boolean)
-      .sort((a, b) => b.z - a.z);
+      .sort((a, b) => b.order - a.order);
     if (visible.length) visible[0].close();
   });
   // 接入底层拖拽交互（Pointer Events 统一方案，鼠标 / 触屏通用）
