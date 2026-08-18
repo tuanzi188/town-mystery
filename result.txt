@@ -1,0 +1,75 @@
+﻿=== 小镇疑云 11 关静态结构验证 ===
+
+解析得到关卡数： 11
+DEBUG L1 conflictGroups:
+  c3 -> G-lie-1 lie
+  c5 -> G-lie-2 lie
+  c6 -> G-lie-1 lie
+  c7 -> G-lie-2 lie
+  c8 -> G-mis-1 misunderstand
+  c9 -> G-mis-1 misunderstand
+
+--- 第 1 关：丢失的菜篮（新手）---
+node :   ✗ isSuspectStatement 线索 c1 必须有 conflictGroup
+At C:\Users\tuanzi\AppData\Local\Temp\trae-agent-toolhost\jobs\job-812416db24e74bf69ba300df2bcfc71a\command.ps1:15 char
+:6491
++ ... bin'; cd "c:\Users\tuanzi\Desktop\小镇疑云" ; node verify.js 2>&1 | Out-F ...
++                                               ~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (  ✗ isSuspectSt...有 conflictGroup:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  ✗ isSuspectStatement 线索 c1 的 conflictType 必须是 lie/misunderstand（当前 undefined）
+  ✗ 困难关（diffLevel=3）G-lie 组 ≥ 3（实际 2）
+  ✗ fake 干扰线索 ≥ 3（实际 1）
+  关卡线索总数: 11, 居民数: 4, fake 干扰: 1
+
+--- 第 2 关：花坛的脚印（新手）---
+  ✗ isWitness 线索 c8 必须有 timeMin（当前 undefined）
+  ✗ conflictGroup G-lie-1 至少 2 条线索（当前 1: c3）
+  关卡线索总数: 10, 居民数: 4, fake 干扰: 1
+
+--- 第 3 关：走失的橘猫（新手）---
+  ✗ conflictGroup G-lie-1 至少 2 条线索（当前 1: c3）
+  关卡线索总数: 10, 居民数: 4, fake 干扰: 1
+
+--- 第 4 关：碎掉的花盆（普通）---
+  ✗ conflictGroup G-lie-1 至少 2 条线索（当前 1: c3）
+  关卡线索总数: 11, 居民数: 5, fake 干扰: 2
+
+--- 第 5 关：消失的快递（普通）---
+  ✗ conflictGroup G-lie-1 至少 2 条线索（当前 1: c5）
+  关卡线索总数: 12, 居民数: 4, fake 干扰: 2
+
+--- 第 6 关：深夜的声响（普通）---
+  ✗ conflictGroup G-lie-1 至少 2 条线索（当前 1: c3）
+  ✗ conflictGroup G-lie-2 至少 2 条线索（当前 1: c4）
+  关卡线索总数: 12, 居民数: 4, fake 干扰: 2
+
+--- 第 7 关：涂鸦的来源（普通）---
+  ✗ conflictGroup G-lie-1 至少 2 条线索（当前 1: c3）
+  关卡线索总数: 12, 居民数: 4, fake 干扰: 2
+
+--- 第 8 关：谁动了我的自行车（普通）---
+  ✗ conflictGroup G-lie-1 至少 2 条线索（当前 1: c3）
+  关卡线索总数: 12, 居民数: 4, fake 干扰: 2
+
+--- 第 9 关：门卫室的失窃（困难）---
+  ✗ conflictGroup G-lie-2 至少 2 条线索（当前 1: c4）
+  ✗ 困难关（diffLevel=3）G-lie 组 ≥ 3（实际 2）
+  ✗ fake 干扰线索 ≥ 3（实际 2）
+  关卡线索总数: 14, 居民数: 4, fake 干扰: 2
+
+--- 第 10 关：雨夜的脚印（困难）---
+  ✗ isWitness 线索 c5 必须有 timeMin（当前 undefined）
+  ✗ conflictGroup G-lie-1 至少 2 条线索（当前 1: c4）
+  ✗ conflictGroup G-lie-2 至少 2 条线索（当前 1: c10）
+  ✗ conflictGroup G-lie-3 至少 2 条线索（当前 1: c11）
+  关卡线索总数: 19, 居民数: 4, fake 干扰: 4
+
+--- 第 11 关：最后的真相（困难）---
+  ✗ conflictGroup G-lie-1 至少 2 条线索（当前 1: c4）
+  ✗ conflictGroup G-lie-2 至少 2 条线索（当前 1: c10）
+  ✗ conflictGroup G-lie-3 至少 2 条线索（当前 1: c11）
+  关卡线索总数: 19, 居民数: 4, fake 干扰: 4
+
+=== 总结：通过 470 项 / 失败 23 项 ===

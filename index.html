@@ -68,6 +68,16 @@ input{font-family:inherit;}
 .menu-btn.secondary{background:var(--soft);color:var(--accent-deep);border:1px solid var(--card-line);}
 .menu-btn.secondary:hover{background:#e2ecdf;}
 .menu-foot{color:var(--text-sub);font-size:12px;margin-top:18px;}
+/* 静音/响铃悬浮按钮：右下角小圆按钮，所有页面通用 */
+.mute-fab{
+  position:fixed;right:14px;bottom:14px;z-index:200;
+  width:42px;height:42px;border-radius:50%;
+  background:var(--card);border:1px solid var(--card-line);color:var(--text);
+  font-size:18px;box-shadow:var(--shadow);cursor:pointer;
+  transition:transform .12s,background .15s;
+}
+.mute-fab:hover{transform:scale(1.06);background:var(--soft);}
+.mute-fab[aria-pressed="true"]{background:#efece4;color:var(--text-sub);}
 
 /* ============================================================
    三、关卡选择页
@@ -198,6 +208,15 @@ input{font-family:inherit;}
   box-shadow:0 0 0 2px rgba(127,174,139,.18);
   font-weight:600;
 }
+/* 替罪羊/次要人物：整体灰化 + 行末"次要"小角标 */
+.resident-head.resident-scapegoat .avatar{opacity:.55;filter:grayscale(.6);}
+.resident-head.resident-scapegoat .resident-name{color:var(--text-sub);}
+.scapegoat-mark{
+  display:inline-block;margin-left:auto;
+  font-size:10px;padding:1px 7px;border-radius:8px;
+  background:#efece4;color:#a09886;border:1px solid var(--card-line);
+  letter-spacing:1px;flex:none;
+}
 .slots{
   display:flex;flex-wrap:wrap;gap:8px;min-height:52px;
   padding:6px;border:1.5px dashed var(--card-line);border-radius:10px;
@@ -241,6 +260,10 @@ input{font-family:inherit;}
 .clue-speak.ev-owner{
   background:#fbeed2;color:#8a6d3b;border:1px dashed #e2cfa6;
 }
+/* 反向物证：与嫌疑人命中但语义是为其脱罪（如 L6 c9 替赵姨洗白） */
+.clue-speak.ev-owner--clear{
+  background:#e7eef7;color:#4d6b91;border:1px dashed #b8c8de;
+}
 /* 卡片被拖起时的样式 */
 .clue-card.dragging{opacity:.6;transform:scale(1.04);box-shadow:0 10px 22px rgba(90,80,60,.2);}
 /* 卡片标红（冲突） */
@@ -257,6 +280,78 @@ input{font-family:inherit;}
 .tl-pair-tag.mis{background:#e7e2f5;color:#6a5a9a;}
 /* 丢到空白区域的抖动反馈 */
 .clue-card.drop-fail{animation:shake .4s;}
+
+/* —— 线索分层 4 种外观（口供 / 目击 / 自白 / 物证） + 入卷仪式 —— */
+/* 物证：金边 + 🔑 角标 + 轻微金辉 */
+.clue-card.evidence{
+  background:linear-gradient(135deg,#fff5d8 0%,#f5ecd8 100%);
+  border:1.5px solid #c89a3a;
+  box-shadow:0 0 0 2px rgba(200,154,58,.08),0 2px 8px rgba(200,154,58,.12);
+}
+.clue-card.evidence .clue-badge{
+  background:#c89a3a;color:#fff;font-weight:600;
+  box-shadow:0 1px 4px rgba(200,154,58,.35);
+}
+/* 自白：橙边 + 🗣 角标 */
+.clue-card.statement{
+  background:linear-gradient(135deg,#fdeede 0%,#f8e4c2 100%);
+  border:1.5px solid #c4804a;
+}
+.clue-card.statement .clue-badge{background:#c4804a;color:#fff;}
+/* 目击：蓝边 + 👁 角标 */
+.clue-card.witness{
+  background:linear-gradient(135deg,#e6efff 0%,#d8e4f7 100%);
+  border:1.5px solid #5a7ba8;
+}
+.clue-card.witness .clue-badge{background:#5a7ba8;color:#fff;}
+/* 普通口供：保持原有米色（.valid），无需额外样式 */
+/* 干扰线索：保持原有灰色（.fake），统一降级视觉 */
+.clue-card.fake.evidence,
+.clue-card.fake.statement,
+.clue-card.fake.witness{opacity:.85;}
+/* 类型角标：统一徽标样式 */
+.clue-badge{
+  display:inline-block;font-size:10px;line-height:1;padding:2px 7px;margin-bottom:4px;
+  border-radius:6px;letter-spacing:.5px;
+}
+/* 入卷动画：新解锁的卡片从右上方"飞入"池子 */
+@keyframes clue-enter{
+  0%{opacity:0;transform:translate(40px,-30px) scale(.85) rotate(4deg);}
+  60%{opacity:1;transform:translate(-4px,2px) scale(1.04) rotate(-1deg);}
+  100%{opacity:1;transform:translate(0,0) scale(1) rotate(0);}
+}
+.clue-card.entering{animation:clue-enter .55s cubic-bezier(.18,.78,.34,1.18) both;}
+/* 物证入卷时再补一次金辉 */
+@keyframes clue-evidence-glow{
+  0%,100%{box-shadow:0 0 0 2px rgba(200,154,58,.08),0 2px 8px rgba(200,154,58,.12);}
+  35%{box-shadow:0 0 0 5px rgba(255,210,120,.55),0 4px 18px rgba(200,154,58,.35);}
+}
+.clue-card.evidence.entering{animation:clue-enter .55s cubic-bezier(.18,.78,.34,1.18) both,clue-evidence-glow 1.4s ease-out .25s 2;}
+/* 入卷气泡：右上角浮出，~1.6s 后淡出 */
+.clue-toast{
+  position:fixed;right:24px;top:80px;z-index:230;
+  background:linear-gradient(135deg,#fffdf7 0%,#f5ecd8 100%);
+  border:1px solid #d6c79c;border-radius:14px;
+  padding:10px 14px;font-size:13px;line-height:1.5;color:var(--text);
+  box-shadow:0 8px 22px rgba(60,55,45,.18);
+  max-width:280px;pointer-events:none;
+  opacity:0;transform:translateX(20px) scale(.95);
+  transition:opacity .25s ease,transform .25s ease;
+}
+.clue-toast.show{opacity:1;transform:translateX(0) scale(1);}
+.clue-toast .clue-toast-title{
+  display:flex;align-items:center;gap:5px;
+  font-size:12px;color:#8a6d3b;letter-spacing:1px;margin-bottom:4px;
+}
+.clue-toast .clue-toast-text{font-size:13px;color:var(--text);line-height:1.55;}
+.clue-toast.evidence{border-color:#c89a3a;background:linear-gradient(135deg,#fffaf0 0%,#f5e2b0 100%);}
+.clue-toast.evidence .clue-toast-title{color:#a07820;}
+.clue-toast.fake{border-color:#b9a8a8;background:linear-gradient(135deg,#f4f2f0 0%,#e9e7e2 100%);opacity:.95;}
+.clue-toast.fake .clue-toast-title{color:#7a6a6a;}
+/* 多个气泡上下错开，避免重叠 */
+.clue-toast[data-stack="1"]{top:140px;}
+.clue-toast[data-stack="2"]{top:200px;}
+.clue-toast[data-stack="3"]{top:260px;}
 /* 时间轴推理区（三层机制·第二层：时间诡计） */
 .timeline-panel{margin:14px 0 0;padding:12px 14px;background:#fffdf7;border:1px dashed var(--card-line);border-radius:14px;}
 .timeline-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px;}
@@ -282,7 +377,46 @@ input{font-family:inherit;}
   position:fixed;z-index:200;pointer-events:none;
   opacity:.92;transform:rotate(2deg);
   box-shadow:0 12px 26px rgba(90,80,60,.18);
+  transition:outline-color .15s;
+  outline:2px dashed transparent;outline-offset:4px;
 }
+/* 拖到无效区域时（空白处）的红色虚线提示 */
+.drag-ghost.drag-invalid{
+  outline-color:var(--danger);
+  animation:invalid-shake .35s ease-in-out infinite;
+}
+@keyframes invalid-shake{
+  0%,100%{transform:rotate(2deg) translateX(0);}
+  25%{transform:rotate(2deg) translateX(-2px);}
+  75%{transform:rotate(2deg) translateX(2px);}
+}
+/* 拖到时间轴时的「长按 1 秒」确认视觉（环形进度 + 提示文字） */
+.drag-ghost .confirm-ring{
+  position:absolute;right:-12px;bottom:-12px;
+  width:34px;height:34px;border-radius:50%;
+  background:conic-gradient(var(--accent) 0deg,rgba(0,0,0,.18) 0deg);
+  border:2px solid #fff;box-shadow:0 3px 8px rgba(0,0,0,.25);
+  opacity:0;transform:scale(.55);
+  transition:opacity .18s,transform .18s;
+  z-index:2;
+}
+.drag-ghost .confirm-ring.active{opacity:1;transform:scale(1);animation:confirm-ring-fill 1s linear forwards;}
+.drag-ghost .confirm-ring.done{animation:none;background:conic-gradient(var(--accent) 360deg,rgba(0,0,0,.18) 360deg);}
+@keyframes confirm-ring-fill{
+  from{background:conic-gradient(var(--accent) 0deg,rgba(0,0,0,.18) 0deg);}
+  to{background:conic-gradient(var(--accent) 360deg,rgba(0,0,0,.18) 360deg);}
+}
+.drag-ghost .confirm-hint{
+  position:absolute;left:50%;bottom:-32px;transform:translateX(-50%) translateY(2px);
+  background:rgba(40,32,22,.85);color:#fff;
+  font-size:11px;line-height:1;padding:5px 10px;border-radius:12px;
+  white-space:nowrap;letter-spacing:.5px;
+  opacity:0;pointer-events:none;
+  transition:opacity .2s,transform .2s;
+  z-index:2;
+}
+.drag-ghost .confirm-hint.active{opacity:1;transform:translateX(-50%) translateY(0);}
+.drag-ghost .confirm-hint.done{background:rgba(76,141,97,.95);}
 /* 磁吸：拖拽经过目标卡槽时的高亮反馈 */
 .slots.slot-target{
   border-color:var(--accent);background:var(--soft);
@@ -310,6 +444,7 @@ input{font-family:inherit;}
   background:var(--soft);color:var(--accent-deep);border:1px solid var(--card-line);
 }
 .cp-pill.warn{background:#fbf1e3;color:var(--warn);border-color:#ecd9bd;}
+.cp-pill.danger{background:#fbeae6;color:var(--danger);border-color:#eec7bf;}
 .cp-pill .cp-num{font-weight:600;}
 /* 底部栏第二行：功能按钮 */
 .bb-row{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;width:100%;max-width:680px;}
@@ -346,7 +481,15 @@ input{font-family:inherit;}
   display:none;margin-top:14px;padding-top:12px;border-top:1px dashed var(--card-line);
   text-align:left;color:var(--accent-deep);font-size:13px;line-height:1.8;
 }
-.modal-extra-title{display:block;font-size:12px;color:var(--accent);letter-spacing:2px;margin-bottom:6px;}
+.modal-extra-title{display:block;font-size:12px;color:var(--accent);letter-spacing:2px;margin-bottom:6px;margin-top:10px;}
+.clue-review-list{list-style:none;padding:0;margin:6px 0 0 0;}
+.clue-review-list li{
+  font-size:12px;line-height:1.6;padding:5px 8px;border-radius:6px;
+  background:var(--bg);margin-bottom:4px;display:flex;gap:6px;align-items:flex-start;
+}
+.clue-review-list .review-icon{flex:none;font-size:13px;line-height:1.6;}
+.clue-review-list .review-icon.decoy{color:var(--danger);}
+.clue-review-list.decoy-list li{background:#fbf1e3;border:1px solid #ecd9bd;}
 .modal-btns{display:flex;gap:10px;margin-top:18px;justify-content:center;}
 .modal-btn{
   flex:1;padding:10px 0;border-radius:10px;font-size:14px;
@@ -367,6 +510,18 @@ input{font-family:inherit;}
 .pk-resident.excluded{opacity:.55;background:#efece4;}
 .pk-resident.picked,.pk-evidence.picked{background:var(--accent);color:#fff;border-color:transparent;}
 .pk-evidence{flex:0 0 100%;text-align:left;font-size:12px;line-height:1.45;padding:9px 6px;}
+.pk-evidence.decoy{border-color:var(--danger);background:#fff3ee;color:#9a4a3e;}
+.pk-evidence.decoy.picked{background:var(--danger);color:#fff;border-color:transparent;}
+.pk-decoy-tag{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:8px;background:var(--danger);color:#fff;font-size:10px;letter-spacing:0;vertical-align:1px;}
+/* 困难关证据分类筛选条 */
+.pk-filter-bar{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 8px;}
+.pk-filter{
+  flex:none;padding:4px 10px;border-radius:14px;font-size:12px;
+  background:var(--soft);color:var(--text-sub);border:1px solid var(--card-line);
+  cursor:pointer;transition:background .15s,color .15s;
+}
+.pk-filter:hover{background:#e2ecdf;color:var(--accent-deep);}
+.pk-filter.active{background:var(--accent);color:#fff;border-color:transparent;}
 #picker-ok:disabled{opacity:.5;cursor:not-allowed;}
 /* 失败时关键证据线索卡高亮（脉动提示） */
 @keyframes keyPulse{
@@ -495,6 +650,128 @@ input{font-family:inherit;}
   0%{opacity:0;transform:translateY(4px) scale(.98);}
   100%{opacity:1;transform:translateY(0) scale(1);}
 }
+
+/* —— 走访弹窗 沉浸感增强：逐句揭幕 / 走访次数开场 / 引导追问 / 内嵌线索 chip —— */
+@keyframes dl-line-in{
+  0%{opacity:0;transform:translateY(5px);}
+  100%{opacity:1;transform:translateY(0);}
+}
+@keyframes dl-prompt-in{
+  0%{opacity:0;transform:translateY(3px);}
+  100%{opacity:1;transform:translateY(0);}
+}
+.dl-line{
+  display:block;
+  animation:dl-line-in .45s ease-out both;
+  white-space:pre-line;
+}
+.dl-statement{
+  font-size:14px;line-height:1.85;color:var(--text);
+  margin:2px 0 6px;
+}
+.dl-statement .dl-line + .dl-line{margin-top:2px;}
+/* 走访次数小标签 */
+.bio-visit-tag{
+  display:inline-block;margin-left:6px;font-size:11px;color:#8a7a5c;
+  background:#ece5d3;padding:1px 8px;border-radius:8px;letter-spacing:.5px;
+  vertical-align:middle;
+}
+/* 场景化开场白：斜体 + 缩进 */
+.dl-opening{
+  font-size:13px;color:#6a6253;font-style:italic;line-height:1.7;
+  padding:6px 0 8px;border-bottom:1px dashed #d8d0bf;margin-bottom:6px;
+  animation:dl-line-in .5s ease-out both;
+}
+.dl-opening::before{content:"· ";color:var(--accent);font-style:normal;}
+/* 跳过揭幕按钮 */
+.walk-skip{
+  display:inline-block;font-size:12px;color:var(--text-sub);
+  background:transparent;border:1px dashed var(--card-line);
+  border-radius:14px;padding:2px 10px;margin-top:4px;cursor:pointer;
+  transition:background .15s,color .15s;
+}
+.walk-skip:hover{background:var(--soft);color:var(--accent-deep);}
+/* 引导行：「你看着TA……」「TA 似乎没再多说……」 */
+.dl-prompt{
+  font-size:13px;color:#6a6253;font-style:italic;line-height:1.7;
+  padding:8px 0 4px;margin-top:10px;
+  border-top:1px dashed #d8d0bf;
+  animation:dl-prompt-in .4s ease-out both;
+}
+.dl-prompt::before{content:"👁 ";font-style:normal;}
+/* 追问块（多选下拉 + 进度） */
+.dl-fu-block{margin-top:8px;}
+.dl-fu-head{
+  display:flex;align-items:center;justify-content:space-between;
+  font-size:12px;color:var(--text-sub);padding:4px 2px;letter-spacing:1px;
+}
+.dl-fu-progress{
+  display:inline-block;padding:1px 8px;border-radius:10px;
+  background:var(--accent);color:#fff;font-size:11px;letter-spacing:0.5px;
+}
+.dl-fu-list{display:flex;flex-direction:column;gap:6px;margin-top:4px;}
+.dl-next-fu{
+  display:block;width:100%;text-align:left;
+  padding:10px 12px;border-radius:10px;
+  background:var(--soft);border:1px solid var(--card-line);color:var(--accent-deep);
+  font-size:13px;line-height:1.55;cursor:pointer;
+  transition:transform .12s,background .15s;
+  animation:dl-prompt-in .35s ease-out both;
+}
+.dl-next-fu:hover{background:#e2ecdf;transform:translateY(-1px);}
+.dl-next-fu .fu-tag{margin-right:6px;}
+/* 已完成所有追问的结束行 */
+.dl-done{
+  font-size:12px;color:var(--text-sub);text-align:center;
+  padding:8px 0 4px;letter-spacing:1px;
+  animation:dl-prompt-in .4s ease-out both;
+}
+.dl-done::before{content:"· ";color:var(--accent);}
+.dl-done::after{content:" ·";color:var(--accent);}
+/* 对白区：每次追问的回答作为一条新对白 */
+.dl-dialog{
+  margin-top:6px;display:flex;flex-direction:column;gap:6px;
+}
+.dl-q{
+  font-size:12px;color:#8a7a5c;font-style:italic;line-height:1.6;
+  padding:2px 0 0;letter-spacing:.5px;
+  animation:dl-prompt-in .35s ease-out both;
+}
+.dl-q::before{content:"你 · ";}
+.dl-a{
+  font-size:14px;line-height:1.85;color:var(--text);
+  padding:8px 12px;border-radius:10px;background:var(--card);
+  border-left:3px solid var(--accent);
+  animation:dl-prompt-in .4s ease-out both;
+  white-space:pre-line;
+}
+/* 内嵌线索 chip：贴在对白末尾，不破坏沉浸感 */
+.dl-clue-chip{
+  display:inline-flex;align-items:center;gap:3px;
+  padding:1px 8px;margin:2px 3px 0 0;font-size:12px;line-height:1.5;
+  background:rgba(255,240,200,.85);border:1px dashed #c0a978;
+  border-radius:10px;color:#6b4f1a;cursor:help;
+  vertical-align:baseline;
+  transition:background .15s,border-color .15s;
+}
+.dl-clue-chip:hover{background:#fbecb9;border-color:#a68650;}
+.dl-clue-chip.evidence{background:rgba(255,232,180,.95);border-color:#b88a3a;color:#5a3f10;}
+.dl-clue-chip.fake{background:#f0ecec;border-color:#b9a8a8;color:#7a4a4a;}
+/* chip 紧贴上一句，在对白末尾另起一行 */
+.dl-clue-row{
+  display:flex;flex-wrap:wrap;gap:2px;margin-top:6px;
+  padding-top:6px;border-top:1px dotted var(--card-line);
+  animation:dl-prompt-in .4s ease-out both;
+}
+.dl-clue-row::before{
+  content:"💭 你记下：";font-size:12px;color:#8a7a5c;width:100%;
+  margin-bottom:2px;letter-spacing:.5px;
+}
+/* 口供区下方原本的 walk-clue-list 改为隐藏：线索已全部上提到对白中 */
+.bio-body .walk-clue-list{display:none;}
+.bio-body .walk-clue-list:empty{display:none;}
+/* 旧版 fu-list（追问列表）整体隐藏：改用「继续询问」单条入口 */
+.bio-body .fu-list{display:none;}
 
 /* —— 跨关人物关系（LorePanel） —— */
 #lore-mask .town-map-box{max-width:560px;}
@@ -639,6 +916,8 @@ input{font-family:inherit;}
   .clues-pool{flex:1 1 auto;min-height:0;border-radius:var(--radius);}
   .case-header h2{font-size:16px;}
   .clue-card{width:calc(50% - 6px);}
+  /* 移动端时间轴卡尺寸与线索池一致（覆盖 desktop 的 180px 硬宽） */
+  .timeline-track .clue-card{width:calc(50% - 6px);}
   /* 底部栏换行 */
   .bottom-bar{flex-wrap:wrap;justify-content:center;}
   .action-btn{flex:1;padding:11px 8px;font-size:13px;}
@@ -696,6 +975,7 @@ input{font-family:inherit;}
     <h1 class="menu-title">小镇疑云</h1>
     <p class="menu-sub">嘘——小镇的秘密，等你来揭开</p>
     <button class="menu-btn" id="btn-start">开 始 游 戏</button>
+    <button class="menu-btn secondary" id="btn-tutorial-menu">📖 先 看 新 手 指 引</button>
     <button class="menu-btn secondary" id="btn-archive">居 民 档 案 馆</button>
     <p class="menu-foot">11 个故事，每一个都在等一个答案</p>
   </div>
@@ -780,7 +1060,7 @@ input{font-family:inherit;}
     <section class="timeline-panel">
       <div class="timeline-head">
         <h3 class="panel-title">时间轴</h3>
-        <span class="timeline-tip" title="带时间描述的线索拖到这里会自动排序">💡 带时间的线索拖进来会自动按时间排序</span>
+        <span class="timeline-tip" title="带时间描述的线索拖到时间轴上方后，长按 1 秒确认落点">💡 拖到时间轴后长按 1 秒确认落点</span>
       </div>
       <p class="pool-hint">把带时间的目击 / 自白线索拖到这里排序。重叠时段的在场者会被列出——「谁有空」不能锁凶，说谎者的时间线会在这里露出破绽。</p>
       <div class="timeline-track" id="timeline-drop"></div>
@@ -856,6 +1136,9 @@ input{font-family:inherit;}
   </div>
 </div>
 
+<!-- 通用静音按钮（body 直属子元素，所有页面均可见） -->
+<button type="button" class="mute-fab" id="btn-mute" title="点击静音" aria-pressed="false">🔊</button>
+
 <!-- 走访追问 / 跨关暗线 数据模块：必须位于主脚本之前（主脚本以 typeof 防御引用） -->
 <script src="town_data.js"></script>
 <script>
@@ -870,7 +1153,7 @@ const App = {
   levelData: null,        // 当前关卡配置（B2 起由关卡数据模块填充，B1 保持 null）
   residents: [],          // 当前关卡居民列表：[{ id, name, role }]
   clueMap: {},            // 当前关卡线索索引：线索 id -> 线索对象
-  layout: { slots: {}, pool: [] }, // 当前关卡摆放状态：js slots: 居民 id -> 线索 id 数组；pool: 线索池 id 数组
+  layout: { pool: [], mapPlace: {}, timeline: [], locked: [] }, // 当前关卡摆放状态：pool 线索池 id；mapPlace 地图地点副本；timeline 时间轴副本；locked 锁定线索
 };
 
 /* ============================================================
@@ -883,26 +1166,77 @@ const App = {
 const StorageUtil = {
   _prefix: "townMystery_",
   /**
-   * DATA_VERSION：关卡数据/机制升级后递增此值。启动时若存档版本落后，
-   * 自动清空全部关卡进度（关卡状态、走访记录、提示计数、累计失败），
-   * 避免旧版谜题/旧字段残留；只清关卡数据，不影响全局收藏/成就。
-   * 修改 LevelData 或线索 schema 后必须 ++ 当前值。
+   * DATA_VERSION：仅在「机制级」变更（卡槽系统、checkEvidence 行为、走访机制等）时递增。
+   * 调整 DATA_VERSION 会触发「全档清空 + 进度回 1」——属于兜底重置。
+   * 单关内容微调（错别字、线索文案、evidenceKeys 增减）**不要动** DATA_VERSION，
+   * 改用 _levelHash(levelIndex) 走按关卡粒度的细粒度迁移。
    */
   DATA_VERSION: 2,
   _versionKey() { return this._prefix + "dataVersion"; },
-  /** 启动期一次性清档：旧版本存档 → 全部关卡状态清空 + 进度回 1 */
+  /** 单关内容指纹：用于"内容变更 → 仅清该关"细粒度迁移。 */
+  _hashStr(s) {
+    let h = 0;
+    for (let i = 0; i < s.length; i++) {
+      h = ((h << 5) - h + s.charCodeAt(i)) | 0;
+    }
+    return (h >>> 0).toString(36);
+  },
+  /**
+   * 计算当前关卡的内容指纹：culpritId + solution 排序 + evidenceKeys 排序 + 关键 isWitness/isEvidence 数量。
+   * 任何会改变"正解/校验逻辑"的结构变更都会改变 hash。
+   * @param {number} idx 关卡序号（1-based）
+   */
+  _levelHash(idx) {
+    const lv = (typeof LevelData !== "undefined" && LevelData[idx - 1]) || null;
+    if (!lv) return "";
+    const sol = lv.solution || {};
+    const solKey = Object.keys(sol).sort().map((rid) => rid + ":" + (sol[rid] || []).slice().sort().join(",")).join("|");
+    const evKeys = ((lv.ext || {}).evidenceKeys || []).slice().sort().join(",");
+    const wCount = (lv.clues || []).filter((c) => c.isWitness === true).length;
+    const eCount = (lv.clues || []).filter((c) => c.isEvidence === true).length;
+    return this._hashStr([
+      lv.culpritId || "",
+      solKey,
+      evKeys,
+      "w" + wCount,
+      "e" + eCount,
+    ].join("#"));
+  },
+  /**
+   * 启动期一次性迁移：
+   *  - 若 DATA_VERSION 落后 → 整档清空 + 进度回 1（机制级变更）
+   *  - 否则按关卡 hash 对比：仅清 hash 变化的关（内容微调）
+   *  本局失败计数 (layout.accuseFails) 在 _restartLevel 内清零，不需要在 migrate 里清理。
+   */
   migrateIfNeeded() {
-    const cur = Number(this.read("dataVersion", 0));
-    if (cur >= this.DATA_VERSION) return;
+    const curVer = Number(this.read("dataVersion", 0));
+    if (curVer < this.DATA_VERSION) {
+      LevelData.forEach((_, idx) => {
+        this.clearLevelState(idx + 1);
+        this.write(this.dialogKey(idx + 1), []);
+      });
+      this.writeProgress(1);
+      this.write("dataVersion", this.DATA_VERSION);
+      // 把当前所有关的 hash 一并落盘，后续只做 diff
+      this._writeAllLevelHashes();
+      return;
+    }
+    // DATA_VERSION 一致 → 逐关 hash 对比，只清 hash 变化的关
     LevelData.forEach((_, idx) => {
-      this.clearLevelState(idx + 1);
-      this.write(this.dialogKey(idx + 1), []);
-      // 累计失败次数也清，避免新关内被旧失败数直接打到高强度提示
-      this.write("accuseFails_" + (idx + 1), 0);
+      const lvNum = idx + 1;
+      const curHash = String(this.read("levelHash_" + lvNum, ""));
+      const newHash = this._levelHash(lvNum);
+      if (curHash === newHash) return;
+      this.clearLevelState(lvNum);
+      this.write(this.dialogKey(lvNum), []);
+      this.write("levelHash_" + lvNum, newHash);
     });
-    // 进度回 1，让玩家从新 L1 开始；已解锁 Bio 列表留作跨版本升级后再次解锁的种子
-    this.writeProgress(1);
-    this.write("dataVersion", this.DATA_VERSION);
+  },
+  /** 启动时一次性把当前所有关的 hash 落盘（首次运行/整档清空后用） */
+  _writeAllLevelHashes() {
+    LevelData.forEach((_, idx) => {
+      this.write("levelHash_" + (idx + 1), this._levelHash(idx + 1));
+    });
   },
   _key(name) { return this._prefix + name; },
   /** 读取存档，失败或不存在时返回默认值 */
@@ -952,7 +1286,11 @@ const StorageUtil = {
    */
   readLevelState(level) {
     const raw = this.read("levelState_" + level, null);
-    const valid = raw && typeof raw === "object" && raw.slots && Array.isArray(raw.pool);
+    // 兼容旧档：raw.slots（旧卡槽字段）存在时仍视为有效；新档无 slots，只要 pool/timeline 是数组即视为有效
+    const hasPool = raw && Array.isArray(raw.pool);
+    const hasTimeline = raw && Array.isArray(raw.timeline);
+    const hasSlots = raw && typeof raw.slots === "object";
+    const valid = raw && typeof raw === "object" && (hasPool || hasTimeline || hasSlots);
     // 提示已用次数（单档，最多 2 次）：优先读 hintCount；旧档从 hintCounts / hintUsed 迁移
     let hintCount = 0;
     if (valid && typeof raw.hintCount === "number") {
@@ -966,18 +1304,13 @@ const StorageUtil = {
     }
     if (!valid) {
       return {
-        slots: {}, pool: [],
-        hintCount, mapPlace: {}, timeline: [], locked: [],
+        pool: [], hintCount, mapPlace: {}, timeline: [], locked: [],
       };
     }
-    const slots = {};
-    Object.keys(raw.slots).forEach((rid) => {
-      if (Array.isArray(raw.slots[rid])) {
-        const ids = raw.slots[rid].filter((x) => typeof x === "string");
-        if (ids.length) slots[rid] = ids;
-      }
-    });
+    // 旧档：尝试从 slots 推断 pool（兼容老玩家）；新档：以 pool 为准
     const strArr = (v) => (Array.isArray(v) ? v.filter((x) => typeof x === "string") : []);
+    const pool = strArr(raw.pool);
+    const timeline = strArr(raw.timeline);
     // 地图地点：{地点id:[线索id]}
     const mapPlace = {};
     if (raw.mapPlace && typeof raw.mapPlace === "object") {
@@ -986,14 +1319,10 @@ const StorageUtil = {
         if (ids.length) mapPlace[locId] = ids;
       });
     }
-    return {
-      slots,
-      pool: strArr(raw.pool),
-      hintCount,
-      mapPlace,
-      timeline: strArr(raw.timeline),
-      locked: strArr(raw.locked),
-    };
+    // 标准化字段 + 透传额外字段（如 accuseFails / overlapWarned），避免读档丢失运行时数据
+    return Object.assign({
+      pool, hintCount, mapPlace, timeline, locked: strArr(raw.locked),
+    }, raw);
   },
   /** 写入当前关卡状态 */
   writeLevelState(level, state) {
@@ -1002,7 +1331,7 @@ const StorageUtil = {
   /** 清空当前关卡状态（重置本局用，含推理辅助数据） */
   clearLevelState(level) {
     this.write("levelState_" + level, {
-      slots: {}, pool: [], hintCount: 0,
+      pool: [], hintCount: 0,
       mapPlace: {}, timeline: [], locked: [],
     });
   },
@@ -1052,13 +1381,20 @@ const StorageUtil = {
 };
 
 /* ============================================================
-   模块一·补：走访对话系统（DialogSystem，混合模式专属）
+   模块一·补：走访对话系统（DialogSystem，混合模式专属 · 沉浸感增强 v2）
    说明：
-   - 点击居民头像 → 弹出单层口供弹窗（复用线索文案，无多分支）
-   - 交谈后：记录入 dialog_L{关}，解锁该居民绑定的线索卡片入池
-   - 仅增量；不触碰 DragManager / ValidateUtil / 推理校验逻辑。
+   - 弹窗打开 → 走访次数开场白（首次/再次/三次+/熟客）→ 口供按句末标点逐句淡入（~700ms/句）→
+     完成后展示引导行与「继续询问」按钮。
+   - 追问入口：单条「继续询问」按钮，每点一次吐出一条；不再一次列出全部。
+   - 线索呈现：完全融入对白末尾的 chip（💡 普通 / 🔑 物证 / 🤥 干扰），不再单列 walk-clue-list。
+   - 反复走访：每次有新开场；已问过的追问不再显示。
+   - 兼容性：保留原 _unlockBoundClue / _markSpoken / close 行为；进度条统计、存档键、
+     ValidateUtil 门槛均不变。
    ============================================================ */
 const DialogSystem = {
+  /** 逐句揭幕定时器：close 或 _finishReveal 时清理，避免内存泄漏 */
+  _revealTimer: null,
+  _skipRequested: false,
   /** 取某居民追问分支：resident 自带 followups 优先；其次查 TOWN_FOLLOWUPS（外部数据用 typeof 防御）。
    *  无任何分支（如替罪羊）返回 null，走"一键全给"兼容逻辑。 */
   _followupsOf(resident) {
@@ -1084,7 +1420,135 @@ const DialogSystem = {
   _readAsked() {
     return StorageUtil.readAskedFollowups(App.currentLevel);
   },
-  /** 线索条目标签：按类型标注（干扰/物证/目击/自白/口供） */
+  /** 走访次数（即将写入后的 1-based 计数，用于决定开场白与标签） */
+  _getVisitCount(resident) {
+    const talked = StorageUtil.readDialogRecord(App.currentLevel) || [];
+    const idx = talked.indexOf(resident.id);
+    return idx === -1 ? 1 : idx + 2;
+  },
+  /** 走访次数小标签文字 */
+  _visitTagText(count) {
+    if (count <= 1) return "首次走访";
+    if (count === 2) return "再次造访";
+    if (count === 3) return "第三次走访";
+    return "熟客 · 第" + count + "次";
+  },
+  /** 场景化开场白（首次不渲染开场块） */
+  _openingFor(resident, count) {
+    const name = (resident && resident.name) || "对方";
+    if (count <= 1) return "";
+    if (count === 2) return "你又来到 " + name + " 家。TA 抬头看了你一眼，像是认出了你——但没先开口。";
+    if (count === 3) return "你第三次推门进来。" + name + " 似乎已经习惯了你这位访客，朝你点点头，目光闪了一下。";
+    return "你再次上门。" + name + " 见到你，表情复杂，沉默片刻才开了腔。";
+  },
+  /** 切分句子：按句末标点 。！？!?…；; 拆分，保留原标点，过滤空白 */
+  _splitSentences(text) {
+    if (!text) return [];
+    return String(text).split(/(?<=[。！？!?…]|[；;])/g).map(function (s) { return s.trim(); }).filter(Boolean);
+  },
+  /** 渲染内嵌线索 chip：贴在对白末尾，hover 显示完整线索文本 */
+  _renderEmbeddedClueChips(cids) {
+    if (!cids || !cids.length) return "";
+    const esc = ClueCards.escapeHtml;
+    const chips = cids.map(function (cid) {
+      const c = App.clueMap[cid];
+      if (!c) return "";
+      let label, extra = "";
+      if (c.type === "fake") { label = "🤥 " + esc(c.text); extra = " fake"; }
+      else if (c.isEvidence) { label = "🔑 " + esc(c.text); extra = " evidence"; }
+      else { label = "💡 " + esc(c.text); }
+      return '<span class="dl-clue-chip' + extra + '" title="' + esc(c.text) + '">' + label + '</span>';
+    }).join("");
+    return chips ? '<div class="dl-clue-row">' + chips + '</div>' : "";
+  },
+  /** 渲染已问对白（dl-dialog 整段），不显示未问的 */
+  _renderFollowupDialog(resident, followups, asked) {
+    if (!followups) return "";
+    const esc = ClueCards.escapeHtml;
+    const items = [];
+    for (let i = 0; i < followups.length; i++) {
+      if (!asked.has(this._askKey(resident.id, i))) continue;
+      const fu = followups[i];
+      if (!fu) continue;
+      const topic = this._topicOf(fu.q) || "继续追问";
+      const a = fu.a || "";
+      items.push(
+        '<p class="dl-q">' + esc(topic) + '</p>' +
+        '<div class="dl-a">' + esc(a) + this._renderEmbeddedClueChips(fu.cids) + '</div>'
+      );
+    }
+    return items.length ? '<div class="dl-dialog">' + items.join("") + '</div>' : "";
+  },
+  /** 渲染「继续询问」入口：展开所有未问过的追问让玩家选择；
+   *  顶部显示"已问 X / Y"进度；全部问完则渲染结束行。 */
+  _renderNextFollowupPrompt(resident, followups, asked) {
+    if (!followups) return "";
+    const esc = ClueCards.escapeHtml;
+    const total = followups.length;
+    let askedCount = 0;
+    for (let i = 0; i < followups.length; i++) {
+      if (asked.has(this._askKey(resident.id, i))) askedCount++;
+    }
+    if (askedCount >= total) {
+      const name = (resident && resident.name) || "TA";
+      return '<p class="dl-done">' + esc(name) + " 似乎没再多说（" + total + " / " + total + "）</p>";
+    }
+    // 构建未问列表 + 进度条
+    const pendingIdx = [];
+    for (let i = 0; i < followups.length; i++) {
+      if (!asked.has(this._askKey(resident.id, i))) pendingIdx.push(i);
+    }
+    const progressPill = '<span class="dl-fu-progress">' + askedCount + " / " + total + "</span>";
+    const listHtml = pendingIdx.map((idx) => {
+      const fu = followups[idx];
+      const topic = this._topicOf(fu.q) || "继续追问";
+      return '<button type="button" class="dl-next-fu" data-fu="' + idx + '">' +
+        '<span class="fu-tag">追问</span>' + esc(topic) + "</button>";
+    }).join("");
+    return '<div class="dl-fu-block">' +
+      '<div class="dl-fu-head">继续询问 ' + progressPill + "</div>" +
+      '<div class="dl-fu-list">' + listHtml + "</div>" +
+      "</div>";
+  },
+  /** 口供全显后挂的"对话 / 引导 / 继续询问 / 隐藏心事"区 */
+  _renderAfterStatement(resident, followups, asked) {
+    const esc = ClueCards.escapeHtml;
+    const secretHtml = this._renderSecretHtml(resident);
+    if (followups) {
+      const dialogHtml = this._renderFollowupDialog(resident, followups, asked);
+      const promptHtml = this._renderNextFollowupPrompt(resident, followups, asked);
+      return dialogHtml +
+        '<p class="dl-prompt">你看着 ' + esc(resident.name || "TA") + '，试探着往下问……</p>' +
+        promptHtml + secretHtml;
+    }
+    // 无追问分支的居民（如替罪羊）：保留原"一键线索" + 提示行
+    const walkHtml = this._renderWalkCluesHtml(resident);
+    // 替罪羊明确提示：无可解锁线索，避免玩家以为"我点错了"
+    const isScapegoat = this._isScapegoat(resident);
+    const scapegoatTip = isScapegoat
+      ? '<p class="bio-lock-sub walk-tip-scapegoat">这位是次要人物，没有可解锁的线索；你可以在「档案」里查看 TA 的生平。</p>'
+      : "";
+    return walkHtml + scapegoatTip +
+      '<p class="bio-lock-sub walk-tip">以上线索已加入下方线索池：浅米色为有效线索，可拖入下方时间轴排序；灰色「干扰」线索请留在池中。</p>' +
+      secretHtml;
+  },
+  /** 替罪羊判定：居民无 bindClue 视为次要人物 */
+  _isScapegoat(resident) {
+    if (!resident) return false;
+    const b = resident.bindClue;
+    if (!b) return true;
+    if (Array.isArray(b)) return b.length === 0;
+    if (typeof b === "string") return !b;
+    return false;
+  },
+  /** 已通关本关才显示 secret（避免剧透） */
+  _renderSecretHtml(resident) {
+    if (!BioArchive.isLevelCleared() || !resident.secret) return "";
+    const esc = ClueCards.escapeHtml;
+    return '<div class="bio-secret-box"><p class="bio-sec-title">· 隐藏心事</p>' +
+      '<p class="bio-text bio-secret">' + esc(resident.secret) + '</p></div>';
+  },
+  /** 线索条目标签：按类型标注（干扰/物证/目击/自白/口供）——仅无追问分支时使用 */
   _walkClueItemHtml(c) {
     const esc = ClueCards.escapeHtml;
     let tag, extraCls = "";
@@ -1096,83 +1560,69 @@ const DialogSystem = {
     return '<div class="walk-clue-item"><span class="walk-clue-tag' + extraCls + '">' + tag +
       '</span><span class="walk-clue-text">' + esc(c.text) + "</span></div>";
   },
-  /** 渲染追问分支区：已问项展示对应线索文本，未问项渲染为可点击问题按钮
-   *  设计原则：不做任何"关键/必问/旁证"视觉区分——玩家必须靠追问文本和线索文本自己判断
-   *  这是有意的"沉浸式推理"设计，让玩家通过分析问出关键证据，而不是被角标牵着走 */
-  _renderFollowupsHtml(resident, followups) {
+  /** 启动口供逐句揭幕：第一句立即出现，后续每 ~700ms 追加一句；
+   *  点"跳过"则一次性补齐并露出追问区；元素缺失时降级为一次性渲染 */
+  _startStatementReveal(box, sentences, followups, asked, resident) {
     const esc = ClueCards.escapeHtml;
-    const asked = new Set(this._readAsked());
-    let html = '<p class="bio-sec-title">· 追问</p><div class="fu-list">';
-    followups.forEach((fu, i) => {
-      const key = this._askKey(resident.id, i);
-      const topic = this._topicOf(fu.q) || "继续追问";
-      if (asked.has(key)) {
-         html += '<div class="fu-item asked" data-fu="' + i + '">' +
-           '<div class="fu-head"><span class="fu-done">已问 ✓</span>' + esc(topic) + "</div>" +
-           (fu.a ? '<p class="fu-answer">' + esc(fu.a) + "</p>" : "") +
-           ((fu.cids || []).map((cid) => {
-             const c = App.clueMap[cid];
-             return c ? this._walkClueItemHtml(c) : "";
-           }).join("")) +
-           "</div>";
-       } else {
-        html += '<button type="button" class="fu-item btn" data-fu="' + i + '">' +
-          '<span class="fu-tag">追问</span>' + esc(topic) + "</button>";
-      }
-    });
-    return html + "</div>";
-  },
-  /** 构建走访弹窗 body（口供 + 追问分支 / 一键线索 + 提示行），供 open 与追问刷新复用 */
-  _buildBodyHtml(resident, followups) {
-    const esc = ClueCards.escapeHtml;
-    const talkText = resident.talk || resident.bio || resident.name + "不愿多说，像是在隐瞒什么。";
-    // secret 彩蛋：仅当已通关本关才展示，避免剧透
-    const unlocked = BioArchive.isLevelCleared();
-    const secretHtml = unlocked && resident.secret
-      ? '<div class="bio-secret-box"><p class="bio-sec-title">· 隐藏心事</p>' +
-        '<p class="bio-text bio-secret">' + esc(resident.secret) + "</p></div>"
-      : "";
-    let bodyHtml = '<p class="bio-sec-title">· 口供</p>' +
-      '<p class="bio-text">' + esc(talkText) + "</p>";
-    if (followups) {
-      bodyHtml += this._renderFollowupsHtml(resident, followups);
-      const asked = new Set(this._readAsked());
-      const left = followups.length - followups.filter((fu, i) => asked.has(this._askKey(resident.id, i))).length;
-      bodyHtml += '<p class="bio-lock-sub walk-tip">追问能套出更多口供。' +
-        (left > 0
-          ? "还有 <b>" + left + "</b> 个话题未追问，可随时再点这位居民补问。"
-          : "该居民的话题已全部问完，线索已齐。") + "</p>";
-    } else {
-      bodyHtml += this._renderWalkCluesHtml(resident);
-      bodyHtml += '<p class="bio-lock-sub walk-tip">以上线索已加入下方线索池：浅米色为有效线索，可拖入下方时间轴排序；灰色「干扰」线索请留在池中。</p>';
+    const stmt = box.querySelector("#dl-statement");
+    const after = box.querySelector("#dl-after-statement");
+    if (!stmt || !after) {
+      this._finishReveal(box, followups, asked, resident);
+      return;
     }
-    return bodyHtml + secretHtml;
+    this._clearRevealTimer();
+    this._skipRequested = false;
+    if (!sentences.length) {
+      stmt.innerHTML = '<span class="dl-line">（TA 沉默着，没接话。）</span>';
+      this._finishReveal(box, followups, asked, resident);
+      return;
+    }
+    stmt.innerHTML = '<span class="dl-line">' + esc(sentences[0]) + '</span>';
+    if (sentences.length <= 1) {
+      this._finishReveal(box, followups, asked, resident);
+      return;
+    }
+    const skipBtn = box.querySelector("#dl-skip");
+    if (skipBtn) skipBtn.hidden = false;
+    let i = 1;
+    const self = this;
+    const tick = function () {
+      if (self._skipRequested) { self._finishReveal(box, followups, asked, resident); return; }
+      if (i >= sentences.length) { self._finishReveal(box, followups, asked, resident); return; }
+      stmt.insertAdjacentHTML("beforeend", '<span class="dl-line">' + esc(sentences[i]) + '</span>');
+      i++;
+      self._revealTimer = setTimeout(tick, 700);
+    };
+    self._revealTimer = setTimeout(tick, 700);
   },
-  /** 绑定弹窗事件：关闭 + 追问按钮（body 重建后需重新绑定） */
-  _bindBioEvents(box, resident, followups) {
-    const closeBtn = box.querySelector("#bio-close");
-    if (closeBtn) closeBtn.addEventListener("click", () => this.close());
-    box.querySelectorAll(".fu-item.btn").forEach((btn) => {
-      btn.addEventListener("click", () => {
+  /** 立即完成揭幕：补齐剩余句子 + 露出追问区 + 绑定事件 */
+  _finishReveal(box, followups, asked, resident) {
+    this._clearRevealTimer();
+    const after = box.querySelector("#dl-after-statement");
+    if (after && after.hidden) {
+      after.hidden = false;
+      after.innerHTML = this._renderAfterStatement(resident, followups, asked);
+      this._bindAfterEvents(after, resident, followups);
+    }
+    const skipBtn = box.querySelector("#dl-skip");
+    if (skipBtn) skipBtn.hidden = true;
+  },
+  /** 绑定 after-statement 区域的事件（继续询问） */
+  _bindAfterEvents(after, resident, followups) {
+    const self = this;
+    after.querySelectorAll(".dl-next-fu").forEach(function (btn) {
+      btn.addEventListener("click", function () {
         const idx = Number(btn.dataset.fu);
         if (Number.isNaN(idx)) return;
-        this._askFollowup(resident, followups, idx);
+        self._askFollowup(resident, followups, idx);
       });
     });
   },
-  /** 刷新弹窗 body（追问后不整窗重开，只重绘内容区并高亮新解锁对白） */
-  _refreshBody(box, resident, followups, freshEl) {
-    const body = box.querySelector(".bio-body");
-    if (!body) return;
-    body.innerHTML = this._buildBodyHtml(resident, followups);
-    this._bindBioEvents(box, resident, followups);
-    // 给刚问出的对白追加出场动画：闪烁高亮 → 渐入
-    if (freshEl) {
-      const fresh = body.querySelector(freshEl);
-      if (fresh) fresh.classList.add("fu-fresh");
-    }
+  /** 清理逐句揭幕定时器 */
+  _clearRevealTimer() {
+    if (this._revealTimer) { clearTimeout(this._revealTimer); this._revealTimer = null; }
   },
-  /** 打开走访弹窗：具备追问分支 → 分支交互（逐问解锁线索）；否则保留"一键全给" */
+  /** 打开走访弹窗：开场白 + 口供逐句 + 引导 + 继续询问 */
   open(resident) {
     if (!resident) return;
     const esc = ClueCards.escapeHtml;
@@ -1180,28 +1630,45 @@ const DialogSystem = {
     const mask = document.getElementById("bio-mask");
     if (!box || !mask) return;
     const followups = this._followupsOf(resident);
+    const asked = new Set(this._readAsked());
+    const visitCount = this._getVisitCount(resident);
+    const visitTag = this._visitTagText(visitCount);
+    const talkText = resident.talk || resident.bio || (resident.name || "TA") + " 不愿多说，像是在隐瞒什么。";
+    const sentences = this._splitSentences(talkText);
+    const opening = this._openingFor(resident, visitCount);
+    const openingHtml = opening ? '<p class="dl-opening">' + esc(opening) + '</p>' : "";
     box.innerHTML =
       '<div class="bio-head">' +
         '<span class="bio-avatar">' + AvatarFactory.build(resident, { size: 52 }) + "</span>" +
         '<div class="bio-id">' +
-          '<h3 class="bio-name">' + esc(resident.name || "无名居民") + "</h3>" +
+          '<h3 class="bio-name">' + esc(resident.name || "无名居民") +
+            '<span class="bio-visit-tag">' + visitTag + '</span></h3>' +
           '<span class="bio-tag">' + esc(resident.tagShort || "身份未知") + "</span>" +
         "</div>" +
         '<button type="button" class="bio-close" aria-label="关闭" id="bio-close">×</button>' +
       "</div>" +
-      '<div class="bio-body">' + this._buildBodyHtml(resident, followups) + "</div>";
-    this._bindBioEvents(box, resident, followups);
+      '<div class="bio-body">' +
+        openingHtml +
+        '<p class="bio-sec-title">· 口供</p>' +
+        '<div class="dl-statement" id="dl-statement" data-total="' + sentences.length + '"></div>' +
+        '<button type="button" class="walk-skip" id="dl-skip" hidden>跳过揭幕</button>' +
+        '<div class="dl-after-statement" id="dl-after-statement" hidden></div>' +
+      "</div>";
+    const self = this;
+    const closeBtn = box.querySelector("#bio-close");
+    if (closeBtn) closeBtn.addEventListener("click", function () { self.close(); });
+    const skipBtn = box.querySelector("#dl-skip");
+    if (skipBtn) skipBtn.addEventListener("click", function () { self._skipRequested = true; });
     mask.classList.add("show");
-    // 标记已交谈（进度条口径不变）
     this._markSpoken(resident);
-    // 有追问分支时不再一键解锁；无分支时原逻辑一次全给
+    // 无追问分支的居民（如替罪羊）：保留原"一键全给"行为，立即解锁绑定的全部线索
     if (!followups) this._unlockBoundClue(resident);
+    this._startStatementReveal(box, sentences, followups, asked, resident);
   },
-  /** 回答某条追问：解锁对应线索入池 + 记录已追问 + 刷新弹窗（不整窗重开） */
+  /** 回答某条追问：解锁对应线索 + 记录已追问 + 局部刷新 after-statement */
   _askFollowup(resident, followups, idx) {
     const fu = followups[idx];
     if (!fu || !Array.isArray(fu.cids)) return;
-    const wasAsked = this._readAsked().indexOf(this._askKey(resident.id, idx)) !== -1;
     this._unlockBoundClue(resident, fu.cids);
     const asked = this._readAsked();
     const key = this._askKey(resident.id, idx);
@@ -1209,11 +1676,13 @@ const DialogSystem = {
       asked.push(key);
       StorageUtil.writeAskedFollowups(App.currentLevel, asked);
     }
-    // 不整窗重开：仅刷 body，避免弹窗闪烁；新问出的对白加高亮
     const box = document.getElementById("bio-box");
     if (box) {
-      this._refreshBody(box, resident, followups,
-        wasAsked ? null : '.fu-item.asked[data-fu="' + idx + '"]');
+      const after = box.querySelector("#dl-after-statement");
+      if (after) {
+        after.innerHTML = this._renderAfterStatement(resident, followups, new Set(asked));
+        this._bindAfterEvents(after, resident, followups);
+      }
     }
   },
   /** 渲染一键线索区：无追问分支的居民一次解锁全部绑定线索（原逻辑） */
@@ -1241,33 +1710,74 @@ const DialogSystem = {
   },
   /** 解锁指定线索集合（未给集合时默认全 bindClue）：加入线索池并重渲染。
    *  防重：线索若已在池子中，视为已解锁，不再加回池子。
-   *  附带效果：本次新解锁的物证(isEvidence)会触发一次轻提示，让玩家意识到「这是关键物证」 */
+   *  附带效果：
+   *  - 本次新解锁的每条线索都会在右上角弹「📁 入卷」气泡（物证/自白/目击/普通/干扰 各有视觉）
+   *  - 线索池中对应的卡片会触发 fly-in 入卷动画（由 renderLevel 的 newCids 触发） */
   _unlockBoundClue(resident, cids) {
     const list = Array.isArray(cids) ? cids
       : (Array.isArray(resident.bindClue) ? resident.bindClue : (resident.bindClue ? [resident.bindClue] : []));
     if (!list.length) return;
     let changed = false;
-    const newEvidenceTags = [];
+    const newCids = []; // 本轮新加入的线索 id，用于 fly-in 动画
     list.forEach((cid) => {
       if (!cid || !App.clueMap[cid]) return;
       if (App.layout.pool.indexOf(cid) === -1) {
         App.layout.pool.push(cid);
         changed = true;
-        const c = App.clueMap[cid];
-        if (c && c.isEvidence) newEvidenceTags.push(c.evidenceOwnerTag || "物证");
+        newCids.push(cid);
       }
     });
     if (changed) {
       StorageUtil.writeLevelState(App.currentLevel, App.layout);
-      GameFlow.renderLevel(GameFlow.getLevelConfig());
+      // 把 newCids 透传给 renderLevel，让新卡片在池子里"飞入"
+      GameFlow.renderLevel(GameFlow.getLevelConfig(), { newCids: newCids });
     }
-    // 本次追问/走访解锁了关键物证 → 弹一次柔和的轻提示（保留沉浸感的同时给新人引导）
-    if (newEvidenceTags.length) {
-      this._showEvidenceToast(newEvidenceTags);
-    }
+    // 逐条弹「入卷」气泡：物证优先、其他线索次之、干扰最后
+    newCids.forEach((cid) => this._showClueIngestToast(cid));
   },
-  /** 关键物证解锁轻提示：淡入显示，停留约 2.4s 后淡出
-   *  与 BioArchive.showUnlockToast 共用 #toast-tip，复用其样式避免重复 */
+  /** 「入卷」气泡：根据线索类型选样式（evidence / statement / witness / 普通 / fake），
+   *  在右上角浮出 ~1.6s 后淡出。多个气泡垂直错开，最多同时 4 个。 */
+  _showClueIngestToast(cid) {
+    const c = App.clueMap[cid];
+    if (!c) return;
+    const cls = ClueCards.classify(c);
+    const isFake = c.type === "fake";
+    const host = document.body;
+    if (!host) return;
+    const toast = document.createElement("div");
+    let typeCls = cls.typeCls || (isFake ? "fake" : "");
+    toast.className = "clue-toast " + typeCls;
+    // 同一时刻最多 4 个气泡，第 5 个起复用第 1 个的位置（旋转队列）
+    const existing = host.querySelectorAll(".clue-toast:not(.removing)").length;
+    const stack = existing % 4;
+    // 兼容测试环境（无 setAttribute 的 plain object）
+    if (typeof toast.setAttribute === "function") {
+      toast.setAttribute("data-stack", String(stack));
+    } else {
+      toast.dataset = toast.dataset || {};
+      toast.dataset.stack = String(stack);
+    }
+    const title = isFake
+      ? "📁 已记录 干扰线索"
+      : "📁 新线索入卷";
+    toast.innerHTML =
+      '<div class="clue-toast-title">' + title +
+      (isFake || !cls.badgeText ? "" : " · " + cls.badgeText) + '</div>' +
+      '<div class="clue-toast-text">' + ClueCards.escapeHtml(c.text) + '</div>';
+    host.appendChild(toast);
+    // 双 rAF 确保 transition 触发
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () { toast.classList.add("show"); });
+    });
+    clearTimeout(this._clueToastTimers && this._clueToastTimers[cid]);
+    this._clueToastTimers = this._clueToastTimers || {};
+    this._clueToastTimers[cid] = setTimeout(function () {
+      toast.classList.add("removing");
+      toast.classList.remove("show");
+      setTimeout(function () { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 320);
+    }, 1600);
+  },
+  /** 关键物证解锁轻提示（保留兼容：仍由其他模块触发此轻量 toast） */
   _showEvidenceToast(evidenceTags) {
     const toast = document.getElementById("toast-tip");
     if (!toast) return;
@@ -1281,8 +1791,10 @@ const DialogSystem = {
       toast.classList.remove("show");
     }, 2400);
   },
-  /** 关闭走访弹窗 */
+  /** 关闭走访弹窗：清理揭幕定时器，避免内存泄漏与状态错乱 */
   close() {
+    this._clearRevealTimer();
+    this._skipRequested = false;
     const mask = document.getElementById("bio-mask");
     if (mask) mask.classList.remove("show");
   },
@@ -1307,42 +1819,48 @@ const Modal = {
   /** 关闭弹窗 */
   close() {
     if (this.mask) this.mask.classList.remove("show");
+    // 触发 onClose 钩子（仅一次），让弹窗方知道弹窗被关闭（ESC / 遮罩 / 按钮都覆盖到）
+    if (typeof this._onClose === "function") {
+      const cb = this._onClose;
+      this._onClose = null;
+      try { cb(); } catch (e) { /* 静默 */ }
+    }
   },
   /** 提示弹窗：仅一个「知道了」按钮 */
-  alert(title, text, onOk) {
-    this._render(title, text, [], [
+  alert(title, text, onOk, onClose) {
+    this._render(title, text, "", [
       { label: "知道了", primary: true, onClick: () => { this.close(); if (onOk) onOk(); } },
-    ]);
+    ], onClose);
   },
   /** 提示弹窗（带番外分段）：extraHtml 为可选的柔和绿色番外内容 */
-  alertWithExtra(title, text, extraHtml, onOk) {
+  alertWithExtra(title, text, extraHtml, onOk, onClose) {
     this._render(title, text, extraHtml, [
       { label: "知道了", primary: true, onClick: () => { this.close(); if (onOk) onOk(); } },
-    ]);
+    ], onClose);
   },
   /** 提示弹窗（带可点击额外按钮）：extraHtml 内按钮通过 onExtra 绑定回调 */
-  alertExtra(title, text, extraHtml, onExtra, onOk) {
+  alertExtra(title, text, extraHtml, onExtra, onOk, onClose) {
     this._render(title, text, extraHtml, [
       { label: "知道了", primary: true, onClick: () => { this.close(); if (onOk) onOk(); } },
-    ]);
+    ], onClose);
     if (this.extraEl && onExtra) {
       const extraBtn = this.extraEl.querySelector("[data-extra-click]");
       if (extraBtn) extraBtn.addEventListener("click", onExtra);
     }
   },
   /** 确认弹窗：两个按钮，回调 onOk / onCancel */
-  confirm(title, text, onOk, onCancel) {
+  confirm(title, text, onOk, onCancel, onClose) {
     this._render(title, text, "", [
       { label: "取消", primary: false, onClick: () => { this.close(); if (onCancel) onCancel(); } },
       { label: "确定", primary: true, onClick: () => { this.close(); if (onOk) onOk(); } },
-    ]);
+    ], onClose);
   },
   /** 通用弹窗：自定义按钮数组（结构 { label, primary, onClick }） */
-  show(title, text, btns) {
-    this._render(title, text, "", btns);
+  show(title, text, btns, onClose) {
+    this._render(title, text, "", btns, onClose);
   },
   /** 渲染弹窗内容并显示；extraHtml 为空时隐藏番外分段 */
-  _render(title, text, extraHtml, btns) {
+  _render(title, text, extraHtml, btns, onClose) {
     this._init();
     this.titleEl.textContent = title;
     this.textEl.textContent = text;
@@ -1363,12 +1881,14 @@ const Modal = {
       btn.addEventListener("click", b.onClick);
       this.btnsEl.appendChild(btn);
     });
+    // 注册 onClose 钩子：close() 触发时调用（兼容 ESC / 遮罩点击 / 按钮调 close 三种路径）
+    this._onClose = (typeof onClose === "function") ? onClose : null;
     this.mask.classList.add("show");
   },
 };
 
 /* ============================================================
-   模块三：线索卡片渲染（两种样式：浅米色有效 / 浅灰色干扰）
+   模块三：线索卡片渲染（4 种外观分层：口供 / 目击 / 自白 / 物证）
    ============================================================ */
 const ClueCards = {
   /** 转义 HTML 特殊字符，防止线索文本破坏结构 */
@@ -1380,28 +1900,55 @@ const ClueCards = {
       .replace(/"/g, "&quot;")
       .replace(/'/g, "&#39;");
   },
-  /** 按线索类型构建卡片元素：type === "fake" 为浅灰色干扰线索，其余为浅米色有效线索。
-   *  说话人角标：物证标「物证」，其余标所属居民名（fake / 无归属不标）。 */
+  /** 线索类型分层：根据元数据判定是「物证 / 自白 / 目击 / 普通口供」，
+   *  返回 { typeCls, badge, badgeIcon, badgeText }，供 buildCard 与 clue-toast 共用 */
+  classify(clue) {
+    if (!clue) return { typeCls: "", badge: "", badgeIcon: "", badgeText: "" };
+    if (clue.isEvidence) {
+      return { typeCls: "evidence", badge: '<span class="clue-badge">🔑 物证</span>', badgeIcon: "🔑", badgeText: "物证" };
+    }
+    if (clue.isSuspectStatement) {
+      return { typeCls: "statement", badge: '<span class="clue-badge">🗣 自白</span>', badgeIcon: "🗣", badgeText: "自白" };
+    }
+    if (clue.isWitness) {
+      return { typeCls: "witness", badge: '<span class="clue-badge">👁 目击</span>', badgeIcon: "👁", badgeText: "目击" };
+    }
+    return { typeCls: "", badge: "", badgeIcon: "📁", badgeText: "口供" };
+  },
+  /** 按线索类型构建卡片元素：type === "fake" 为浅灰色干扰线索，其余按 isEvidence/isSuspectStatement/isWitness 分层。 */
   buildCard(clue, lockedIds) {
     const isFake = clue.type === "fake";
     const locked = lockedIds && lockedIds.indexOf(clue.id) !== -1;
+    const cls = this.classify(clue);
     const el = document.createElement("div");
-    el.className = "clue-card" + (isFake ? " fake" : " valid") + (locked ? " locked" : "");
+    el.className = "clue-card" + (isFake ? " fake" : " valid") +
+      (cls.typeCls ? " " + cls.typeCls : "") +
+      (locked ? " locked" : "");
     el.dataset.clueId = clue.id;
     el.dataset.type = clue.type;
+    el.dataset.clueKind = cls.typeCls || (isFake ? "fake" : "statement");
     el.dataset.locked = locked ? "1" : "0";
     el.draggable = false; // 本游戏用手势拖拽，禁用 HTML5 原生拖拽
     let speak = "";
     if (!isFake) {
       if (clue.isEvidence) {
-        // 物证同时显示「物证」徽标 + 归属居民身份标签（evidenceOwnerTag），方便玩家在困难关快速匹配
         const ownerTag = clue.evidenceOwnerTag ? this.escapeHtml(clue.evidenceOwnerTag) : "";
-        speak = '<span class="clue-speak ev">物证</span>' +
-          (ownerTag ? '<span class="clue-speak ev-owner" data-ev-owner="' + ownerTag + '">对应：' + ownerTag + "</span>" : "");
+        const dirCls = clue.evidenceDirection === "clear" ? " ev-owner--clear" : "";
+        speak = cls.badge +
+          (ownerTag ? '<span class="clue-speak ev-owner' + dirCls + '" data-ev-owner="' + ownerTag + '">对应：' + ownerTag + "</span>" : "");
+      } else if (cls.badge) {
+        // 自白 / 目击：用统一 clue-badge 作为类型徽标
+        const owner = App.clueOwner ? App.clueOwner[clue.id] : null;
+        speak = cls.badge + (owner ? '<span class="clue-speak">' + this.escapeHtml(owner) + "</span>" : "");
       } else {
+        // 普通口供：保留原"说话人"角标
         const owner = App.clueOwner ? App.clueOwner[clue.id] : null;
         if (owner) speak = '<span class="clue-speak">' + this.escapeHtml(owner) + "</span>";
       }
+    } else {
+      // 干扰线索：不显示类型徽标，但保留说话人角标作为干扰方
+      const owner = App.clueOwner ? App.clueOwner[clue.id] : null;
+      if (owner) speak = '<span class="clue-speak">' + this.escapeHtml(owner) + "</span>";
     }
     el.innerHTML =
       speak +
@@ -1409,6 +1956,22 @@ const ClueCards = {
       '<span class="clue-type">' + (isFake ? "干扰线索" : "有效线索") +
         '<span class="clue-lock-mark">🔒 已锁定</span></span>';
     return el;
+  },
+  /** 给本轮新加入池子的线索卡片加上「入卷」动画（fly-in + 短暂高亮）。
+   *  调用方传入 newCids 数组，渲染后比对 DOM，命中即加 entering class，动画结束自动移除。
+   *  留空时直接返回，不影响正常渲染。 */
+  markEntering(poolEls, newCids) {
+    if (!newCids || !newCids.length) return;
+    const set = new Set(newCids);
+    poolEls.forEach((el) => {
+      if (set.has(el.dataset.clueId)) {
+        el.classList.add("entering");
+        el.addEventListener("animationend", function once() {
+          el.classList.remove("entering");
+          el.removeEventListener("animationend", once);
+        });
+      }
+    });
   },
 };
 
@@ -1955,32 +2518,8 @@ AvatarFactory._initIndexes();
    ============================================================ */
 const ValidateUtil = {
   /**
-   * 检测同一人物卡槽内是否存在互相矛盾的线索。
-   * 规则：两条（及以上）有效线索的 conflictGroup 相同且非空 → 判定冲突。
-   * 卡槽机制已移除，本方法退化为「读 timeline 上同 group 出现的证词对」，仅作兼容调用；
-   * 真正的时序冲突请使用 detectTimelineConflict。 */
-  detectConflict(residentId) {
-    const ids = App.layout.timeline || [];
-    const groups = {};
-    ids.forEach((id) => {
-      const c = App.clueMap[id];
-      if (!c || c.type === "fake" || !c.conflictGroup) return;
-      (groups[c.conflictGroup] = groups[c.conflictGroup] || []).push(id);
-    });
-    return Object.keys(groups).reduce((acc, g) => {
-      if (groups[g].length > 1) return acc.concat(groups[g]);
-      return acc;
-    }, []);
-  },
-  /**
-   * 检测干扰线索是否被放入了卡槽。
-   * 卡槽机制已移除，本方法恒返回空数组（无卡槽可入）。 */
-  checkFakeClueInSlot() {
-    return [];
-  },
-  /**
    * 根据当前布局刷新全部卡片的冲突标红（.conflict），并返回全部冲突 id。
-   * 卡槽已下线，统一改读时间轴上的冲突（detectTimelineConflict）。 */
+   * 统一改读时间轴上的冲突（detectTimelineConflict）。 */
   syncConflictMarks() {
     return ValidateUtil.detectTimelineConflict();
   },
@@ -2151,9 +2690,20 @@ const DragManager = {
   ghost: null,       // 跟随指针的幽灵卡片
   _onMove: null,     // document 级 pointermove 处理器引用
   _onUp: null,       // document 级 pointerup / pointercancel 处理器引用
+  /** 长按 1 秒确认状态机（仅时间轴落点需要） */
+  _confirmTimer: null,    // 1s 定时器句柄
+  _confirmed: false,      // 1s 已满，可放
+  _ringEl: null,          // 进度环 DOM（创建后挂到 ghost）
+  _hintEl: null,          // 提示文字 DOM
+  _lastOverTimeline: false, // 上一帧是否在时间轴上，用于决定启动/取消
+  /** 触屏设备标记：true 时时间轴落点改为"松手即放"（省略 1s 长按确认）。 */
+  _isTouch: false,
 
   /** 绑定全局事件（事件委托，不依赖具体关卡数据） */
   init() {
+    // 触屏设备检测：有 touch 事件 + 视口 ≤ 1024 视为移动端
+    this._isTouch = (("ontouchstart" in window) || (navigator.maxTouchPoints > 0))
+      && window.matchMedia("(max-width: 1024px)").matches;
     document.addEventListener("pointerdown", (e) => this._handlePointerDown(e));
     // 防止个别环境（图片区等）触发 HTML5 原生拖拽
     document.addEventListener("dragstart", (e) => {
@@ -2182,7 +2732,8 @@ const DragManager = {
     document.addEventListener("pointercancel", this._onUp);
   },
 
-  /** 移动中：越过阈值则进入拖拽，随后幽灵卡片跟随并高亮目标卡槽 */
+  /** 移动中：越过阈值则进入拖拽，随后幽灵卡片跟随并高亮目标卡槽。
+   *  拖到时间轴上方时启动「长按 1 秒」确认；移出时间轴则取消。 */
   _handlePointerMove(e) {
     if (!this.card) return;
     const dx = e.clientX - this.startX;
@@ -2193,7 +2744,14 @@ const DragManager = {
     }
     const rect = this.card.getBoundingClientRect();
     this._moveGhost(e.clientX - this.offsetX, e.clientY - this.offsetY, rect.width, rect.height);
-    this._highlightSlot(e);
+    const target = this._getDropTarget(e);
+    this._highlightSlot(target);
+    this._updateGhostValidity(target);
+    // 时间轴落点 → 长按 1 秒确认
+    const overTl = !!(target && target.type === "timeline");
+    if (overTl) this._startConfirm();
+    else this._cancelConfirm();
+    this._lastOverTimeline = overTl;
   },
 
   /** 正式进入拖拽：原件半透明，创建幽灵卡片 */
@@ -2221,12 +2779,17 @@ const DragManager = {
   },
 
   /** 拖拽经过的目标区域：仅时间轴（磁吸高亮）。居民卡槽机制已移除。 */
-  _highlightSlot(e) {
-    const t = this._getDropTarget(e);
+  _highlightSlot(target) {
     this._clearSlotHighlight();
-    if (!t) return;
-    if (t.type === "map") t.el.classList.add("loc-target");
-    if (t.type === "timeline") t.el.classList.add("tl-target");
+    if (!target) return;
+    if (target.type === "map") target.el.classList.add("loc-target");
+    if (target.type === "timeline") target.el.classList.add("tl-target");
+  },
+  /** 给幽灵卡片加"无效/有效"视觉态：实时反馈拖放区域是否合法。 */
+  _updateGhostValidity(target) {
+    if (!this.ghost) return;
+    const valid = !!(target && (target.type === "timeline" || target.type === "pool"));
+    this.ghost.classList.toggle("drag-invalid", !valid);
   },
 
   /**
@@ -2244,7 +2807,7 @@ const DragManager = {
     return null;
   },
 
-  /** 松手：有效目标则移动卡片，否则触发抖动并复位 */
+  /** 松手：时间轴落点需「长按 1 秒」确认；其他目标即时生效；无效区域抖动反馈。 */
   _handlePointerUp(e) {
     if (!this.card) return;
     this._removeListeners();
@@ -2259,8 +2822,15 @@ const DragManager = {
     this.moving = false;
     this.dragging = false;
     this._clearSlotHighlight();
-    if (!wasMoving) return; // 未滑动，按点击处理
+    if (!wasMoving) { this._resetConfirm(); return; } // 未滑动，按点击处理
     const target = this._getDropTarget(e);
+    // 触屏设备：时间轴落点直接放（省略 1s 长按确认，避免体感卡顿）
+    // 桌面端：时间轴落点需「长按 1 秒」确认，否则抖动反馈并复位
+    if (target && target.type === "timeline" && !this._isTouch && !this._confirmed) {
+      this._shakeFail(card);
+      this._resetConfirm();
+      return;
+    }
     if (target) {
       const wasTimeline = target.type === "timeline";
       this._moveCard(cardId, target);
@@ -2270,6 +2840,72 @@ const DragManager = {
     } else {
       this._shakeFail(card);   // 无效区域：CSS 抖动反馈，卡片原地不动
     }
+    this._resetConfirm();
+  },
+  /** 启动「长按 1 秒」确认：幂等，已在计时或已完成则直接返回。 */
+  _startConfirm() {
+    if (this._confirmed) return;
+    if (this._confirmTimer) return; // 已经在计时
+    if (!this.ghost) return; // ghost 还没创建时（移动阈值未越过）直接返回
+    // 首次进入时间轴：创建进度环 + 提示文字
+    if (!this._ringEl) {
+      this._ringEl = document.createElement("div");
+      this._ringEl.className = "confirm-ring";
+      this.ghost.appendChild(this._ringEl);
+    }
+    if (!this._hintEl) {
+      this._hintEl = document.createElement("div");
+      this._hintEl.className = "confirm-hint";
+      this._hintEl.textContent = "按住 1 秒确认落点";
+      this.ghost.appendChild(this._hintEl);
+    }
+    // 触发动画（移除后重加，确保连续进入/离开/进入能重新启动）
+    this._ringEl.classList.remove("active", "done");
+    this._hintEl.classList.remove("active", "done");
+    // 双 rAF：保证浏览器重排后再加 class，CSS 动画能从头播放
+    const ringEl = this._ringEl, hintEl = this._hintEl;
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        ringEl.classList.add("active");
+        hintEl.classList.add("active");
+      });
+    });
+    this._confirmTimer = setTimeout(function () {
+      this._confirmTimer = null;
+      this._confirmed = true;
+      if (this._ringEl) {
+        this._ringEl.classList.add("done");
+        this._ringEl.classList.remove("active");
+      }
+      if (this._hintEl) {
+        this._hintEl.classList.add("done");
+        this._hintEl.textContent = "✓ 落点已锁定 · 松手确认";
+      }
+    }.bind(this), 1000);
+  },
+  /** 取消「长按 1 秒」确认：清除计时器 + 重置视觉（用户移出时间轴或松手时调用） */
+  _cancelConfirm() {
+    if (this._confirmTimer) {
+      clearTimeout(this._confirmTimer);
+      this._confirmTimer = null;
+    }
+    // 已经完成确认的 _confirmed 态：保留 _confirmed = true，让用户松手即可生效
+    if (this._confirmed) return;
+    if (this._ringEl) this._ringEl.classList.remove("active", "done");
+    if (this._hintEl) {
+      this._hintEl.classList.remove("active", "done");
+      this._hintEl.textContent = "按住 1 秒确认落点";
+    }
+  },
+  /** 完整重置确认状态机：清空 DOM、计时器、_confirmed 标记。拖拽结束（pointerup / cancel）时调用。 */
+  _resetConfirm() {
+    if (this._confirmTimer) { clearTimeout(this._confirmTimer); this._confirmTimer = null; }
+    this._confirmed = false;
+    this._lastOverTimeline = false;
+    if (this._ringEl && this._ringEl.parentNode) this._ringEl.parentNode.removeChild(this._ringEl);
+    if (this._hintEl && this._hintEl.parentNode) this._hintEl.parentNode.removeChild(this._hintEl);
+    this._ringEl = null;
+    this._hintEl = null;
   },
 
   /** 更新布局状态：把线索 id 放入目标（线索池 / 地图地点 / 时间轴）。居民卡槽落点已移除。 */
@@ -2354,6 +2990,16 @@ const Bgm = {
     this.gameplay = new Audio("audio/gameplay.mp3");
     this.gameplay.loop = true;
     this.gameplay.preload = "auto";
+    // 从 localStorage 恢复静音状态
+    try {
+      const saved = localStorage.getItem("townMystery_bgmMuted");
+      this.muted = saved === "1";
+    } catch (e) { /* localStorage 不可用时静默忽略 */ }
+    this._applyMute();
+    // 资源加载/解码失败时给出控制台提示（部署到无音频资源的子路径时便于排查）
+    const warnOnErr = (label) => (e) => console.warn(`[Bgm] ${label} 音频加载失败：`, e && e.message || e);
+    this.menu.addEventListener("error", warnOnErr("menu.mp3"));
+    this.gameplay.addEventListener("error", warnOnErr("gameplay.mp3"));
     // 任何位置的首次点击都作为启动信号（只触发一次）
     document.addEventListener("click", () => Bgm.unlock(), { once: true });
   },
@@ -2362,8 +3008,9 @@ const Bgm = {
   unlock() {
     if (this.started) return;
     this.started = true;
+    if (this.muted) return; // 静音状态不启动
     const target = this.current || this.menu;
-    target.play().catch(() => {});
+    target.play().catch((e) => console.warn("[Bgm] 解锁播放失败（用户尚未交互或被浏览器拦截）：", e && e.message || e));
   },
 
   /** 按页面切换曲目：menu/archive 播 menu.mp3，其余播 gameplay.mp3 */
@@ -2373,7 +3020,35 @@ const Bgm = {
     if (this.current === target) return; // 同一曲目内跳转保持连贯，不重播
     if (this.current) this.current.pause();
     this.current = target;
-    if (this.started) target.play().catch(() => {});
+    if (this.started && !this.muted) target.play().catch((e) => console.warn("[Bgm] 切换曲目播放失败：", e && e.message || e));
+  },
+  /** 切换静音状态：暂停/恢复当前曲目 + 持久化 + 触发 UI 刷新 */
+  toggleMute() {
+    this.muted = !this.muted;
+    try { localStorage.setItem("townMystery_bgmMuted", this.muted ? "1" : "0"); } catch (e) { /* ignore */ }
+    this._applyMute();
+    this._refreshMuteButton();
+  },
+  /** 把 muted 状态同步到两路 Audio 对象 */
+  _applyMute() {
+    if (this.menu) this.menu.muted = this.muted;
+    if (this.gameplay) this.gameplay.muted = this.muted;
+    if (this.muted && this.current && !this.current.paused) this.current.pause();
+    if (!this.muted && this.started && this.current && this.current.paused) {
+      this.current.play().catch((e) => { /* 静默 */ });
+    }
+  },
+  /** 刷新顶栏静音按钮的图标 */
+  _refreshMuteButton() {
+    const btn = document.getElementById("btn-mute");
+    if (!btn) return;
+    btn.textContent = this.muted ? "🔇" : "🔊";
+    btn.title = this.muted ? "点击开启背景音乐" : "点击静音";
+    if (typeof btn.setAttribute === "function") {
+      btn.setAttribute("aria-pressed", this.muted ? "true" : "false");
+    } else {
+      btn["aria-pressed"] = this.muted ? "true" : "false";
+    }
   },
 };
 
@@ -2417,6 +3092,20 @@ const Menu = {
       grid.appendChild(card);
     }
   },
+  /** 根据玩家进度刷新主菜单"开始游戏"按钮文案：
+   *  - 首次玩（unlocked=1 且未通关过任何一关）→"开 始 游 戏"
+   *  - 老玩家（已通关 ≥1 关）→"继 续 推 理" + 副文案显示当前关 */
+  refreshStartButton() {
+    const btn = document.getElementById("btn-start");
+    if (!btn) return;
+    const progress = StorageUtil.readProgress();
+    const clearedAny = progress.unlocked > 1 || StorageUtil.readBioRecord().length > 0;
+    if (clearedAny) {
+      btn.textContent = "继 续 推 理（当前第 " + progress.unlocked + " 关）";
+    } else {
+      btn.textContent = "开 始 游 戏";
+    }
+  },
 };
 
 /* ============================================================
@@ -2453,28 +3142,24 @@ const LevelData = [
         id: "r1", name: "王婶", tagShort: "菜市场摊主", bindClue: ["c1", "c2", "c9"],
         avatar: { hair: "#5a5040", hairStyle: "bun", hat: "straw", skin: "#e8b58a" },
         bio: "王婶在镇东菜市场卖菜二十多年，天不亮出摊，收摊总比谁都晚。年轻时她随丈夫从乡下搬来小镇，丈夫走得早，她一个人把女儿拉扯大。她记性极好，谁家爱吃什么菜都记得，摊位上总放着几把送老街坊的葱，从不收钱。每天清早，扫街的赵大爷会绕到摊前歇脚；退休教师老张隔三差五帮她修门轴，她则回赠一把自家种的葱。她手上那只磨旧的帆布菜篮跟了她大半辈子，谁要碰，她都要先叮咛一句「轻些」。",
-            talk: "那篮鸡蛋我天不亮头一批挑的，搁门口几分钟就没了影，你说气人不气人。",
         secret: "那只磨旧的帆布菜篮，是女儿上小学时攒了半年零花钱偷偷给她买的。篮底补了又补，她从不舍得换新的。女儿三年前去了省城，回过家的次数一只手数得过来，王婶嘴上从不说想，只是每天收摊后把照片一张张存进旧手机，再拎着那只菜篮，把一天里最软的话都说给它听。那天菜篮不见了，她急的不是那一篮鸡蛋——是怕女儿买的那点念想，也弄丢了。"
       },
       {
         id: "r2", name: "小李", tagShort: "晨跑上班族", bindClue: ["c3", "c8"],
         avatar: { hair: "#1a1a1a", hairStyle: "short", cloth: "#3b7ec4", cloth2: "#ffffff", hat: "headband", skin: "#f4d4b0" },
         bio: "小李是镇上银行的职员，搬来小镇两年。他每天天刚亮就沿着镇口河堤跑步，风雨无阻，跑完再顺路喝碗豆浆，晨扫的赵大爷在街口碰上他，总会点头打个招呼。同事都说他自律得不像这个年纪的人，他却只笑笑。",
-        talk: "我没碰过那菜篮——早上有人弯腰抱走的，我瞅着背影眼熟。今早照旧跑河堤，雾还没散呢。",
         secret: "他晨跑时会故意绕远，经过镇口那家花店，只为多看一眼门口那个系围裙的姑娘。这件事他谁都没告诉，连路线都是算好角度才绕的。只是他始终不知道，那姑娘每天清晨也总在店门口多站一会儿，像是在等一阵从河堤那边跑来的风。"
       },
       {
         id: "r3", name: "老张", tagShort: "退休老教师", bindClue: ["c6", "c7", "c10", "c16"],
         avatar: { hair: "#cccccc", hairStyle: "bald", hat: "glasses", skin: "#eac098", cloth: "#3a4a66", cloth2: "#ffffff" },
         bio: "老张在镇小学教了一辈子语文，退休后闲不住，每天清晨遛鸟、买菜，顺带帮街坊刷墙、修栅栏、换个灯泡，王婶家那扇老木门的门轴，也是他修的。他说话慢条斯理，做事总是先动手后解释，衣兜里常年揣着一条擦汗的褪色旧毛巾，街坊说他是个闷葫芦，心肠却是好的。",
-        talk: "我那早在家收拾屋子，门都没出。王婶家的门轴我帮修了几年，何必动她那只菜篮。",
         secret: "老张年轻时在乡下教书，有一回村里起火，他腿有旧伤没能跟人一起抬水，只能眼睁睁看着火扑灭。这事他记了很多年，此后谁家有事他总抢着搭把手，像是要把当年那一步补回来。那天清晨他看见王婶门口那只菜篮淋着雨，想着她收摊回来准要糟蹋，便顺手拎到垃圾站墙角先护着，打算回来再送还——谁知转头就被垃圾车收走了。他怕被当成贪小便宜，又怕说不清，便编了两套不在场的谎话，又在阳台伪装成目击者反咬小李，企图把水搅浑——可他自己的两段「位置」本来就在打架，再加上一条「目击」破绽只会更大。"
       },
       {
         id: "r4", name: "赵大爷", tagShort: "晨扫环卫工", bindClue: ["c5", "c12"],
         avatar: { hair: "#dddddd", hairStyle: "short", hat: "cap", skin: "#d4a078", cloth: "#8a7040", cloth2: "#e8dcc0" },
         bio: "赵大爷在镇环卫所干了十八年，负责清晨路段清扫。他话不多，一杆大扫帚扫得又稳又匀，垃圾站哪个箱子该归哪类他闭着眼都知道。清早扫到王婶的菜摊前，他总要歇脚说两句话。遇上谁家小孩淘气，他也只是笑着摇摇头，从不跟人红脸。",
-        talk: "我扫街十八年，垃圾站哪只桶归哪类、哪袋是几点丢的，我心里都有本账。菜篮真要被人当垃圾收了，头一个瞒不过的就是我。",
         secret: "赵大爷年轻时唱过几年戏班，走南闯北，见过的人多，眼睛也毒——谁走路的架势、穿的旧衫，他扫街时扫一眼就能记住。他这辈子最得意的事，不是扫了多少年街，而是当年跑码头时，帮一个走散的孩子找到了爹娘。他说话慢，可记人记事的本事，街坊们谁也糊弄不过他。"
       }
     ],
@@ -2528,28 +3213,24 @@ const LevelData = [
         id: "r1", name: "赵奶奶", tagShort: "养花爱好者", bindClue: ["c1", "c8"],
         avatar: { hair: "#c8a47a", hairStyle: "bun", hat: "ribbon", skin: "#fde0c4" },
         bio: "赵奶奶独居一楼，门前屋后都是她侍弄的花草，社区绿化带她也常去浇水。老伴走后，她把心思都花在照看花草和给邻居送自家腌的咸菜上，小胖总来帮她提浇花的水桶——毛手毛脚，没少被她数落；便利店夜班的阿明下夜班路过，也常帮她把吹倒的花盆扶正。日子过得安静又热闹。",
-        talk: "那些花我养了大半年，一天三遍水。我一早在阳台晾衣裳呢——花坛那边半只眼都盯着，谁糟蹋花我心里有数。",
         secret: "赵奶奶的儿子常年跑船，一年见不了几次面。老伴走后，她最怕的是空屋子里静下来——钟摆每走一格都听得见。所以她给花一天浇三遍水，给邻居送自己腌的咸菜，连小胖毛手毛脚来帮倒忙，她也乐意数落两句——人气儿一多，屋里就不静了。她那天清晨在阳台上晾衣服，余光瞄见楼下有道人影在花坛里钻——她没敢出声喊，只在心里默默念叨：'莫要糟蹋我的花。'"
       },
       {
         id: "r2", name: "小胖", tagShort: "社区小学生", bindClue: ["c3", "c4"],
         avatar: { hair: "#1a1a1a", hairStyle: "short", hat: "ribbon", skin: "#f4d4b0", cloth: "#205081" },
         bio: "小胖是小区里出了名的皮猴子，上六年级，圆滚滚的身板跑起来却快得像阵风。每天放学，他和小伙伴们在小区空地上追跑打闹，永远是第一个摔跤、也第一个爬起来接着玩的那一个。他常帮赵奶奶提浇花的水桶，还总毛手毛脚打翻，被数落了一回又一回，改了没两天又皮起来。三年级那年校际追球赛他拿了亚军，那颗橡皮球宝贝至今，打闹时总揣在兜里。",
-        talk: "我才没去过花坛！那天早上我在家吃早饭，一步没出门。后来我是下楼追球去了——那是玩球，跟花坛可没关系，你们别乱赖我。",
         secret: "小胖其实很羡慕楼上那位会弹钢琴的姐姐。他捡了个坏电子琴，偷偷攒零花钱找人修，想学会一首《生日快乐》，给常年加班、早出晚归的爸爸一个惊喜。那天他在花坛边追球，球弹到花坛里，他犹豫了一秒还是追了进去——等他脚下一软，才后知后觉：'糟了'。他怕被赵奶奶骂，回家跟自己说了一晚上的'我没去过'，又因为太想推卸，把话头甩给了楼下的小乐。"
       },
       {
         id: "r3", name: "阿明", tagShort: "便利店店员", bindClue: ["c2"],
         avatar: { hair: "#2a1d12", hairStyle: "short", hat: "headband", skin: "#d4a078", cloth: "#4a6c8a", cloth2: "#f3e7c1" },
         bio: "阿明在小区门口的便利店上夜班，白天睡觉，傍晚才露面。他话不多，却很细心，常帮腿脚不便的邻居把重物搬上楼，也从不催人赶着买单。每天下夜班路过花坛，他都会顺手把赵奶奶被风吹倒的花盆扶正，久了两人也熟络起来。",
-        talk: "我八点下夜班路过花坛，在外侧蹲下系鞋带——鞋底干干净净，没往里踩。赵奶奶那些花，我一直小心着。",
         secret: "阿明每天下夜班后，都会去花坛旁的长椅上坐一会儿。那是爷爷生前接他放学时常坐的老位置，爷爷走了五年，他始终没跟人提起过这个习惯。他嘴上说「只是顺路歇歇脚」，可谁要是踩坏了那几株花，他比谁都心疼——那花坛边上，有爷爷的影子。"
       },
       {
         id: "r4", name: "小乐", tagShort: "小学五年级", bindClue: ["c7"],
         avatar: { hair: "#1a1a1a", hairStyle: "short", hat: null, skin: "#fde0c4" },
         bio: "小乐是小区里另一个爱跑爱闹的男孩，和小胖同年级不同班，凑在一块儿就能把空心操场闹翻天。他放学后喜欢在楼栋间拍皮球、踢毽子，踢到哪家算哪家，邻里又爱又嫌。",
-        talk: "我那天一直在西边空地拍球，离花坛八丈远！那天我穿的是件红卫衣，邻居都见过的——真不是我，你…你要信我啊。",
         secret: "小乐其实特别怕赵奶奶——上次他把赵奶奶的葱拔了一根去喂蚂蚁，被赵奶奶念叨了整整一个礼拜。从那以后他见着赵奶奶都绕着走，更不敢靠近花坛一步。他那天真就只在楼栋西边的空地上拍球，离花坛八丈远——可他没想到，这事最终被人甩到他头上。"
       }
     ],
@@ -2600,28 +3281,24 @@ const LevelData = [
         id: "r1", name: "刘姐", tagShort: "热心肠主妇", bindClue: ["c1", "c7"],
         avatar: { hair: "#4a2e1a", hairStyle: "bun", hat: "ribbon", skin: "#f4d4b0" },
         bio: "刘姐是全职主妇，操持一家三口的伙食，做饭总爱多做一些，端给独居的老人和加班晚归的邻居。她养过三只猫，最懂猫的脾气，小区里的猫一有事，第一个急的就是她。她围裙口袋里，总装着几根留着喂流浪猫的猫条，小区东头喂猫的高中女生小蕊常来跟她讨，做程序员的小伙子阿伟作息乱，也总被她端着热饭骂着吃下去。",
-        talk: "我养过三只猫，最懂猫脾气。中午洗菜那会儿，瞧见团子往东边巷子跑了——我喊了两声，没追上。这一下午，心里都没放下过。",
         secret: "刘姐年轻时在乡下弄丢过一只养了多年的老猫，找了三天没找着，第四天它竟自己找回了家。这事过去快二十年，可她每次看见走失的猫，还是会放下锅铲去找。那天中午她在院子里洗菜，瞧见橘猫从东边巷子窜进阿伟车底下——她没多想，叫了一声'团子'，猫没应。"
       },
       {
         id: "r2", name: "阿伟", tagShort: "程序员铲屎官", bindClue: ["c3", "c4"],
         avatar: { hair: "#1a1a1a", hairStyle: "curly", hat: "glasses", skin: "#f4d4b0" },
         bio: "阿伟是镇上软件公司的程序员，作息混乱是常态，唯独对猫格外上心。他的工位上贴满了流浪猫的照片，办公桌底下还常年藏着几只从快递箱裁出来的「猫窝」，谁问起他都说是顺手玩的。小区东头的高中女生小蕊常喂的那只橘猫，他其实摸过好几回，只是嘴上从不认。",
-        talk: "我最怕被人当成偷猫的——工位那排猫照片谁都说我像猫奴，可我真就只是看看。那天我人在工位，下午就回趟家拿 U 盘。",
         secret: "阿伟的房间其实偷偷养了四只捡来的猫，纸箱窝就藏在床底下。他怕房东发现，从没跟任何人提过，连同事都想不通他为什么每天下班都急着往家赶。那天中午他从工位偷跑回家拿 U 盘，一开车库门就看见团子钻进了车底——他犹豫了几秒，到底还是抱进了屋。他怕同事知道他偷养猫，又怕这件事被邻居发现，于是先跟同事说「下午在工位」，回到家又想把锅甩给小蕊。"
       },
       {
         id: "r3", name: "小蕊", tagShort: "高中女生", bindClue: ["c2", "c8"],
         avatar: { hair: "#2a1d12", hairStyle: "long", hat: "ribbon", skin: "#fde0c4" },
         bio: "小蕊住在小区东头，爸妈在县城上班，她平时跟奶奶一起住。每天放学路过花坛，她都会拿家里多余的火腿肠喂小区里那帮流浪猫，那只橘猫就是她一点点喂熟的。她跟热心肠的刘姐相熟，隔三差五讨两包猫条，攒着喂猫。",
-        talk: "我天天喂它，火腿肠都是省下的零嘴。下午路过阿伟楼下，好像听见他阳台里有猫叫——我不敢确定，也不敢喊。",
         secret: "小蕊的日记本里夹着一张橘猫的照片，她偷偷给它取名叫「团子」。她一直想说服奶奶同意养猫，话还没来得及开口，团子就不见了——这几天她比谁都难过。她下午其实路过了阿伟家楼下，看见阿伟家阳台多了一团橘色——但她不确定那是不是团子，没敢声张。"
       },
       {
         id: "r4", name: "陈伯", tagShort: "退休花匠", bindClue: ["c5"],
         avatar: { hair: "#cccccc", hairStyle: "bald", hat: "straw", skin: "#e8b58a" },
         bio: "陈伯是镇里出了名的花匠，退休后被阿伟所在的公司聘为绿化顾问，每周去公司剪一次枝。他沉默寡言，剪起枝来一刀一个准。",
-        talk: "我去阿伟公司剪枝，瞥见他车库边蹲着只橘猫。养花几十年，猫见过不少——猫有猫的去处，我只看，不多嘴。",
         secret: "陈伯下午去阿伟公司剪枝，瞥见阿伟的车库里蹲着只橘猫——他没多话，只当没看见，转身继续剪枝。他这辈子最爱说的一句是'各有各的缘法'。"
       }
     ],
@@ -2672,35 +3349,30 @@ const LevelData = [
         id: "r1", name: "陈伯", tagShort: "养花退休工人", bindClue: ["c1", "c8"],
         avatar: { hair: "#cccccc", hairStyle: "bald", hat: "straw", skin: "#e8b58a" },
         bio: "陈伯是纺织厂退休工人，膝盖不好，极少下楼，最大的乐趣就是照看楼道里那几盆花。那些花是老伴在世时留下的，老伴走后，他浇得比谁都勤。隔三差五，他的老伙计老周会拎着新打的小板凳上来，两人坐在花盆边，一坐就是一下午。楼下的阿芳隔三差五往楼道花瓶里插野花，他见了，笑呵呵地夸上两句。",
-        talk: "那些花是老伴留下的，我一盆盆照看比照看自己还上心。傍晚听见楼道「哐啷」一响——等挪到门口，就剩一地碎瓷片了。",
         secret: "陈伯的耳朵其实不太好了，那天「听见」花盆摔碎，更多是靠着多年的习惯判断的。他怕儿女操心，一直瞒着全家，连助听器都没敢去配。他嘴上总说「老了耳朵背点正常」，心里却清楚自己不肯认老——就像花盆碎了，他总想着还能补，补不好也舍不得扔。"
       },
       {
         id: "r2", name: "阿杰", tagShort: "快递站小哥", bindClue: ["c3", "c4"],
         avatar: { hair: "#1a1a1a", hairStyle: "short", hat: "cap", skin: "#d4a078" },
         bio: "阿杰是快递站的送货员，一天要派几百件包裹，风里来雨里去。他干活麻利、嗓门大、笑点低，是整个小区最眼熟的年轻人。他那只工具腰包里，常年垫着脚放着一瓶跌打油，谁也没见他拿出来用过。",
-        talk: "我五点就在驿站分拣，几百件忙得脚不沾地。花盆？听说是老李搬箱子碰的——纸箱堆满楼道。我糙归糙，可不敢碰别人东西。",
         secret: "那瓶跌打油是给奶奶备的——奶奶腰不好，他每天收工回家都要帮奶奶揉腰。他总在同事面前嘻嘻哈哈，从不提这些，可谁家老人腿脚不便的件，他送时总会多上心码整齐。他嗓门大，心却细得很——可他那天推着满车的纸箱拐过三楼，没看清花盆就撞了上去。他怕赔钱，更怕被客户投诉，于是回家先跟同事说「我没上楼」，又想把锅甩给楼上搬家的老李。"
       },
       {
         id: "r3", name: "小敏", tagShort: "写字楼文员", bindClue: ["c2"],
         avatar: { hair: "#4a2e1a", hairStyle: "long", hat: null, skin: "#fde0c4" },
         bio: "小敏在县城写字楼做文员，早出晚归，是小区里最普通的通勤族。她记性很好，上班路上总顺手帮楼里的阿婆带份早点，也总能在阿芳新插的那枝野花前多停一步看看。",
-        talk: "我五点四十五出门上班，经过三楼听见「哐啷」一响——花盆倒在地上，有人蹲在边上收拾。我赶打卡没多停，可那一幕记到了现在。",
         secret: "小敏最近在偷偷备考中级会计师，每天下班后都在房间里学到深夜，书都包了书皮藏起来，怕考不好丢人。她记性向来好——那天她五点四十五出门，路过三楼楼道时，亲眼看见阿杰拎着一只比平日快递大得多的箱子撞上花盆，碎瓷片撒了一地。她没敢吱声，怕得罪了这位爱串门的快递小哥。"
       },
       {
         id: "r4", name: "阿芳", tagShort: "花艺工作室主理人", bindClue: ["c7"],
         avatar: { hair: "#6a4423", hairStyle: "long", hat: "ribbon", skin: "#f4d4b0" },
         bio: "阿芳在镇上开了一家小花艺工作室，哪里有花，她总是第一个知道。她每天都会往楼道的花瓶里插上新剪的野花，是小区里出了名的「一抹香」，连最不起眼的角落，都被她摆上一小枝。她也常帮陈伯把楼道花盆挪到晒得着太阳的地方，几个爱花的人就这样熟了。",
-        talk: "那盆花养了好些年，我隔三差五换水掰黄叶。傍晚下楼取快递见它碎了满地，心里真不是滋味——多看了两眼，可惜没见它最好的样子。",
         secret: "阿芳年轻时在省城的花店打过工，店主是个她暗暗仰慕的插花师傅。那人后来远走他乡，阿芳却把插花这门手艺留在了小镇，一晃就是十年。她插花从不挑名贵，专挑路边没人看的花——她说，越不起眼的花，越该有人记得。她那天傍晚下楼取快递，亲眼看见阿杰蹲在碎瓷片前收拾，听到有脚步声才装作没事走开。"
       },
       {
         id: "r5", name: "老李", tagShort: "楼上租户",
         avatar: { hair: "#1a1a1a", hairStyle: "short", hat: null, skin: "#f4d4b0", cloth: "#5a5a5a" },
         bio: "老李是四楼新搬来的租户，白天在小区门卫室当班。搬家那天把整条楼道都堆满了纸箱，邻居们嘴上不说什么，心里都有些嫌。他不爱说话，能用点头解决的绝不开口。",
-        talk: "我早就搬完了，纸箱两周前清干净。花盆摔那会儿我不在家，更没下楼搬箱子——这话我说了又说，可没人肯听。",
         secret: "老李其实早就搬完了家，他搬走那天都过去两周了，门口的纸箱也早就清干净了——他压根没在花盆摔碎那段时间出现过。可不知道为什么，「箱子」「老李」「撞花盆」这几个词在邻居中间传得绘声绘色，他懒得解释。"
       }
     ],
@@ -2751,28 +3423,24 @@ const LevelData = [
         id: "r1", name: "店老板", tagShort: "驿站老板", bindClue: ["c1", "c7"],
         avatar: { hair: "#2a1d12", hairStyle: "short", hat: null, skin: "#d4a078" },
         bio: "店老板年轻时在镇码头扛过包，攒了一笔钱回来开了这家快递驿站，一开就是十二年。他记性像闹钟一样准，哪家件多件少、哪个老人腿脚慢，他心里都有一本账。退休木匠老周隔三差五来店里歇脚，两口子沏壶茶，能下一下午的棋。",
-        talk: "我这驿站开了十二年，哪件货几点来几点走都有账。那件快递下午四点还在架上，傍晚就不见了——回头还闻到门口一股木屑味儿。",
         secret: "那片码头去年拆迁了。店老板把当年领工的合照一直揣在钱包里，谁也不知道，为什么有码头来的快递时，他总会多看上两眼——他其实是在等，等一个早年一起扛包、后来断了音讯的老伙计的回信。他那天傍晚进库房数件，闻到一阵木屑味儿从门缝飘出来——他心里咯噔了一下，没吱声。"
       },
       {
         id: "r2", name: "阿强", tagShort: "货运司机", bindClue: ["c2", "c8"],
         avatar: { hair: "#1a1a1a", hairStyle: "short", hat: "cap", skin: "#c08862" },
         bio: "阿强是镇上的货运司机，常年跑短途，为人实在，话不多。他取快递向来分得清清楚楚，自己的码放整齐，别人的绝不乱碰。他和驿站老板是老熟人，卸货搭手的事没少做。",
-        talk: "傍晚六点我按手印，拿的是自己名下的件。手指头沾机油洗都洗不掉那股味——别人的东西我不碰，这是我的规矩。",
         secret: "阿强年轻时干活毛躁，被师傅说过一句「笨手笨脚，一辈子干不了细活」。这些年他干货运，分拣、码件、对单号，规矩得不能再规矩——「别人的东西我不碰」不只是规矩，是他拿命挣回的自尊。他手上总沾着机油味，那是他的骄傲。他那天傍晚的确按了手印拿了自己的件，但手印一压完就洗了手。"
       },
       {
         id: "r3", name: "小红", tagShort: "在校大学生", bindClue: ["c4"],
         avatar: { hair: "#4a2e1a", hairStyle: "long", hat: "ribbon", skin: "#fde0c4" },
         bio: "小红是镇上少数考去省城上大学的姑娘，放假回镇上，常帮驿站店老板照看店面。她眼睛尖、爱管「闲事」，小区里谁家出了岔子，她常常是第一个留意的。",
-        talk: "我蹲在驿站门口取件，眼睛闲不住——看见个戴鸭舌帽的老头把别人箱子往布袋里塞，步子急得很。那人我眼熟，就是想不起名字。",
         secret: "小红偷偷攒钱报了一个摄影夏令营，谁也没告诉。她拍的第一组照片入选了社团巡展，那张入围通知被她藏在日记本里，怕爸妈说她「不务正业」。她总说自己「爱管闲事」，其实她拍照，是想把小镇每个常被忽略的角落，都好好记下来——她怕出去久了，这些地方会慢慢忘了。那天她蹲在驿站门口取自己的件，亲眼瞧见一个戴鸭舌帽的老头把别人的件塞进了布袋。"
       },
       {
         id: "r4", name: "老周", tagShort: "退休老木匠", bindClue: ["c5", "c9"],
         avatar: { hair: "#cccccc", hairStyle: "bald", hat: "glasses", skin: "#eac098" },
         bio: "老周是镇上有名的老木匠，退休后收了两个徒弟，家里的花架、邻居的小板凳，多半出自他的手。他性子慢，做事讲究，最看不得东西乱放。隔三差五，他会拎着新打的小板凳上陈伯家坐坐，两位老伙计一说就是一下午；路过驿站，也常进去找店老板沏壶茶、下一盘棋。",
-        talk: "我一下午都在木工房赶花架，榫凿到一半了，哪来工夫出门。做人要讲究，一辈子没拿过别人一根线——你们查吧，我老周行得正。",
         secret: "老周的儿子在外地打工，三年春节没回家。他嘴上说着「男人就该闯事业」，夜里却把儿子小时候坐过的小板凳从仓库搬到了床头。那天傍晚他本想给儿子寄一盒手作木器，心想着事情多走得急，错把驿站门口一只陌生人的快递盒也一起塞进布袋——等他发现时，已经迟了。他这一辈子做事讲究「不差一厘」，偏偏败在一时走神上。他最怕的是被人说「老糊涂」，于是守口如瓶，还把锅甩给了阿强。"
       }
     ],
@@ -2792,7 +3460,7 @@ const LevelData = [
       { id: "c13", text: "驿站门口那盏监控探头 17:40 那段拍到：老周那件灰布袋挡住了他的胸口以上，帽子的轮廓被布袋遮住了一大半——能看到的帽檐下似乎有几根白发，但也有可能是布袋口漏出来的几缕毛线。", type: "valid", timeMin: 1060, timeText: "17:40 物证", isEvidence: true, evidenceOwnerTag: "退休老木匠" }
     ],
     conflictPairs: [],
-    solution: { r1: ["c1", "c4", "c7"], r2: ["c2", "c8"], r3: ["c3", "c10"], r4: ["c5", "c6", "c9"] },
+    solution: { r1: ["c1", "c4", "c7"], r2: ["c2", "c8"], r3: ["c3", "c10"], r4: ["c5", "c6", "c9", "c13"] },
     hints: [
       "凶手说「一直在木工房」，可驿站门口却掉了木屑和半颗灰旧棉袄的纽扣——木屑味只有去过现场的人才沾。",
       "小红看见的「鸭舌帽+白头发+步子快」的老头，和老周平日出门的样子有什么差别？",
@@ -2825,28 +3493,24 @@ const LevelData = [
         id: "r1", name: "吴先生", tagShort: "上夜班的会计", bindClue: ["c1", "c7"],
         avatar: { hair: "#1a1a1a", hairStyle: "short", hat: "glasses", skin: "#f4d4b0" },
         bio: "吴先生是镇粮站的会计，常年上夜班，作息和旁人错开，早上交班回来正好碰上初二生小宇出门上学，两人在楼道点头算打过招呼。他耳朵很灵，楼道里的一点动静都听得真切，邻里说他是「半只耳朵都在值班」。",
-        talk: "我上夜班，耳朵常年半睁着。那晚听见楼上「哐」一声，像大件东西落了地——我犹豫了一阵，没开门去看。夜里最不爱挪窝。",
         secret: "吴先生怕黑。他房间里永远留一盏小夜灯，起夜从来不敢关——这件事只有他母亲知道，而母亲已经过世三年，他再没对谁提起过。他耳朵灵，邻里说他是「半只耳朵都在值班」，可那天深夜他听见走廊的动静，犹豫了很久到底没开门——他怕黑，也怕管了不该管的事。第二天早晨他出门，看见摆件底座下那根粉色纤维才明白过来。"
       },
       {
         id: "r2", name: "林姐", tagShort: "社区护士", bindClue: ["c3", "c4", "c16"],
         avatar: { hair: "#2a1d12", hairStyle: "bun", hat: "nurse", skin: "#fde0c4" },
         bio: "林姐是镇卫生院的护士，值完班回到家常常已是深夜。她性子稳，遇事不慌，走廊上那尊摆件是大家给退休老院长凑钱买的，她一直当宝贝那样护着。楼里赵姨家那只白猫雪球打疫苗、看病，都是来找她。",
-        talk: "我值完夜班回家，累得眼皮打架，一上床就睡着了，后半夜的事一点不知道。赵姨家那只白猫，夜里出了名地爱闹——不如先问问雪球。",
         secret: "林姐有值完夜班回家，先在楼下那盏路灯下站一会儿，把白天的委屈都消化掉再上楼的习惯。那晚她上楼时，衣袖一甩挂到了摆件，整个底座哐啷摔到了地上。她一整晚都在自责，却不敢把责任讲出来——她怕自己「稳」了大半辈子的人设，在旁人眼里塌了。她治病救人十几年，最不会的，居然是承认自己的一次失手。她先说「一上床就睡着了」，又想把锅甩给赵姨的猫，最后干脆伪装成目击者，反咬在卧室一觉睡到天亮的小宇「深夜蹲在摆件旁鬼鬼祟祟」——可她连小宇几点睡、人在哪儿都说不清。"
       },
       {
         id: "r3", name: "小宇", tagShort: "初中生", bindClue: ["c2"],
         avatar: { hair: "#1a1a1a", hairStyle: "short", hat: null, skin: "#f4d4b0" },
         bio: "小宇是镇上中学的初二学生，住校生的作息雷打不动，晚上九点半准时上床。他睡觉沉，打雷都吵不醒，第二天听邻居说起走廊的事，才知道夜里还有这么一出。早上出门总碰上夜班回来的吴先生，两人点头就算打了招呼。",
-        talk: "我九点半就上床了，一觉睡到天亮，打雷都吵不醒我。第二天听人说起走廊的事，我还以为是做梦呢。",
         secret: "小宇的闹钟定在五点五十，比闹铃早响十分钟——那是他背着爸妈留给自己的晨读时间，他想考上市里的重点高中。他总说「考上才是正经」，可班里那个成绩倒数的同桌，他其实偷偷给人家讲了一学期的题，从没让老师知道。他闷头沉默，心却热。"
       },
       {
         id: "r4", name: "赵姨", tagShort: "养猫的邻居", bindClue: ["c6"],
         avatar: { hair: "#6a4423", hairStyle: "bun", hat: "ribbon", skin: "#f4d4b0", cloth: "#a45e7a", cloth2: "#f3e7c1" },
         bio: "赵姨退休后独居，身边作伴的是一只养了七年的白猫「雪球」。她对猫的作息如数家珍，也最容易被夜里猫叫惊得睡不安稳。雪球打疫苗、看病都找楼里的护士林姐，一来二去，两家也走动起来。",
-        talk: "雪球整晚跟我睡，九点喂过就再没叫过，更没出过门。猫比人省心——要有人把什么事赖它头上，我第一个不答应。",
         secret: "雪球是女儿离家前捡回来的。女儿去外地工作后，赵姨把对女儿的牵挂都移到了猫身上：猫打个喷嚏她都要紧张半天，嘴上却说「猫比人省心」。她那天晚上九点喂过雪球后就睡了，一整夜猫没叫过——第二天听林姐说「是雪球撞的」，她气得直笑。"
       }
     ],
@@ -2859,7 +3523,7 @@ const LevelData = [
       { id: "c6", text: "赵姨：雪球整晚跟我睡在卧室，九点喂过之后就没再叫过，更没出门。", type: "valid", timeMin: 0, timeText: "21:00~次日", isWitness: true, exclude: "r4" },
       { id: "c7", text: "吴先生：早晨六点我出门时看见摆件旁的应急灯还亮着——夜里我听见声响后，灯大概亮了一会儿。", type: "valid", timeMin: 360, timeText: "6:00", isWitness: true, involve: ["r2"], conflictGroup: "G-lie-2", conflictType: "lie" },
       { id: "c8", text: "走廊监控（楼道公共摄像头）拍到一个粉色衣袖的人影在 0:28 进了走廊，0:32 出。", type: "valid", timeMin: 30, timeText: "0:28~0:32", isEvidence: true, evidenceOwnerTag: "社区护士" },
-      { id: "c9", text: "监控里那团白色的小动物是隔壁楼的流浪猫——雪球那天晚上戴的项圈是红色，两只猫项圈颜色不一样。", type: "valid", isEvidence: true, evidenceOwnerTag: "养猫的邻居" },
+      { id: "c9", text: "监控里那团白色的小动物是隔壁楼的流浪猫——雪球那天晚上戴的项圈是红色，两只猫项圈颜色不一样。", type: "valid", isEvidence: true, evidenceOwnerTag: "养猫的邻居", evidenceDirection: "clear" },
       { id: "c10", text: "林姐：那只白猫的毛色我看得清清楚楚，就是雪球——赵姨家养了七年的猫我认得。", type: "valid", conflictGroup: "G-lie-2", conflictType: "lie" },
       { id: "c11", text: "物业通知：本楼应急灯因线路老化，本周将统一更换。", type: "fake" },
       { id: "c12", text: "赵姨：今年雪球七岁，相当于人的五十多岁。", type: "fake" },
@@ -2902,28 +3566,24 @@ const LevelData = [
         id: "r1", name: "大刘", tagShort: "小区门卫", bindClue: ["c1", "c7"],
         avatar: { hair: "#1a1a1a", hairStyle: "short", hat: "cap", skin: "#c08862" },
         bio: "大刘是小区新来的门卫，上岗还不到半年，每天准时守在门岗，进出的脸他都记得八九分。他记性特别好，谁几点出门、谁拎了什么，都逃不过他的眼睛。",
-        talk: "我下午四点巡逻，亲眼看见一男孩在围墙前喷漆——我一喊他，他掉头就跑，我腰不好追不动。那孩子模样我眼熟，就是没看清脸。",
         secret: "大刘来当门卫，是因为在城里工地干伤了腰，干不动重活了。他把媳妇儿给他揉腰的药油藏在值班室抽屉最里头，从不让来往的人看见他那条贴满膏药的腰。他记性好，谁几点出门、拎了什么，都逃不过他的眼睛——可他最想记住不忘的，其实是家里那盏总给他留的灯。那天他巡逻时看见围墙前站着个六年级男孩，没看清脸。"
       },
       {
         id: "r2", name: "小凯", tagShort: "六年级学生", bindClue: ["c3", "c4"],
         avatar: { hair: "#1a1a1a", hairStyle: "short", hat: "ribbon", skin: "#f4d4b0" },
         bio: "小凯读六年级，是小区里画画最好的孩子，墙报、黑板报都找他。他性子急，也爱面子，最受不了别人说他画得不如人。五年级的小彤总羡慕他，蹲在墙根捡他丢的粉笔头练字，他嘴上嫌烦，心里其实受用。",
-        talk: "那画是我画的又怎了？我练了一暑假的喷漆画，比谁都好——那天墙边又不止我一个人，你们别光盯着我。",
         secret: "小凯其实练过整整一个暑假的喷漆画——他在老家废院墙上偷偷学的，就为了让新来的同学多看他两眼。那天他拎着喷漆罐出门，心里想的只是「画给谁看」，没想过后果。等他第二天看着自己刷满墙的「作品」，才后知后觉地慌了——他想要的是被人记住，不是让人责怪。他先跟同学说「是小彤画的」，又跟门卫说「我先回家了」。"
       },
       {
         id: "r3", name: "小彤", tagShort: "五年级学生", bindClue: ["c2", "c8"],
         avatar: { hair: "#6a4423", hairStyle: "long", hat: "ribbon", skin: "#fde0c4" },
         bio: "小彤读五年级，老实听话，字写得工工整整，老师总拿她的作业当范本。她不爱凑热闹，放学就回家，最怕被冤枉。她心里偷偷羡慕小凯画画有天分，却从不敢说出口。",
-        talk: "我没碰过喷漆罐，整整一下午都在家写作业，作业本上还有我的字呢。我穿粉色卫衣，那穿蓝外套的男孩不是我——我从来不干那种事。",
         secret: "小彤一直羡慕小凯画画有天分，攒了半年的零花钱买了盒新蜡笔，还没舍得用。她被赖上那天书包里就装着那盒蜡笔，可她始终没拿出来解释——她怕说出来显得更「可疑」。其实她偷偷在日记里练画画，想有朝一日画得跟小凯一样好，只是这话从不敢说出口。"
       },
       {
         id: "r4", name: "苏姐", tagShort: "花店老板娘", bindClue: ["c6"],
         avatar: { hair: "#4a2e1a", hairStyle: "long", hat: "ribbon", skin: "#f4d4b0" },
         bio: "苏姐在镇口开了家小花店，为人热情，看什么都说好。她说话就是随口夸，一句「颜色好看」能挂在嘴边一整天，从不走心。可每天清晨开门，她总会往门口多站一会儿，像是在等一阵从河堤那边跑来的风。那个晨跑青年每天绕远路来买豆浆、路过时总往店里多看两眼，她早就注意到了，只是她比他更不敢先开口。",
-        talk: "我下午四点半收摊，瞥见一穿蓝外套的男孩在围墙前弯腰，能闻到刺鼻的喷漆味儿。我寻思是哪个孩子在淘气——花店忙，没敢多管。",
         secret: "苏姐的花店其实是半价租下的老裁缝铺，房东看她刚离了婚、带着女儿难，才少收了房租。她从不提自己身后的事，只把店门前日日摆上免费野花，谢那些照应过她的人。她总说自己是被照应的那一个，其实她心里也藏着一件没敢问出口的事——那个每天故意绕远路来买豆浆、路过时总往店里多看的晨跑青年，她早就注意到了，只是她比他更不敢先开口。她那天下午收摊时瞥见一个男孩在围墙前弯腰。"
       }
     ],
@@ -2943,7 +3603,7 @@ const LevelData = [
       { id: "c13", text: "喷漆空罐上那枚带泥的男孩指纹经比对是右手中指——小彤是左撇子（她写字用左手、画画也用左手），所以罐口那枚指纹根本不是小彤的。", type: "valid", timeMin: 960, timeText: "16:00 物证", isEvidence: true, evidenceOwnerTag: "六年级学生" }
     ],
     conflictPairs: [],
-    solution: { r1: ["c1", "c7"], r2: ["c3", "c4", "c5"], r3: ["c2", "c8"], r4: ["c6"] },
+    solution: { r1: ["c1", "c7"], r2: ["c3", "c4", "c5", "c10", "c13"], r3: ["c2", "c8"], r4: ["c6"] },
     hints: [
       "大刘和苏姐都看见了那个穿蓝外套、身高 1.4 米的男孩——小彤穿的是粉色卫衣。",
       "喷漆罐上那枚带泥的男孩指纹，是从围墙上取下来的。",
@@ -2976,28 +3636,24 @@ const LevelData = [
         id: "r1", name: "车主老王", tagShort: "退休钳工", bindClue: ["c1", "c7"],
         avatar: { hair: "#cccccc", hairStyle: "bald", hat: "glasses", skin: "#eac098" },
         bio: "老王退休前是机修厂的钳工，一辈子和自行车、摩托车打交道。他那辆二八大杠骑了十几年，擦得锃亮，每条螺丝是紧是松，他心里都有数。外卖骑手阿成的车坏了，也常推来他这儿捯饬，两人交情不浅。",
-        talk: "那辆二八大杠跟了我十几年，每条螺丝松紧心里有数。早上车被骑过，中午又回来了，链条上的是「防雨油」——从没上过那种。",
         secret: "那辆二八大杠是他和老伴结婚时买的，老伴前年走了，车成了老王心里唯一的伴。他每天擦车时都絮絮叨叨说几句话，像是车能听懂似的。他嘴上说「车就是车」，可谁要是碰了那辆车，他准要急眼——他护着的哪里是车，是那段没人懂的话。那天早上他看见链条上的油是「防雨型」而非「普通黄油」，心里就开始画问号。"
       },
       {
         id: "r2", name: "阿成", tagShort: "外卖骑手", bindClue: ["c3", "c4"],
         avatar: { hair: "#1a1a1a", hairStyle: "short", hat: "helmet", skin: "#d4a078" },
         bio: "阿成是镇上最早一批外卖骑手，一天要跑几十单，电动车充电、换胎、上油都是自己来。他手脚麻利，也够朋友，谁的车坏了推到他楼下，他顺手就给你捯饬好——住的久了，和老王老爷子的车来车往也就熟了。",
-        talk: "我那天电动车没电，在家充了一上午，门都没出。要我说，楼上高三那个小乐整天戴耳机背书，谁碰了车他都不带知道。",
         secret: "阿成以前在省城跑过一夜的雨，膝盖落下风湿，天阴下雨就疼。他不舍得请假，疼得厉害时就在坡道上一圈一圈地慢慢蹬——这单挣的是孩子的奶粉钱。他总笑呵呵说「没事」，可车座底下那瓶热敷贴，他比谁都记得换。那天早上他的电动车没电，他急单又没来得及换电池，瞄见老王那辆二八大杠在车棚里，犹豫了两秒，骑走赶了两单就还了。他怕老王怪他，又想把锅甩给一同住楼的小乐。"
       },
       {
         id: "r3", name: "小乐", tagShort: "高三备考生", bindClue: ["c2", "c8"],
         avatar: { hair: "#1a1a1a", hairStyle: "short", hat: "glasses", skin: "#f4d4b0" },
         bio: "小乐是高三学生，每天五点半起床背书。他走路都带着耳机听英语，眼睛只盯着课本和眼前的路，旁的事一概不闻不问。晨练的冯叔见他天不亮就抱着书出门，总在背后夸一句「这孩子用功」。住在这片的老住户都记得，十多年前他还蹲在花坛边拍皮球，一转眼连高考都近了——小镇的日子，就是这么一茬茬往前走的。",
-        talk: "我一整天都在家背书，五点半起来就没下过楼。车棚那动静……我好像听见过，可我戴着耳机，没抬头看。高考前，我哪敢分心。",
         secret: "小乐其实听见了那天车棚的动静，只是背书背得入迷，没抬头看。他事后想起来隐约觉得有人影晃过，却怎么也拼不出那张脸——高考前他不敢让任何事分心。可每当背书背不下去，他总会想起楼下那个五点五十就亮起灯的初二小子小宇——那盏灯比自己还准时，他也就不好意思松懈了。"
       },
       {
         id: "r4", name: "冯叔", tagShort: "晨练太极队长", bindClue: ["c6"],
         avatar: { hair: "#cccccc", hairStyle: "bald", hat: "glasses", skin: "#d4a078" },
         bio: "冯叔是小区晨练太极队的领队，每天早上七点在广场带大家打拳，二十年没断过。他爱聊天，见谁都爱搭话，什么「天气不错」张口就来。晨练的广场挨着车棚，早出晚归的外卖小哥阿成、天不亮抱着书出门的高三生小乐，他都眼熟。",
-        talk: "今天天气不错，适合晨练！我七点带拳的时候，车棚那边安安静静的。要说骑车我骑了几十年——车座子垫软了才不硌人。",
         secret: "冯叔打太极二十年，外人只当他痴迷锻炼，其实那下盘和腰劲，是练来背老伴下楼晒太阳的——老伴腿脚不好，上楼下楼全靠他一背。他爱把话题往「天气」上引，是怕人多的场子冷下来没人接话。他打太极二十年，一招一式稳得很，只有背老伴下楼时，那双手会不自觉地轻轻抖一下。他那天七点在广场打拳，看见阿成的电动车停在小区门口——他记得阿成的车平时这个时候早该出门了。"
       }
     ],
@@ -3017,7 +3673,7 @@ const LevelData = [
       { id: "c13", text: "小区东门那盏智能监控 7:00 那段拍到：广场上停着一辆绿色小龟车，车牌尾号其实是 075（属另一家外卖站的小哥）——阿成的车尾号是 037；冯叔 7:00 看的那辆车不是阿成的。", type: "valid", timeMin: 420, timeText: "7:00 物证", isEvidence: true, evidenceOwnerTag: "外卖骑手" }
     ],
     conflictPairs: [],
-    solution: { r1: ["c1", "c7"], r2: ["c3", "c4", "c5", "c9", "c13"], r3: ["c2", "c8"], r4: ["c6", "c10"] },
+    solution: { r1: ["c1", "c7"], r2: ["c3", "c4", "c5", "c10", "c13"], r3: ["c2", "c8"], r4: ["c6"] },
     hints: [
       "凶手说「电动车刚充完电」，可冯叔七点就看见他的车还停在小东门——他根本没法骑。",
       "链条上那层油是「外卖骑手专供」——小乐一个高三学生不会用这种油。",
@@ -3051,28 +3707,24 @@ const LevelData = [
         id: "r1", name: "保安老李", tagShort: "门卫室值班保安", bindClue: ["c1", "c7"],
         avatar: { hair: "#5a5040", hairStyle: "short", hat: "cap", skin: "#c08862" },
         bio: "老李在门卫室干了十五年，一把自行车铃铛似的嗓子，声音洪亮。他值夜班最仔细，每晚十点准时落锁，门卫室里的收音机是他唯一的夜伴，雷打不动开到深夜。清洁的陈秀兰每天清早来门卫室收垃圾袋，他总留一杯热茶在桌上。门卫岗上他与白班的大刘轮转，新建岗亭那边是老韩守着，三人一套班；上个月他在四号楼租了间房搬进去，白天当班、夜里落锁，两头都不耽误。",
-        talk: "那台收音机是闺女给我买的六十岁寿礼，我当宝贝。十点落锁那会儿它还在桌上，第二天就没了——我一夜没睡踏实，每道缝都翻过了。",
         secret: "那台收音机是女儿送给他的六十岁生日礼物，他天天宝贝似的带在身边，谁碰一下都不高兴。收音机不见那天夜里，他没敢声张，自己摸着黑在门卫室翻了三遍。他嘴上说「不就是台收音机」，可那一夜，他把门卫室每一道缝都摸遍了——他怕丢的，是女儿那句「爸，你辛苦了」。"
       },
       {
         id: "r2", name: "租客小马", tagShort: "刚毕业的外地租客", bindClue: ["c3", "c4"],
         avatar: { hair: "#1a1a1a", hairStyle: "curly", hat: null, skin: "#f4d4b0", cloth: "#4a6c8a", cloth2: "#ffffff" },
         bio: "小马是外地来镇里上班的毕业生，租住在小区三楼。他一个人住，不爱说话，晚上回来得晚，和邻居的交集一只手数得过来。退休的老孙见他是外地来的年轻人，总找借口跟他搭话，他回得两句，就又低头走开了。",
-        talk: "我十点多在工位赶 bug，根本没下楼，门卫室一次没进过。我这种外地来的，哪敢动人家老师傅的宝贝——收音机我听都没听过。",
         secret: "小马家里有个生病的妹妹，药钱不便宜。他白天上班晚上又去跑夜班代驾，攒的每一分钱都往家里寄。他一个人住，不爱说话，可房间桌上那摞写了一半没敢寄出去的信，字字都写着「等妹妹好了，哥带你去镇上走走」。他总盼着有一天，能光明正大把妹妹接来看他住的这个小镇。那晚他提前半小时下班，去门卫室想蹭点热水喝，一眼看到桌上那台收音机——他知道那台机是「老李心头肉」，可他转念一想，妹妹在医院里正等这笔钱买新药包，犹豫了十秒，把收音机塞进自己黑外套里。被追问时他不仅谎称在工位赶 bug，还伪装成目击者，反咬老李「十点二十抱着收音机出门卫室」——想把这口锅，扣在失主自己头上。"
       },
       {
         id: "r3", name: "访客老孙", tagShort: "退休职工", bindClue: ["c2", "c8"],
         avatar: { hair: "#cccccc", hairStyle: "bald", hat: "glasses", skin: "#eac098" },
         bio: "老孙退休前在供电局上班，下岗后帮着各处看摊儿，镇里大半人家的水电他都帮忙修过。他眼神好使，走路爱东张西望，说这是「电工的老毛病」。他是三十年前外乡来此扎的根，见着和小马一般年纪的外地年轻人，总忍不住没话找话聊上两句。",
-        talk: "夜里十点一刻我路过门卫室，看见个穿黑外套的年轻人从里头出来，步子急匆匆的。我眼神好，可天黑路滑，能认出大概模样就不错了。",
         secret: "老孙是三十年前一个人从外地来小镇扎的根，靠的就是有人肯多接他两句话，他才没打退堂鼓。现在他见着和小马一样的外地年轻人，总要没话找话聊两句——他不是在找人陪，是想给当年站在风里没人理的自己，补一句「到了地方，有人理你」。他嘴上说「电工的老毛病爱东张西望」，其实看的是谁正需要这么一句话。他十点一刻路过时，看见一个穿黑外套的年轻人从门卫室出来，步子很快，没看清脸。"
       },
       {
         id: "r4", name: "清洁阿姨", tagShort: "楼道清洁员", bindClue: ["c5", "c6"],
         avatar: { hair: "#4a2e1a", hairStyle: "bun", hat: "headband", skin: "#e8b58a" },
         bio: "清洁阿姨本名陈秀兰，负责小区三栋楼的楼道保洁，天不亮就到，扫地、擦栏杆、收垃圾袋，一样不落。她干活细，谁家门口摆了什么她都记得。值夜班的老李总在她保温杯里续上热水，两人算是门卫室的常客之交。",
-        talk: "我十点二十进去擦的桌子，收音机好好在桌上，那会儿还大声唱着戏呢。我打扫二十年，哪家摆了什么我都记得，错不了。",
         secret: "陈秀兰还有个没到学龄的孙子在乡下，由她老伴带着。她每月把挣来的钱精打细算寄回去，自己中午就啃两毛一个的馒头，从没让同楼的住户看出来。她干活细，谁家门口摆了什么她都记得——可最让她惦记的，是老家门口那个总踮脚等她回去的小人儿。她十点二十进出门卫室时，收音机确实还在——那台机播的正好是戏曲频道。"
       }
     ],
@@ -3093,11 +3745,11 @@ const LevelData = [
       { id: "c14", text: "清洁阿姨：今天楼道里有一只野猫跑过去好几趟。", type: "fake" },
       { id: "c15", text: "小马：十点二十八我回宿舍接电话，根本没下楼——你问老孙他十点一刻也没听见我下楼。", type: "valid", timeMin: 628, timeText: "自称 22:28", isSuspectStatement: true, conflictGroup: "G-lie-3", conflictType: "lie" },
       { id: "c16", text: "物业群通知：今晚十点起，小区电梯例行停运维保一小时。", type: "fake" },
-      { id: "c17", text: "小马：十点二十我去楼下打水，正好看见老李抱着收音机从门卫室出来，往宿舍楼下走——我当他是拿去修，就没当回事。", type: "valid", timeMin: 620, timeText: "22:20", isWitness: true, pointsTo: "r1" },
+      { id: "c17", text: "小马：十点二十我去楼下打水，正好看见老李抱着收音机从门卫室出来，往宿舍楼下走——我当他是拿去修，就没当回事。", type: "valid", timeMin: 620, timeText: "22:20", isSuspectStatement: true, pointsTo: "r1", conflictGroup: "G-lie-1", conflictType: "lie" },
       { id: "c18", text: "门卫室那盏监控（带红外）22:15~22:30 那段拍到：走廊里根本没出现「黑外套年轻人」的身影；倒是窗台上那只常驻的野猫（纯黑色、身形瘦长）从 22:18~22:26 一直在窗台晒太阳。", type: "valid", timeMin: 622, timeText: "22:22 物证", isEvidence: true, evidenceOwnerTag: "刚毕业的外地租客" }
     ],
     conflictPairs: [],
-    solution: { r1: ["c1", "c7", "c12"], r2: ["c3", "c4", "c9", "c10", "c11", "c15", "c17"], r3: ["c2", "c8"], r4: ["c5", "c6"] },
+    solution: { r1: ["c1", "c7", "c12"], r2: ["c3", "c4", "c9", "c10", "c11", "c15"], r3: ["c2", "c8"], r4: ["c5", "c6"] },
     hints: [
       "凶手一段自白说「十点二十在工位赶 bug」，另一段又说「十点一刻去门卫室要水」——两段时间对不上。",
       "窗台上那枚指纹+黑棉絮，只可能来自那条黑外套——凶手说「自己穿的是灰卫衣」。",
@@ -3130,28 +3782,24 @@ const LevelData = [
         id: "r1", name: "夜班保安老韩", tagShort: "新建岗亭的保安", bindClue: ["c1", "c5", "c12"],
         avatar: { hair: "#1a1a1a", hairStyle: "short", hat: "cap", skin: "#d4a078" },
         bio: "夜班保安姓韩，去年秋天才来岗亭上班，值夜班，白天补觉。他新到不久，脸生，话少，一个人守着整夜整夜的小区门口，把进出的人都记在值班本上。住户阿琳夜归，他记在本上总多看一眼，算是无声的照应。",
-        talk: "我一整夜都在岗亭，进出小区的生面孔都记本上。那晚我开窗问过一个小伙子——我守夜不掺和事，可谁进谁出，我记着。",
         secret: "老韩以前在县城纺织厂守过十年的仓库，下岗那晚把整个仓库的钥匙交给新来的小伙子，回家路上走了很久很久。他如今守岗亭，只是还放不下「守」这个字。他话少，可那把用旧了的钥匙串他天天带着，谁都不知道，那上面挂着一把他早就不需要、却再也舍不得扔的旧钥匙。"
       },
       {
         id: "r2", name: "住户阿琳", tagShort: "家电城收银员", bindClue: ["c2", "c7", "c13"],
         avatar: { hair: "#4a2e1a", hairStyle: "long", hat: "ribbon", skin: "#fde0c4", cloth: "#c8364b", cloth2: "#ffffff" },
         bio: "阿琳在镇家电城收银，九点上班，日子规律。她睡眠浅，楼道里走个老鼠都能醒，夜里听见脚步声是常事，也不当回事。楼里的汽修师傅大勇替她扛过米袋上楼，她一直记着这份人情。",
-        talk: "我睡得浅，楼道里有动静就醒。那晚听见有人从走廊跑过去，踩拖鞋「啪嗒啪嗒」的——我不敢开门，只当没听见。",
         secret: "阿琳因为睡眠浅，错过过女儿半夜哭闹的电话，从那以后再不敢睡得死。她睡前总把手机音量调到最大，那晚听见走廊的脚步声时，她其实醒着却不敢开门——她独居，总是怕。她总说「我一个人住惯了」，可窗台上那盏一夜不灭的小台灯，是她不敢对人说的胆怯。"
       },
       {
         id: "r3", name: "住户大勇", tagShort: "汽修厂师傅", bindClue: ["c3", "c6", "c8"],
         avatar: { hair: "#2a1d12", hairStyle: "short", hat: "cap", skin: "#c08862" },
         bio: "大勇是镇汽修厂的老师傅，干了一辈子修车，手上全是机油痕。他话不多，认死理，说出口的话九成九是真的，只是他活儿忙，很多事都顾不上留心。跑外地的水电工阿海隔三差五路过厂子来讨口水，两人算是半熟。",
-        talk: "我整晚没下过楼，说得出做得到——汽修厂的活儿还欠着，我在家趴着等媳妇下班，门都没开过。",
         secret: "大勇的媳妇儿在县医院做护理，倒班倒了十年，两人同住一个屋檐下，一个月碰不上几面。他那晚说「没出过门」，其实是趴在窗台上看了半夜的路——等媳妇儿的车灯。他嘴上嫌媳妇忙，可汽修厂休息室的墙上，贴着媳妇儿给全家求的平安符，他谁也不让碰。"
       },
       {
         id: "r4", name: "访客阿海", tagShort: "常年跑外的水电工", bindClue: ["c4", "c10", "c11"],
         avatar: { hair: "#1a1a1a", hairStyle: "short", hat: "cap", skin: "#c08862" },
         bio: "阿海是跑外地的水电工，一单活儿接在哪个镇，人就在哪个镇住上一阵。他性子豪爽，喝酒敞亮，走到哪儿都能和人搭上话。路过汽修厂就进去跟大勇讨口水喝，一来二去混了个脸熟。",
-        talk: "我那单活儿在隔壁镇，收了工就往回赶，进门都过凌晨了——穿着黄雨衣打着伞，雨鞋上带点泥，能留下什么脚印？",
         secret: "阿海好几年没回过自己的家了，母亲的电话他从来不敢拒接，却总在接通前深呼吸三次。那凌晨他踩着一鞋泥回来，看见楼道灯亮了又灭，忽然特别想有个能回的家——所以他没忍住，把脚上那双沾满泥的雨鞋塞进了单元门口的塑料桶里，自己光着脚跑回了走廊。"
       }
     ],
@@ -3195,7 +3843,7 @@ const LevelData = [
   },
   /* ---- 第 11 关：困难·终极（半真半假缜密型 + 重度连环谎言 + 嫁祸甩锅 + 多条间接目击 + 4 条干扰） ---- */
   {
-    title: "最后的真相", difficulty: "困难", orderSensitive: true,
+    title: "最后的真相", difficulty: "困难",
     background: "社区活动室的投影仪不翼而飞，当晚有四人来过活动室，每人各执一词，谁都拿不出不在场证明。",
     goal: "判断是谁拿走了投影仪。",
     culpritId: "r4", // 凶手：老蔡
@@ -3213,28 +3861,24 @@ const LevelData = [
         id: "r1", name: "管理员方姐", tagShort: "社区活动室管理员", bindClue: ["c1", "c12"],
         avatar: { hair: "#2a1d12", hairStyle: "bun", hat: "glasses", skin: "#fde0c4" },
         bio: "方姐是社区活动室的管理员，管着钥匙、设备、排班，事无巨细，条理分明。她爱护公物出了名，谁乱动设备都要被她念叨半天。和常驻的维修工老蔡搭档多年，老蔡修东西她总要盯着看；热心的志愿者丁丁也常来搭把手。",
-        talk: "投影仪是街道奖给社区的，我天天擦得锃亮，谁动它我都不答应。八点锁门时它还在架子上——公家的东西，少一颗螺丝都不踏实。",
         secret: "活动室的投影仪是街道奖给社区的，方姐天天擦拭那台机器，像是在擦自己年轻时在厂里荣誉墙上的照片。她离退休还有三年，最怕的是「把公家的东西看没了」。她嘴上念叨得凶，可每次放完电影，她都会多留一盏灯，等最后一个观众走远才关——她说，那是她年轻时就学会的，送人一段路。"
       },
       {
         id: "r2", name: "租客小柯", tagShort: "小镇青年", bindClue: ["c2", "c13"],
         avatar: { hair: "#1a1a1a", hairStyle: "curly", hat: null, skin: "#f4d4b0", cloth: "#4a6c8a", cloth2: "#ffffff" },
         bio: "小柯在镇上租房子住，白天在一家培训中心做助教，晚上接网约课到十点。他住得近，来活动室取落下的东西是常有的事，和常在活动室忙活的丁丁碰过好几回面。",
-        talk: "我八点半来取落下的笔记本，推开门，投影仪已经不在架子上了。我在考研，脑子里全是题——门口那根红绳，出来时才注意到。",
         secret: "小柯的房租是父母想着他留在镇上安稳，咬咬牙供的。他想考研去省城，申请表填了三年，压在最底下的抽屉里——每次看见，都像是看见自己还没敢跨出去的那半步。他总说「再想想」，可那张申请表他改了一版又一版，像是不敢填，又像是终有一天会填完。"
       },
       {
         id: "r3", name: "志愿者丁丁", tagShort: "社区青年志愿者", bindClue: ["c3", "c7"],
         avatar: { hair: "#4a2e1a", hairStyle: "long", hat: "ribbon", skin: "#fde0c4" },
         bio: "丁丁是社区里的热心志愿者，活动室办讲座、放电影，他总是第一个到场搬椅子。他心细眼尖，谁进出哪有异常，他都有印象。在活动室里，他常和维修工老蔡搭伴整理器材，一老一少配合得挺好。",
-        talk: "活动室我熟，办讲座放电影都找我搬椅子。八点一刻有个人拎着黑箱子出来，步子沉沉的——我愣了一下，寻思这是搬的啥家伙。",
         secret: "丁丁考上大学那年，家里正赶上难处，是社区的助学款送他一程。他如今天天泡在社区做志愿者，只为还那四年的人情。他总说「就当锻炼」，可活动室那本他偷偷记的困难家庭名单，笔迹密密麻麻——他是在替那些曾经帮过他的人，把这份善传下去。"
       },
       {
         id: "r4", name: "维修工老蔡", tagShort: "活动室常驻维修工", bindClue: ["c4", "c10", "c11"],
         avatar: { hair: "#cccccc", hairStyle: "bald", hat: "glasses", skin: "#eac098" },
         bio: "老蔡是社区的常驻维修工，水管、电灯、门锁、投影仪，坏了都归他修。他工具不离手，总拎着个黑箱子，工具箱比谁都沉。每日傍晚他都会擦拭维修箱，和志愿者丁丁经常搭伴整理器材，性子沉稳，不爱多争辩。",
-        talk: "我八点一刻进活动室是修插座，修完就出来了，投影仪在架子上原封没动。那是公家的东西，我最多想想，万万不敢乱动。",
         secret: "老蔡的箱子底下压着一张旧照片：照片里他年轻时站在县剧团舞台的幕布边，手里拎着的正是如今这个黑箱子。那里面本是他攒了半辈子、想再登台用的家当。他总说「修东西就是要稳」，可只有他自己知道，那晚他八点一刻进活动室「修插座」是假，悄悄把投影仪装进黑箱才是真——他想把那台机搬回家，连一晚，对着老照片放一出当年没演完的戏。他也清楚那是公家的东西，搬回来的路上手心里全是汗；到家对着老照片坐了一宿，越想越心虚，第二天一早想过还回去，「还了就没人知道」——可「再放一晚」这个念头赢了。不是坏，是侥幸。"
       }
     ],
@@ -3282,14 +3926,16 @@ const LevelData = [
 const GameFlow = {
   /**
    * 关卡配置：从 LevelData 读取并规范化。
-   * 将 conflictPairs 转为线索上的 conflictGroup 字段（供 ValidateUtil.detectConflict 使用）。
+   * 将 conflictPairs 转为线索上的 conflictGroup 字段（供 detectTimelineConflict 使用）。
    * @returns {Object|null} 配置结构：{ title, difficulty, background, goal,
    *   residents, clues, solution, hints, truth }
    */
   getLevelConfig() {
     const raw = LevelData[App.currentLevel - 1];
     if (!raw) return null;
-    const cfg = JSON.parse(JSON.stringify(raw));
+    // 浅拷贝一层：阻止 future 启用 conflictPairs 时对 LevelData 数组的字段赋值污染
+    // （关卡数据本身只读，没有更深层 mutate，无需深拷贝）
+    const cfg = { ...raw };
     (cfg.conflictPairs || []).forEach((pair, idx) => {
       const group = "auto_" + idx;
       pair.forEach((cid) => {
@@ -3318,23 +3964,27 @@ const GameFlow = {
       document.getElementById("case-goal").textContent = cfg.goal || "";
     }
     this._syncHintButton();
-    // 新手引导：仅首次进入第 1 关时弹 2 张文字说明卡，之后不再打扰
+    // 新手引导：首次玩任一关时弹（任意未通关关卡），老玩家不再打扰
     this.maybeShowTutorial();
   },
   /**
    * 新手引导（分步文字卡，首次弹窗 / 常驻按钮共用）。
-   * 仅在「未看过」且「首次进入第 1 关」时自动弹窗；
+   * 触发条件：玩家未看过教程 **且** 本关未通关。任一关卡首次进入都弹，
+   * 避免"跳过 L1 直接进 L4 看不到引导"。
    * 界面右上角常驻「新手指引」按钮可随时重新打开。
    * 共 3 张，支持「上一步 / 跳过 / 下一步」：
    *   1) 欢迎与目标：你扮演调解员，找出说谎者并与物证一并摆入卡槽
-   *   2) 四条核心操作：走访 / 拖拽 / 时间轴 / 指认
+   *   2) 四条核心操作：走访 / 追问 / 时间轴 / 指认 / 物证
    *   3) 求助渠道：起步顺序建议 + 提示按钮限次 + 重置机制
    * 首次自动弹窗时，任意退出（跳过 / 看完）都会写入 tutorialSeen=true；
    * 主动点击按钮重看时不写标记，不影响首次弹窗逻辑。
    */
   maybeShowTutorial() {
     if (StorageUtil.readTutorialSeen()) return;
-    if (App.currentLevel !== 1) return;
+    // 仅"本关首次进入"才弹：layout 的 pool/timeline 都为空，说明玩家还没动过这一关
+    const layout = StorageUtil.readLevelState(App.currentLevel);
+    const hasTouched = layout && (((layout.pool || []).length > 0) || ((layout.timeline || []).length > 0));
+    if (hasTouched) return;
     this.showTutorialCards(true);
   },
 
@@ -3347,45 +3997,48 @@ const GameFlow = {
       {
         title: "🌸 欢迎来到小镇疑云",
         text:
-          "你是镇上新来的调解员。你很快会发现，这里的人不是不会说谎——他们只是更擅长用沉默代替解释。你不需要逮捕谁，只需要听完每个人的故事，然后问自己一句：『他为什么这么说？』",
+          "你是镇上新来的调解员。你很快会发现，这里的人不是不会说谎——他们只是更擅长用沉默代替解释。你不需要逮捕谁，只需要听完每个人的故事，然后问自己一句：『他为什么这么说？』\n\n💡 小提示：右上角「❓ 新手指引」可随时重看本卡。",
       },
       {
         title: "🎮 四条核心操作",
         text:
           "① 走访：点居民头像与其对话，线索随交谈逐步解锁。\n" +
-          "② 时间轴：把带时间的证词按顺序排好，说谎者的时间线会露出破绽。\n" +
-          "③ 指认：点右下角「指认凶手」，先挑人、再提交。",
+          "② 追问：点「继续询问」可让 TA 说出更多细节（含关键物证）。\n" +
+          "③ 时间轴：把带时间的证词拖到下方时间轴排序；说谎者的时间线会露出破绽。\n" +
+          "④ 指认：点右下角「指认凶手」，先挑人、再选决定性证据。\n\n" +
+          "提示：浅米色为有效线索；灰色「干扰」线索请留在线索池中。",
       },
       {
         title: "💡 卡壳了怎么办",
         text:
           "起步建议：先走访全部居民 → 再整理时间轴 → 最后才指认。\n\n" +
           "求助渠道：\n" +
-          "· 底部「获取提示」按钮：模糊 / 中度两档，每档限 3 次。\n" +
+          "· 底部「获取提示」按钮：方向 / 直指两档，每关限 2 次。\n" +
           "· 「重置本局」按钮：随时清空重来，不影响通关进度。\n\n" +
           "准备就绪，开始破案吧！",
       },
     ];
-    const exit = () => {
-      Modal.close();
-      if (markSeen) StorageUtil.writeTutorialSeen();
-    };
+    // markSeen=true（首次自动弹窗用）：弹窗关闭时写 tutorialSeen 标记，兼容 ESC / 遮罩 / 按钮三种关闭路径
+    // markSeen=false（主动按钮重看用）：不写标记
+    // 通过 Modal.show 的 onClose 钩子统一触发，避免 ESC 跳过回调导致反复弹窗
+    const seenHandler = () => { if (markSeen) StorageUtil.writeTutorialSeen(); };
     const render = (i) => {
       const btns = [];
       if (i > 0) btns.push({ label: "上一步", primary: false, onClick: () => render(i - 1) });
-      btns.push({ label: "跳过", primary: false, onClick: exit });
+      btns.push({ label: "跳过", primary: false, onClick: () => Modal.close() });
       btns.push(
         i === cards.length - 1
-          ? { label: "开始探索", primary: true, onClick: exit }
+          ? { label: "开始探索", primary: true, onClick: () => Modal.close() }
           : { label: "下一步", primary: true, onClick: () => render(i + 1) }
       );
-      Modal.show(cards[i].title, cards[i].text, btns);
+      Modal.show(cards[i].title, cards[i].text, btns, seenHandler);
     };
     render(0);
   },
 
-  /** 全量渲染当前关卡（居民卡槽 + 线索池），恢复存档并刷新冲突标红 */
-  renderLevel(cfg) {
+  /** 全量渲染当前关卡（居民卡槽 + 线索池），恢复存档并刷新冲突标红
+   *  opts.newCids?: 本次新解锁的线索 id 列表；renderPool 收到后会触发「入卷」飞入动画 */
+  renderLevel(cfg, opts) {
     App.levelData = cfg;
     App.residents = (cfg && cfg.residents) || [];
     App.clueMap = {};
@@ -3402,7 +4055,7 @@ const GameFlow = {
     // 混合模式：线索池与「已交谈居民」严格对应，避免切换模式后泄露未走访线索
     this._reconcileMixPool(cfg);
     this.renderResidents();
-    this.renderPool();
+    this.renderPool((opts && opts.newCids) || []);
     this.renderTimeline();
     this._syncHintButton();
     ValidateUtil.syncConflictMarks();
@@ -3432,12 +4085,20 @@ const GameFlow = {
       '<span>🚶</span>走访 <span class="cp-num">' + talked.length + "/" + total + "</span>");
     const conflict = pill(conflicts ? "warn" : "done",
       '<span>⚖</span>' + (conflicts ? conflicts + " 处矛盾" : "无矛盾"));
-    // 卡槽机制已下线，关键物证总数保留为线索池中已解锁的关键物证数量；
-    // 已配齐数无法再以「卡槽归属」统计，简化为「全部/全部」展示进度含义。
+    // 关键物证进度：已纳入时间轴/线索池的占总数
+    const seenIds = new Set([].concat(App.layout.timeline || [], App.layout.pool || []));
+    const evHave = evIds.filter((id) => seenIds.has(id)).length;
     const ev = evIds.length
-      ? pill("done", '<span>🔍</span>关键物证 <span class="cp-num">' + evIds.length + "/" + evIds.length + "</span>")
+      ? pill(evHave >= evIds.length ? "done" : "warn",
+          '<span>🔍</span>关键物证 <span class="cp-num">' + evHave + "/" + evIds.length + "</span>")
       : "";
-    el.innerHTML = interview + conflict + ev;
+    // 本局失败次数：只在本局失败 ≥1 时显示，让玩家清楚剩余机会
+    const fails = Number(App.layout.accuseFails || 0);
+    const failPill = fails > 0
+      ? pill(fails >= 3 ? "danger" : "warn",
+          '<span>💔</span>本局失败 <span class="cp-num">' + fails + "/3</span>")
+      : "";
+    el.innerHTML = interview + conflict + ev + failPill;
   },
 
   /** 混合模式：重建线索池 = 已交谈居民绑定线索的并集（含已入槽线索） */
@@ -3501,8 +4162,11 @@ const GameFlow = {
       block.className = "resident-block";
       const spoke = StorageUtil.readDialogRecord(App.currentLevel).indexOf(r.id) !== -1;
       const tagMatch = r.tagShort && evOwnerTags.has(r.tagShort);
+      // 替罪羊判定：居民无 bindClue 视为次要人物（仅档案/口供，无线索入池）
+      const isScapegoat = !r.bindClue || (Array.isArray(r.bindClue) && !r.bindClue.length) || (typeof r.bindClue === "string" && !r.bindClue);
       block.innerHTML =
-        '<div class="resident-head" data-resident="' + ClueCards.escapeHtml(r.id) + '" title="查看人物档案">' +
+        '<div class="resident-head' + (isScapegoat ? " resident-scapegoat" : "") + '" data-resident="' + ClueCards.escapeHtml(r.id) + '"' +
+        (isScapegoat ? ' title="次要人物，无可解锁线索"' : ' title="查看人物档案"') + '>' +
           '<span class="avatar">' + AvatarFactory.build(r, { size: 34 }) + "</span>" +
           (spoke ? '<span class="speak-badge" title="已交谈"></span>' : "") +
           '<span class="resident-name">' + ClueCards.escapeHtml(r.name) + "</span>" +
@@ -3511,13 +4175,15 @@ const GameFlow = {
                 (tagMatch ? ' title="有物证指向该身份"' : "") + ">" +
                 ClueCards.escapeHtml(r.tagShort) + "</span>"
             : "") +
+          (isScapegoat ? '<span class="scapegoat-mark" title="次要人物（无可解锁线索）">次要</span>' : "") +
         "</div>";
       panel.appendChild(block);
     });
   },
 
-  /** 渲染右侧线索池（有效线索 / 干扰线索两组） */
-  renderPool() {
+  /** 渲染右侧线索池（有效线索 / 干扰线索两组）
+   *  newCids?: 本轮新加入的线索 id 列表，命中后会触发「入卷」飞入动画。 */
+  renderPool(newCids) {
     const validList = document.getElementById("valid-clue-list");
     const fakeList = document.getElementById("fake-clue-list");
     validList.innerHTML = "";
@@ -3533,11 +4199,16 @@ const GameFlow = {
       fakeList.appendChild(fTip);
       return;
     }
+    const allEls = [];
     App.layout.pool.forEach((id) => {
       const c = App.clueMap[id];
       if (!c) return;
-      (c.type === "fake" ? fakeList : validList).appendChild(ClueCards.buildCard(c, App.layout.locked));
+      const card = ClueCards.buildCard(c, App.layout.locked);
+      (c.type === "fake" ? fakeList : validList).appendChild(card);
+      allEls.push(card);
     });
+    // 给本轮新解锁的线索触发「入卷」飞入动画
+    if (newCids && newCids.length) ClueCards.markEntering(allEls, newCids);
     // 线索池为空时给出走访引导，避免玩家困惑
     if (!App.layout.pool.length) {
       const vTip = document.createElement("p");
@@ -3630,6 +4301,7 @@ const GameFlow = {
     const mask = document.getElementById("modal-mask");
     if (!title || !text || !extra || !btns || !mask) return;
     const esc = ClueCards.escapeHtml;
+    const isHard = App.currentLevel >= 9;
     // 被排除居民集合：exclude 字段指向的居民在弹窗中置灰标注（仍可选，用于教学）
     const excludedIds = new Set((cfg.clues || [])
       .filter((c) => c.exclude).map((c) => c.exclude));
@@ -3647,10 +4319,35 @@ const GameFlow = {
     grid += "</div>";
     // 区块二：决定性证据按钮（凶手关键线索 + 干扰项，最多 4 条）
     grid += '<div class="pick-sec-title">' + (isRetry ? "重选决定性证据 · 请一次找对" : "第二步 · 哪条证据最能证明 TA？") +
-      '</div><div class="culprit-pick-grid">';
+      '</div>';
+    // 困难关(L9-11)：加分类筛选条，让玩家快速定位物证/自白/目击
+    if (isHard) {
+      grid += '<div class="pk-filter-bar">' +
+        '<button type="button" class="pk-filter active" data-kind="all">全部</button>' +
+        '<button type="button" class="pk-filter" data-kind="evidence">🔑 物证</button>' +
+        '<button type="button" class="pk-filter" data-kind="statement">🗣 自白</button>' +
+        '<button type="button" class="pk-filter" data-kind="witness">👁 目击</button>' +
+        '<button type="button" class="pk-filter" data-kind="decoy">⚠ 干扰</button>' +
+        "</div>";
+    }
+    grid += '<div class="culprit-pick-grid pk-evidence-grid">';
+    // 预计算每条证据的 kind（便于筛选）
+    const clueById = {};
+    (cfg.clues || []).forEach((c) => { clueById[c.id] = c; });
+    const kindOf = (evOpt) => {
+      if (evOpt.isDecoy) return "decoy";
+      const c = clueById[evOpt.id];
+      if (!c) return "other";
+      if (c.isEvidence) return "evidence";
+      if (c.isSuspectStatement) return "statement";
+      if (c.isWitness) return "witness";
+      return "other";
+    };
     this._evidenceOptions(cfg).forEach((c) => {
+      const decoyTag = c.isDecoy ? ' <span class="pk-decoy-tag">⚠ 干扰</span>' : "";
+      const kind = kindOf(c);
       grid += '<button type="button" class="modal-btn pk-evidence' + (c.isDecoy ? " decoy" : "") +
-        '" data-evid="' + esc(c.id) + '">' + esc(c.text) + "</button>";
+        '" data-evid="' + esc(c.id) + '" data-kind="' + kind + '">' + esc(c.text) + decoyTag + "</button>";
     });
     grid += "</div>";
     const lockedName = ((cfg.residents || []).find((r) => r.id === lockedRid) || {}).name || "此人";
@@ -3683,6 +4380,27 @@ const GameFlow = {
         btn.classList.add("picked");
         selEv = btn.dataset.evid;
         refreshOk();
+      });
+    });
+    // 困难关：分类筛选条（全部 / 物证 / 自白 / 目击 / 干扰）
+    extra.querySelectorAll(".pk-filter").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        extra.querySelectorAll(".pk-filter").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        const kind = btn.dataset.kind;
+        extra.querySelectorAll(".pk-evidence").forEach((ev) => {
+          const match = kind === "all" || ev.dataset.kind === kind;
+          ev.style.display = match ? "" : "none";
+        });
+        // 筛选后若当前选中的证据被隐藏，清除选择
+        if (selEv) {
+          const selBtn = extra.querySelector('.pk-evidence[data-evid="' + CSS.escape(selEv) + '"]');
+          if (selBtn && selBtn.style.display === "none") {
+            selBtn.classList.remove("picked");
+            selEv = null;
+            refreshOk();
+          }
+        }
       });
     });
     okBtn.addEventListener("click", () => {
@@ -3721,29 +4439,54 @@ const GameFlow = {
         if (!keySet.has(cid) && clueById[cid]) decoys.push({ id: cid, text: clueById[cid].text, isDecoy: false });
       });
     });
-    // 正确项全部保留；干扰项洗牌按需补齐，但保证至少一枚「专用干扰证据」出现在选项中
-    const shuffled = decoys.sort(() => Math.random() - 0.5);
+    // 正确项全部保留；干扰项用 Fisher-Yates 洗牌按需补齐，
+    // 保证至少一枚「专用干扰证据」出现在选项中（不受洗牌影响）。
+    const anyDecoy = decoys.find((d) => d.isDecoy);
+    const shuffled = GameFlow._shuffle(decoys.slice());
     const maxTotal = App.currentLevel >= 9
       ? Math.max(7, killerIds.length + 2)
       : Math.max(5, killerIds.length + 1);
     const shown = killerIds.concat(shuffled).slice(0, maxTotal);
-    if (decoys.length && !shown.some((x) => x.isDecoy)) {
+    if (anyDecoy && !shown.some((x) => x.isDecoy)) {
       shown.pop();
-      shown.push(decoys[0]);
+      shown.push(anyDecoy);
     }
     return shown;
+  },
+  /**
+   * Fisher-Yates 原地洗牌：均匀分布 + 可复现（传入种子即可重现）。
+   * 避免 Array.sort(Math.random) 比较子不一致 + 不可复现的两个反模式。
+   * @template T
+   * @param {T[]} arr 输入数组（不修改原数组）
+   * @param {number} [seed] 可选种子；不传则用 Math.random
+   * @returns {T[]} 洗牌后的新数组
+   */
+  _shuffle(arr, seed) {
+    const out = arr.slice();
+    const n = out.length;
+    if (n < 2) return out;
+    // 简易可复现 RNG（mulberry32）；无 seed 时回退到 Math.random
+    let s = (typeof seed === "number" && seed >= 0) ? (seed >>> 0) : 0;
+    const rand = s
+      ? function () { s |= 0; s = (s + 0x6D2B79F5) | 0; let t = Math.imul(s ^ (s >>> 15), 1 | s); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }
+      : function () { return Math.random(); };
+    for (let i = n - 1; i > 0; i--) {
+      const j = Math.floor(rand() * (i + 1));
+      const tmp = out[i]; out[i] = out[j]; out[j] = tmp;
+    }
+    return out;
   },
 
   /** 指认结果判定（仅 1 次机会）：
    *  - 凶手 + 证据都对 → 通关
    *  - 凶手对、证据错（首次）→ 给一次换证据的机会（不重置、不记失败）
-   *  - 凶手错，或证据重选再错 → 整局失败（重置）
-   *  - 选中「看似相关实则无效」的专用干扰证据（decoy- 前缀）→ 证据链断裂，直接失败（陷阱）
+   *    · 包含「专用干扰证据（decoy- 前缀）」也走换证据路径，但弹窗中已标 .decoy + ⚠ 提示
+   *  - 凶手错 → 整局失败（重置）
+   *  - 证据重选再错 → 整局失败（重置）
    *  @param {Object} [opts] { retry }：true 表示处于证据重选二次机会 */
   _handleAccusation(cfg, selectedId, evId, opts) {
     const opt = opts || {};
     const evOk = this._killerKeyIds(cfg).has(evId);
-    const isDecoy = String(evId).indexOf("decoy-") === 0;
     if (opt.retry) {
       // 证据重选机会：只判证据，选对即通关，再错即整局失败
       if (evOk) { this._onLevelClear(cfg); } else { this._onAccuseFail(cfg, selectedId); }
@@ -3757,34 +4500,17 @@ const GameFlow = {
       this._onLevelClear(cfg);
       return;
     }
-    // 选了「看似相关实则无效」的干扰证据 → 证据链断裂：直接失败，不进入换证据机会
-    if (isDecoy) {
-      this._onEvidenceChainBreak(cfg, selectedId);
-      return;
-    }
-    // 人选对了、证据没对（普通干扰项）→ 唯一一次换证据机会（不重置、不记失败）
-    this._promptEvidenceRetry(cfg, selectedId);
-  },
-
-  /** 证据链断裂：玩家选中了「看似相关实则已被排除」的干扰证据。
-   *  视为整局失败（重置），并给出针对性提示，帮助理解该证据为何无效。 */
-  _onEvidenceChainBreak(cfg, rid) {
-    const failsKey = "accuseFails_" + App.currentLevel;
-    const fails = Number(StorageUtil.read(failsKey, 0)) + 1;
-    StorageUtil.write(failsKey, fails);
-    const resident = (cfg.residents || []).find((r) => r.id === rid);
-    const name = resident ? resident.name : "此人";
-    Modal.alert("证据链断裂",
-      "你认定的「" + name + "」虽然没错，但选中的这条证据看似与案件相关，实则并不足以定罪——它被证词或物证排除了。\n\n" +
-      "定罪需要的是「能直接坐实 TA 」的决定性证据，而不是「像是 TA 留下的」旁证。本局判定失败，将重置推理。",
-      () => this._restartLevel());
+    // 人选对了、证据没对（含普通干扰项 + 专用 decoy 干扰项）→ 唯一一次换证据机会
+    this._promptEvidenceRetry(cfg, selectedId, evId);
   },
 
   /** 证据重选引导：提示凶手人选已锁定，重开指认弹窗（仅能换证据，再错即失败）。
-   *  困难关(9-11)清空时间轴作为「调查时效性」代价，并附警示文案。 */
-  _promptEvidenceRetry(cfg, rid) {
+   *  困难关(9-11)清空时间轴作为「调查时效性」代价，并附警示文案。
+   *  @param {string} [lastEvId] 玩家上次选错的证据 id（含 decoy- 前缀）；用于针对性提示 */
+  _promptEvidenceRetry(cfg, rid, lastEvId) {
     const resident = (cfg.residents || []).find((r) => r.id === rid);
     const isHard = App.currentLevel >= 9;
+    const wasDecoy = typeof lastEvId === "string" && lastEvId.indexOf("decoy-") === 0;
     let extraMsg = "";
     if (isHard) {
       App.layout.timeline = [];
@@ -3792,17 +4518,23 @@ const GameFlow = {
       this.renderTimeline();
       extraMsg = "\n\n⚠️ 因证据重选，时间轴已被清空——你需要重新排列时间线。";
     }
+    if (wasDecoy) {
+      // 玩家刚选了"看似相关实则无效"的 decoy 干扰：明确告知这是陷阱
+      extraMsg += "\n\n⚠️ 上一条是「干扰证据」：看似相关，但已被排除。决定性证据要能直接坐实 TA。";
+    }
     Modal.alert("人选对了，证据没找对",
       "「" + (resident ? resident.name : "此人") + "」确实是凶手，但这条证据还不足以定罪。\n\n" +
       "这是本案最后一次机会：请换一条更有力的决定性证据。" + extraMsg,
       () => this._showCulpritPicker(cfg, { lockedRid: rid }));
   },
 
-  /** 指认失败：累计失败次数（跨局保留）→ 渐进提示 / 排除法专属提示 / 高亮关键证据，随后重置本局 */
+  /** 指认失败：本局累计失败次数（重置时清零）→ 渐进提示 / 排除法专属提示 / 高亮关键证据。
+   *  进度反馈：把"本局失败 X / 3"渲染到底部调查进度条，让玩家清楚剩余机会。 */
   _onAccuseFail(cfg, selectedId) {
-    const failsKey = "accuseFails_" + App.currentLevel;
-    const fails = Number(StorageUtil.read(failsKey, 0)) + 1;
-    StorageUtil.write(failsKey, fails);
+    const fails = (App.layout.accuseFails || 0) + 1;
+    App.layout.accuseFails = fails;
+    StorageUtil.writeLevelState(App.currentLevel, App.layout);
+    this.renderProgress();
     const resident = (cfg.residents || []).find((r) => r.id === selectedId);
     const name = resident ? resident.name : "此人";
     // 优先级1：选中被排除居民 → 排除法专属提示（漏洞5）
@@ -3849,10 +4581,21 @@ const GameFlow = {
     return "某人";
   },
 
-  /** 失败后重开本局：清空摆放与走访记录，保留跨局失败次数（渐进提示用） */
+  /** 失败后重开本局：保留走访记录（dialog 状态）+ 仅清布局与本局失败计数。
+   *  玩家不会因为"指认失败"而失去已收集的口供证据；只清空时间轴/线索池/锁定/本局失败数。 */
   _restartLevel() {
-    StorageUtil.clearLevelState(App.currentLevel);
-    StorageUtil.writeDialogRecord(App.currentLevel, []);
+    // 保留 StorageUtil.readDialogRecord 的内容（走访已交谈的人）；只清布局相关字段
+    const prev = StorageUtil.readLevelState(App.currentLevel);
+    const dialogIds = StorageUtil.readDialogRecord(App.currentLevel);
+    StorageUtil.writeLevelState(App.currentLevel, {
+      pool: [], mapPlace: {}, timeline: [], locked: [],
+      hintCount: prev && typeof prev.hintCount === "number" ? prev.hintCount : 0,
+      accuseFails: 0,
+    });
+    // 走访记录保留（如果之前有）——重置不影响"我走访过哪些人"
+    if (!dialogIds || !dialogIds.length) {
+      StorageUtil.writeDialogRecord(App.currentLevel, []);
+    }
     this.loadLevelPlaceholder();
   },
 
@@ -3863,7 +4606,7 @@ const GameFlow = {
     const onPass = opt.onPass || (() => this._onLevelClear(cfg));
     const rule = this.getLevelRule(cfg);
     // 步骤0：全局前置 - 干扰线索入时间轴检测（fake 占位不属于案发时间线）
-    // 注：ValidateUtil.checkFakeClueInSlot 因卡槽机制下线已恒返回空数组，这里改读时间轴真实检测
+    // 注：旧版卡槽机制下的 checkFakeClueInSlot 已下线，统一改读时间轴真实检测
     const fakeIds = (App.layout.timeline || []).filter((id) => {
       const c = App.clueMap[id];
       return !!(c && c.type === "fake");
@@ -3915,7 +4658,7 @@ const GameFlow = {
         return;
       }
     }
-    // 步骤2：物证唯一性锁死（已退化为 no-op，仅留配置入口供后续扩展）
+    // 步骤2：物证闭环校验（evidenceKeys 中的物证 id 必须已纳入时间轴/线索池）
     if (rule.checkEvidence && rule.evidenceKeys && rule.evidenceKeys.length) {
       const missing = this._getMissingEvidence(cfg, rule.evidenceKeys);
       if (missing.length) {
@@ -3955,11 +4698,28 @@ const GameFlow = {
   },
 
   /** 检测缺失的关键物证（证据链闭环门槛）。
-   *  原检查要求物证放入对应居民卡槽；卡槽机制已移除后，
-   *  该门槛失去落点支撑，统一定为空数组（视为「无缺失」）。
-   *  @returns {Array<string|{id:string,tag:string}>} 始终为空数组 */
+   *  卡槽机制下线后，判定"玩家是否已把关键物证纳入推理视野"：
+   *  关键物证必须出现在 App.layout.timeline（已在时间轴上被审视）
+   *  或 App.layout.pool（已在下方线索池中可见）之一，即视为「已采纳」。
+   *  困难关（diffLevel=3）不展示物证对应身份标签，避免直接剧透。
+   *  @param {Object} cfg 当前关卡配置
+   *  @param {string[]} evKeys 关键物证 id 列表（来自 ext.evidenceKeys）
+   *  @returns {Array<{id:string,tag:string}>} 缺失的关键物证（含身份标签用于文案） */
   _getMissingEvidence(cfg, evKeys) {
-    return [];
+    if (!cfg || !Array.isArray(evKeys) || !evKeys.length) return [];
+    const seen = new Set([].concat(App.layout.timeline || [], App.layout.pool || []));
+    const diffLevel = Number((cfg.ext || {}).diffLevel) ||
+      (App.currentLevel <= 3 ? 1 : (App.currentLevel <= 8 ? 2 : 3));
+    const isHard = diffLevel >= 3;
+    const missing = [];
+    evKeys.forEach((eid) => {
+      if (seen.has(eid)) return;
+      const c = (cfg.clues || []).find((x) => x.id === eid);
+      if (!c) return;
+      // 困难关不外泄 evidenceOwnerTag，避免直接剧透身份
+      missing.push({ id: eid, tag: isHard ? "" : (c.evidenceOwnerTag || "") });
+    });
+    return missing;
   },
 
   /** 时间重叠排查弹窗：时间轴拖入新目击证词后，
@@ -3984,15 +4744,6 @@ const GameFlow = {
     const h = Math.floor(m / 60);
     const mm = m % 60;
     return (h < 10 ? "0" + h : h) + ":" + (mm < 10 ? "0" + mm : mm);
-  },
-
-  /**
-   * 比对当前摆放与正确答案映射。
-   * 卡槽机制已移除，所有基于槽位精确匹配的检查项已下线，
-   * 残留的 slot 数据仅做兼容读取，不再用于判定胜负。
-   * 后续由「时间轴校验 + 指认凶手」两步组合替代此函数作为最终校验入口。 */
-  _checkSolution(cfg) {
-    return { ok: true, message: "" };
   },
 
   /** 由线索 id 反查其所属居民的姓名（用于提示文案） */
@@ -4041,6 +4792,9 @@ const GameFlow = {
       extraHtml = '<span class="modal-extra-title">· ' + (isLast ? "小镇终章" : "小镇小番外") + "</span>" +
         "<p>" + ClueCards.escapeHtml(story) + "</p>";
     }
+    // 关键证据 + decoy 清单：玩家通关后回看本关推理路径
+    const review = this._buildClueReview(cfg);
+    if (review) extraHtml += review;
     Modal.alertWithExtra(
       "案件告破",
       cfg.truth + (isLast ? "\n\n恭喜你通关全部 11 关！" : "\n\n已解锁下一关。"),
@@ -4054,6 +4808,41 @@ const GameFlow = {
         }
       }
     );
+  },
+
+  /**
+   * 构造"本关关键证据 + decoy 干扰"清单（仅在通关时展示）。
+   * - 关键证据：凶手 solution 线索 + pointsTo 凶手的目击线索（🔑 物证 / 🗣 自白 / 👁 目击）
+   * - decoy 干扰：ext.decoyEvidence 列表（⚠ 干扰）
+   * 让玩家通关后能"复盘"——哪些线索是真正定罪的、哪些是陷阱。
+   * @returns {string} HTML 字符串
+   */
+  _buildClueReview(cfg) {
+    const esc = ClueCards.escapeHtml;
+    const keySet = this._killerKeyIds(cfg);
+    const decoys = (cfg.ext && cfg.ext.decoyEvidence) || [];
+    if (!keySet.size && !decoys.length) return "";
+    const classify = (c) => {
+      if (!c) return "📁";
+      if (c.isEvidence) return "🔑";
+      if (c.isSuspectStatement) return "🗣";
+      if (c.isWitness) return "👁";
+      return "📁";
+    };
+    const stripPrefix = (text) => String(text || "").replace(/^[^：:]*[：:]\s*/, "");
+    const keysHtml = Array.from(keySet).map((cid) => {
+      const c = (cfg.clues || []).find((x) => x.id === cid);
+      if (!c) return "";
+      return '<li><span class="review-icon">' + classify(c) + "</span>" + esc(stripPrefix(c.text)) + "</li>";
+    }).join("");
+    const decoysHtml = decoys.map((d) => {
+      return '<li><span class="review-icon decoy">⚠</span>' + esc(d) + "</li>";
+    }).join("");
+    return '<span class="modal-extra-title">· 关键证据回顾</span>' +
+      (keysHtml ? '<ul class="clue-review-list">' + keysHtml + "</ul>" : "<p>（无）</p>") +
+      (decoysHtml
+        ? '<span class="modal-extra-title">· 干扰证据（陷阱）</span><ul class="clue-review-list decoy-list">' + decoysHtml + "</ul>"
+        : "");
   },
 
   /**
@@ -4105,44 +4894,12 @@ const GameFlow = {
       ? "提示已用完"
       : "获取提示 (" + (2 - used) + " / 2)";
   },
-  /** 刷新底部实时推理进度条（混合模式展示） */
-  refreshProgress() {
-    const bar = document.getElementById("progress-bar");
-    if (!bar) return;
-    if (!App.levelData) {
-      bar.hidden = true;
-      return;
-    }
-    bar.hidden = false;
-    const cfg = this.getLevelConfig();
-    if (!cfg) return;
-    const rule = this.getLevelRule(cfg);
-    const talked = StorageUtil.readDialogRecord(App.currentLevel);
-    const total = (cfg.residents || []).length;
-    const done = talked.length;
-    const talkOk = done >= total;
-    // 卡槽机制已下线，solOk 始终为 true（保留占位以兼容既有存档文案）
-    const solOk = true;
-    // 时序冲突：拖入时间轴的冲突线索
-    const timeOk = rule.checkTimeline ? !ValidateUtil.detectTimelineConflict().length : true;
-    // 证据链
-    const evOk = rule.checkEvidence ? !this._getMissingEvidence(cfg, rule.evidenceKeys).length : true;
-    const esc = (s) => s;
-    bar.innerHTML =
-      '<span class="' + (talkOk ? 'done' : 'todo') + '">走访 ' + done + '/' + total + '</span>' +
-      (rule.checkTimeline
-        ? ' <span class="' + (timeOk ? 'done' : 'todo') + '">时序' + (timeOk ? ' ✔' : ' ✘') + '</span>'
-        : "") +
-      (rule.checkEvidence && rule.evidenceKeys.length
-        ? ' <span class="' + (evOk ? 'done' : 'todo') + '">证据' + (evOk ? ' ✔' : ' ✘') + '</span>'
-        : "");
-  },
 
   /** 重置本局：带二次确认，避免误触清空布局；确认后复用 _restartLevel（跨局失败次数保留） */
   resetLevel() {
-    Modal.confirm("确认重置本局？", "当前的时间轴与走访记录将被清空，且无法撤销。确定要重新开始吗？", () => {
+    Modal.confirm("确认重置本局？", "当前的时间轴与线索池将被清空，已走访的居民记录会保留——你不用重新跑口供。确定要重新开始吗？", () => {
       this._restartLevel();
-      Modal.alert("已重置", "本局卡片摆放与走访记录已清空，请重新推理。");
+      Modal.alert("已重置", "本局时间轴与线索池已清空；走访记录保留，请重新推理。");
     });
   },
 
@@ -4706,11 +5463,17 @@ const Achievement = {
 (function init() {
   // 数据/机制升级时一次性清档：旧版关卡进度会与新谜题冲突
   StorageUtil.migrateIfNeeded();
+  // 刷新主菜单按钮文案（首次玩 →"开始游戏"，老玩家 →"继续推理（当前第 N 关）"）
+  Menu.refreshStartButton();
   // 主菜单入口：开始游戏 → 直接进入当前已解锁关卡
   document.getElementById("btn-start").addEventListener("click", () => {
     App.currentLevel = StorageUtil.readProgress().unlocked;
     Menu.showPage("page-game");
     GameFlow.loadLevelPlaceholder();
+  });
+  // 主菜单"先看新手指引"按钮：主动打开教程（不写已看标记，但会自动弹窗）
+  document.getElementById("btn-tutorial-menu").addEventListener("click", () => {
+    GameFlow.showTutorialCards(false);
   });
   // 居民档案馆入口
   document.getElementById("btn-archive").addEventListener("click", () => {
@@ -4724,9 +5487,9 @@ const Achievement = {
     // 返回前二次确认：本局摆放 / 走访记录将被清空，点「取消」则留在本关
     Modal.confirm(
       "确认返回主菜单？",
-      "返回将清空当前的时间轴与走访记录，且无法撤销。确定离开吗？",
+      "返回将清空当前的时间轴与线索池（已走访的居民记录会保留）。确定离开吗？",
       () => {
-        GameFlow._restartLevel(); // 清空本局，避免再进入时残留
+        GameFlow._restartLevel(); // 清空本局布局，避免再进入时残留
         Menu.showPage("page-menu");
       }
     );
@@ -4786,8 +5549,33 @@ const Achievement = {
 
   // 首次进入展示主菜单
   Menu.showPage("page-menu");
-  // 初始化背景音乐（两路 Audio + 首次点击解锁）
+  // 静音按钮：点击切换 BGM 静音状态
+  document.getElementById("btn-mute").addEventListener("click", () => Bgm.toggleMute());
+  // 启动背景音乐（两路 Audio + 首次点击解锁）
   Bgm.init();
+  Bgm._refreshMuteButton();
+  // 全局快捷键：ESC 关闭"最上层"的遮罩弹窗（按 z-index 倒序找第一个 .show 的 mask）
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape") return;
+    const maskClosers = [
+      { id: "achievement-mask", close: () => Achievement.close() },
+      { id: "modal-mask", close: () => Modal.close() },
+      { id: "bio-mask", close: () => BioArchive.close() },
+      { id: "lore-mask", close: () => LorePanel.close() },
+      { id: "chronicle-mask", close: () => ChroniclePanel.close() },
+      { id: "town-map-mask", close: () => TownMap.close() },
+    ];
+    const visible = maskClosers
+      .map((m) => {
+        const el = document.getElementById(m.id);
+        if (!el || !el.classList.contains("show")) return null;
+        const z = parseInt((getComputedStyle(el).zIndex || "0"), 10) || 0;
+        return { ...m, z };
+      })
+      .filter(Boolean)
+      .sort((a, b) => b.z - a.z);
+    if (visible.length) visible[0].close();
+  });
   // 接入底层拖拽交互（Pointer Events 统一方案，鼠标 / 触屏通用）
   GameFlow.setupDrag();
 })();

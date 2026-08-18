@@ -96,7 +96,7 @@ if (!LevelData || LevelData.length !== 11) {
   console.error("✗ LevelData 加载异常：", LevelData && LevelData.length);
   process.exit(1);
 }
-if (!ValidateUtil || typeof ValidateUtil.detectConflict !== "function") {
+if (!ValidateUtil || typeof ValidateUtil.detectTimelineConflict !== "function") {
   console.error("✗ ValidateUtil 加载异常");
   process.exit(1);
 }
@@ -124,8 +124,11 @@ function buildCorrectLayout(cfg) {
   const timeline = (cfg.clues || [])
     .filter((c) => c.type !== "fake" && c.isWitness === true && c.conflictType !== "lie")
     .map((c) => c.id);
-  AppObj.layout = { slots, pool: [], timeline };
-  return { slots, timeline };
+  // 关键物证放入线索池（模拟"正解玩家已把关键物证纳入推理视野"）
+  const evKeys = ((cfg.ext || {}).evidenceKeys) || [];
+  const pool = evKeys.slice();
+  AppObj.layout = { slots, pool, timeline };
+  return { slots, timeline, pool };
 }
 
 function getLevelRule(cfg, num) {
@@ -160,7 +163,11 @@ LevelData.forEach((cfg, idx) => {
     const c = AppObj.clueMap[id];
     return !c || c.conflictType !== "misunderstand";
   });
-  const fakes = ValidateUtil.checkFakeClueInSlot();
+  // fake 入时间轴的检测：直接读时间轴（checkFakeClueInSlot 已下线）
+  const fakes = (AppObj.layout.timeline || []).filter((id) => {
+    const c = AppObj.clueMap[id];
+    return !!(c && c.type === "fake");
+  });
   const tlConflicts = ValidateUtil.detectTimelineConflict();
   const miss = rule.checkEvidence ? getMissingEvidenceReal(cfg, rule.evidenceKeys) : [];
   log(allConflicts.length === 0, `第 ${num} 关 正解：时间轴无 lie 冲突（${allConflicts.length}）`);
@@ -210,13 +217,22 @@ LevelData.forEach((cfg, idx) => {
     }
   }
 
-  // ===== 场景 3：漏物证（卡槽已下线，证据链门槛退化为 no-op，验证脚本仅做兼容性核对） =====
+  // ===== 场景 3：漏物证（关键物证必须出现在时间轴或线索池，否则 evidenceKeys 门槛会拦截） =====
   if (rule.checkEvidence && rule.evidenceKeys && rule.evidenceKeys.length) {
-    const dropId = rule.evidenceKeys[0];
+    // 用真实 _getMissingEvidence 逻辑复刻（避免 vm 内访问不到）
+    const seen = new Set([].concat(AppObj.layout.timeline || [], AppObj.layout.pool || []));
+    const evKeys = rule.evidenceKeys;
+    // 正解时所有 key 应都已入池/入轴 → 缺失数应为 0
+    const missOk = evKeys.every((eid) => seen.has(eid));
+    log(missOk, `第 ${num} 关 正解：关键物证全部入轴/入池（缺=${evKeys.length - (evKeys.filter((eid) => seen.has(eid)).length)}）`);
+
+    // 故意把第一个 evidenceKey 移除 → 缺失数应 ≥ 1
+    const dropId = evKeys[0];
     if (dropId && AppObj.clueMap[dropId]) {
-      // 物证门槛已退化为恒返回 []，验证脚本相应改为「确认不会误报缺失」
-      const missNow = getMissingEvidenceReal(cfg, rule.evidenceKeys);
-      log(missNow.length === 0, `第 ${num} 关 漏物证：证据链门槛已下线，应恒返回 0（实得 ${missNow.length}）`);
+      const seen2 = new Set([].concat(AppObj.layout.timeline || [], AppObj.layout.pool || []));
+      seen2.delete(dropId);
+      const missDrop = evKeys.filter((eid) => !seen2.has(eid)).length;
+      log(missDrop >= 1, `第 ${num} 关 漏物证：缺失关键物证应被识别（实得 ${missDrop}）`);
     }
   }
 

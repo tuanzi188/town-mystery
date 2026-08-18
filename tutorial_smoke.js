@@ -70,13 +70,15 @@ const log = (ok, msg) => { if (ok) { pass++; } else { fail++; console.error("  �
 function makeContext() {
   const alerts = [];
   const ctx = (new Function(wrapped))(documentMock, windowMock, localStorageMock, CSSMock, () => {}, { userAgent: "tutorial-smoke" });
-  ctx.Modal.show = (title, text, btns) => {
+  ctx.Modal.show = (title, text, btns, onClose) => {
     const labels = (btns || []).map((b) => b.label);
     alerts.push({ title, text, labels });
     // 模拟玩家逐张点「下一步 / 开始探索」：递归弹出后续卡片
     const next = (btns || []).find((b) => b.label === "下一步" || b.label === "开始探索");
     if (next) {
       try { next.onClick(); } catch (e) { /* 忽略内部错误 */ }
+      // 模拟"点完按钮后弹窗关闭"——触发 onClose 钩子，与真实玩家路径一致（覆盖教程标记写入）
+      if (onClose) { try { onClose(); } catch (e) { /* ignore */ } }
     }
   };
   return { ctx, alerts };
@@ -111,17 +113,28 @@ localStorageMock.clear();
   log(alerts.length === 0, `场景 2：已看过则不弹（实际 ${alerts.length}）`);
 }
 
-// === 场景 3：未看过 + 非 L1 → 不弹 ===
+// === 场景 3：未看过 + 任意未通关关卡 → 都弹（保证萌新任何路径都看到引导） ===
 {
   localStorageMock.clear();
   const { ctx, alerts } = makeContext();
   ctx.App.currentLevel = 2;
   ctx.GameFlow.maybeShowTutorial();
-  log(alerts.length === 0, `场景 3：L2 未看过也不弹（实际 ${alerts.length}）`);
-  // L9 困难关也试一下
+  log(alerts.length === 3, `场景 3a：L2 未看过 + 未碰过布局 → 应弹 3 张（实际 ${alerts.length}）`);
+  // 场景 3a 结束后 tutorialSeen=true；3b 是验证"已看过任何一关" → 后面的关不再弹
   ctx.App.currentLevel = 9;
   ctx.GameFlow.maybeShowTutorial();
-  log(alerts.length === 0, `场景 3：L9 未看过也不弹（实际 ${alerts.length}）`);
+  log(alerts.length === 3, `场景 3b：L9 已通过 3a 看过了 → 不再弹（实际 ${alerts.length}）`);
+}
+
+// === 场景 3c：未看过 + 本关已被玩过（layout 非空） → 不弹 ===
+{
+  localStorageMock.clear();
+  const { ctx, alerts } = makeContext();
+  ctx.App.currentLevel = 3;
+  // 模拟玩家在 L3 已经动过布局（拖了线索入时间轴）
+  ctx.StorageUtil.writeLevelState(3, { pool: ["c1"], timeline: ["c2"], mapPlace: {}, locked: [] });
+  ctx.GameFlow.maybeShowTutorial();
+  log(alerts.length === 0, `场景 3c：L3 已动过布局 → 不弹（实际 ${alerts.length}）`);
 }
 
 // === 场景 4：migrateIfNeeded 升级 → tutorialSeen 不清 ===
