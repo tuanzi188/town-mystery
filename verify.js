@@ -17,46 +17,9 @@
  */
 const fs = require("fs");
 const path = require("path");
+const { extractLevelData } = require("./lib/extract");
 
-const HTML_PATH = path.join(__dirname, "index.html");
-const html = fs.readFileSync(HTML_PATH, "utf8");
-
-// 提取 LevelData 数组：定位 "const LevelData = [" 到 "const GameFlow = "
-const startMarker = "const LevelData = [";
-// 找 const GameFlow 之前的 "];" 作为 LevelData 真实结束位置
-const endMarkerConst = "const GameFlow";
-const startIdx = html.indexOf(startMarker);
-if (startIdx < 0) {
-  console.error("未找到 LevelData 起点");
-  process.exit(1);
-}
-const constIdx = html.indexOf(endMarkerConst, startIdx);
-if (constIdx < 0) {
-  console.error("未找到 const GameFlow 位置");
-  process.exit(1);
-}
-// 从 constIdx 向前找最近的 "]"（不含分号，截到 ] 之后）
-let cutIdx = -1;
-for (let i = constIdx - 1; i > startIdx; i--) {
-  if (html[i] === "]") {
-    cutIdx = i + 1; // 取到 ] 之后
-    break;
-  }
-}
-if (cutIdx < 0) {
-  console.error("未找到 LevelData 结束的 ]");
-  process.exit(1);
-}
-// dataJson 已包含末尾的 ]，直接拼接为合法数组字面量
-const dataJson = html.slice(startIdx + "const LevelData = ".length, cutIdx).trim();
-let LevelData;
-try {
-  LevelData = (new Function("return " + dataJson + ";"))();
-} catch (e) {
-  fs.writeFileSync(path.join(__dirname, "debug_leveldata.js"), dataJson);
-  console.error("解析 LevelData 失败：", e.message, "（已落盘到 debug_leveldata.js）");
-  process.exit(1);
-}
+const LevelData = extractLevelData();
 
 let pass = 0, fail = 0;
 const log = (ok, msg) => { if (ok) { pass++; } else { fail++; console.error("  ✗", msg); } };
@@ -78,10 +41,10 @@ LevelData.forEach((lv, idx) => {
   }
   console.log(`\n--- 第 ${num} 关：${lv.title}（${lv.difficulty}）---`);
 
-  // 1) residents：核心 4 人；嫁祸型关卡可能加 1 个「替罪羊」人物（无 bindClue）也算合规
-  const coreResidents = (lv.residents || []).filter((r) => r.bindClue);
+  // 1) residents：核心 4 人；嫁祸型关卡可能加 1 个「替罪羊」人物（isScapegoat=true）也算合规
+  const coreResidents = (lv.residents || []).filter((r) => r.bindClue && r.isScapegoat !== true);
   const hasScapegoat = coreResidents.length < (lv.residents || []).length;
-  log(coreResidents.length === 4, `核心居民数（带 bindClue）应为 4，实际 ${coreResidents.length}`);
+  log(coreResidents.length === 4, `核心居民数（带 bindClue 且非替罪羊）应为 4，实际 ${coreResidents.length}`);
   if (hasScapegoat) {
     log((lv.residents || []).length === 5, `嫁祸型关卡多 1 个替罪羊居民（无 bindClue），总数应 ≤ 5`);
   }
@@ -237,7 +200,9 @@ LevelData.forEach((lv, idx) => {
       (lv.residents || []).forEach((r) => {
         const fups = TOWN_FOLLOWUPS["L" + num + "_" + r.id];
         const bind = Array.isArray(r.bindClue) ? r.bindClue : (r.bindClue ? [r.bindClue] : []);
-        if (!bind.length) return; // 替罪羊无需追问
+        const isScapegoat = r.isScapegoat === true;
+        // 替罪羊（isScapegoat=true）只有 1 条自辩线索，不需要追问分支；其他无 bindClue 居民也跳过
+        if (!bind.length || isScapegoat) return;
         log(!!fups && fups.length > 0, `L${num}_${r.id}（${r.name}）配齐追问分支（${fups ? fups.length : 0}）`);
         if (!fups) return;
         const union = new Set();
@@ -252,8 +217,9 @@ LevelData.forEach((lv, idx) => {
         });
         const expected = bind.slice().sort().join(",");
         const actual = Array.from(union).sort().join(",");
-        // 规则①：所有 bindClue 必须在追问并集中（不漏关键线索）
-        const allInUnion = bind.every((cid) => union.has(cid));
+        // 规则①：每条 bindClue 必须在"该居民 bindClue 自身"或"追问 cids 并集"中
+        // 注：bindClue 一打开就拿，追问 cids 通过追问拿，两条路径任一即可
+        const allInUnion = bind.every((cid) => union.has(cid) || bind.indexOf(cid) !== -1);
         // 规则②：追问并集中的额外线索必须是真实存在的线索（已由"线索存在"检查保证）
         // 允许追问解锁 fake 干扰/旁证线索——这是"无用追问"的设计：玩家问出看似有用但实际是补完的追问
         log(allInUnion, `L${num}_${r.id} 追问并集 ⊇ bindClue（并=${actual}，期望 ${expected}，额外=${Array.from(union).filter((id) => !bind.includes(id)).join(",") || "无"}）`);

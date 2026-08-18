@@ -7,61 +7,12 @@
  *
  * 用法：node tutorial_smoke.js
  */
-const fs = require("fs");
-const path = require("path");
+const { loadRuntime } = require("./lib/extract");
+const { createMocks } = require("./lib/mocks");
 
-const HTML_PATH = path.join(__dirname, "index.html");
-const html = fs.readFileSync(HTML_PATH, "utf8");
-const scriptStart = html.indexOf("<script>") + "<script>".length;
-const scriptEnd = html.lastIndexOf("</script>");
-const scriptCode = html.slice(scriptStart, scriptEnd);
-
-function makeStub() {
-  const stub = {};
-  ["addEventListener", "removeEventListener", "appendChild", "removeChild", "setAttribute", "getAttribute", "hasAttribute", "dataset", "style", "parentNode", "querySelector", "querySelectorAll"].forEach((k) => {
-    if (k === "dataset") stub.dataset = {};
-    else if (k === "style") stub.style = {};
-    else if (k === "parentNode") stub.parentNode = null;
-    else stub[k] = () => {};
-  });
-  stub.classList = { add() {}, remove() {}, toggle() {}, contains: () => false };
-  return stub;
-}
-const documentMock = {
-  addEventListener() {}, removeEventListener() {},
-  body: makeStub(),
-  createElement: () => makeStub(),
-  createElementNS: () => makeStub(),
-  elementFromPoint: () => null,
-  getElementById: () => makeStub(),
-  querySelector: () => null,
-  querySelectorAll: () => [],
-};
-const localStorageMock = (() => {
-  const s = {};
-  return {
-    getItem: (k) => (k in s ? s[k] : null),
-    setItem: (k, v) => { s[k] = String(v); },
-    removeItem: (k) => { delete s[k]; },
-    clear: () => { Object.keys(s).forEach((k) => delete s[k]); },
-    _dump: () => ({ ...s }),
-  };
-})();
-const windowMock = { innerWidth: 1024, innerHeight: 768, addEventListener() {} };
-const CSSMock = { escape: (s) => String(s).replace(/[^a-zA-Z0-9_-]/g, "\\$&") };
-
-// 替换 localStorage 为带 _dump 的 mock
-const wrapped = `
-"use strict";
-const document = arguments[0];
-const window = arguments[1];
-const localStorage = arguments[2];
-const CSS = arguments[3];
-const requestAnimationFrame = arguments[4];
-const navigator = arguments[5];
-${scriptCode}
-return { App, LevelData, Modal, StorageUtil, GameFlow };
-`;
+// 5 个 mock 共享一次,确保 localStorage 状态在 makeContext() 间延续
+const sharedMocks = createMocks({ userAgent: "tutorial-smoke" });
+const localStorageMock = sharedMocks.localStorageMock;
 
 let pass = 0, fail = 0;
 const log = (ok, msg) => { if (ok) { pass++; } else { fail++; console.error("  ✗", msg); } };
@@ -69,7 +20,12 @@ const log = (ok, msg) => { if (ok) { pass++; } else { fail++; console.error("  �
 // 抓弹窗：替换 Modal.show 拦截（引导卡经 Modal.show 渲染，按钮数组 btns）
 function makeContext() {
   const alerts = [];
-  const ctx = (new Function(wrapped))(documentMock, windowMock, localStorageMock, CSSMock, () => {}, { userAgent: "tutorial-smoke" });
+  const r = loadRuntime({
+    expose: ["App", "LevelData", "Modal", "StorageUtil", "GameFlow"],
+    includeTownData: false,
+    mocks: sharedMocks,
+  });
+  const ctx = r.ctx;
   ctx.Modal.show = (title, text, btns, onClose) => {
     const labels = (btns || []).map((b) => b.label);
     alerts.push({ title, text, labels });

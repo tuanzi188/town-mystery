@@ -1,56 +1,23 @@
 // 缺陷 A 单元测试：detectTimeRangePairing 在各关应输出预期结果
-const fs = require("fs");
-const path = require("path");
-const HTML_PATH = path.join(__dirname, "index.html");
-const html = fs.readFileSync(HTML_PATH, "utf8");
-const scriptStart = html.indexOf("<script>") + "<script>".length;
-const scriptEnd = html.lastIndexOf("</script>");
-const scriptCode = html.slice(scriptStart, scriptEnd);
+const { loadRuntime } = require("./lib/extract");
+const { createMocks } = require("./lib/mocks");
 
-function makeStub() {
-  const stub = {};
-  ["addEventListener", "removeEventListener", "appendChild", "removeChild", "classList", "setAttribute", "getAttribute", "hasAttribute", "dataset", "style", "parentNode"].forEach((k) => {
-    if (k === "classList") stub.classList = { add() {}, remove() {}, toggle() {}, contains: () => false };
-    else if (k === "dataset") stub.dataset = {};
-    else if (k === "style") stub.style = {};
-    else if (k === "parentNode") stub.parentNode = null;
-    else stub[k] = () => {};
+let ctx;
+let localStorageMock;
+try {
+  const r = loadRuntime({
+    expose: ["App", "LevelData", "ValidateUtil", "GameFlow", "StorageUtil", "Bgm"],
+    includeTownData: false,
+    userAgent: "test",
   });
-  stub.cloneNode = () => makeStub();
-  stub.closest = () => null;
-  stub.getBoundingClientRect = () => ({ left: 0, top: 0, right: 0, bottom: 0, width: 0, height: 0 });
-  stub.querySelector = () => null;
-  stub.querySelectorAll = () => [];
-  return stub;
+  ctx = r.ctx;
+  localStorageMock = r.mocks.localStorageMock;
+} catch (e) {
+  console.error("✗ 真实脚本加载失败：", e.message);
+  console.error(e.stack.split("\n").slice(0, 5).join("\n"));
+  process.exit(1);
 }
-const documentMock = {
-  addEventListener() {}, removeEventListener() {}, body: makeStub(),
-  createElement: () => makeStub(), createElementNS: () => makeStub(),
-  elementFromPoint: () => null, getElementById: () => makeStub(),
-  querySelector: () => null, querySelectorAll: () => [],
-};
-const localStorageMock = (() => {
-  const s = {};
-  return {
-    getItem: (k) => (k in s ? s[k] : null),
-    setItem: (k, v) => { s[k] = String(v); },
-    removeItem: (k) => { delete s[k]; },
-    clear: () => { Object.keys(s).forEach((k) => delete s[k]); },
-  };
-})();
-const wrapped = [
-  '"use strict";',
-  'const document = arguments[0];',
-  'const window = arguments[1];',
-  'const localStorage = arguments[2];',
-  'const CSS = arguments[3];',
-  'const requestAnimationFrame = arguments[4];',
-  'const navigator = arguments[5];',
-  scriptCode,
-  'return { App, LevelData, ValidateUtil, GameFlow, StorageUtil, Bgm };',
-].join("\n");
-const fn = new Function(wrapped);
-const ctx = fn(documentMock, { innerWidth: 1024, innerHeight: 768, addEventListener() {} }, localStorageMock, { escape: (s) => String(s).replace(/[^a-zA-Z0-9_-]/g, "\\$&") }, () => {}, { userAgent: "test" });
+
 const { App: A, LevelData, ValidateUtil, GameFlow, StorageUtil, Bgm } = ctx;
 
 let pass = 0, fail = 0;

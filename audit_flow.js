@@ -8,18 +8,8 @@
  * 额外统计缺陷A（时间区间配对）的线索数据覆盖。
  * 用法：node audit_flow.js
  */
-const fs = require("fs");
-const path = require("path");
-const HTML_PATH = path.join(__dirname, "index.html");
-const html = fs.readFileSync(HTML_PATH, "utf8");
-const startIdx = html.indexOf("const LevelData = [");
-const constIdx = html.indexOf("const GameFlow", startIdx);
-let cutIdx = -1;
-for (let i = constIdx - 1; i > startIdx; i--) {
-  if (html[i] === "]") { cutIdx = i + 1; break; }
-}
-const dataJson = html.slice(startIdx + "const LevelData = ".length, cutIdx).trim();
-const LevelData = (new Function("return " + dataJson + ";"))();
+const { extractLevelData } = require("./lib/extract");
+const LevelData = extractLevelData();
 
 let pass = 0, fail = 0;
 const log = (ok, msg) => { if (ok) { pass++; } else { fail++; console.error("  ✗", msg); } };

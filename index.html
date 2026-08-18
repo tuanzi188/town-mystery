@@ -217,6 +217,33 @@ input{font-family:inherit;}
   background:#efece4;color:#a09886;border:1px solid var(--card-line);
   letter-spacing:1px;flex:none;
 }
+/* 居民卡片下方的「获取线索」提示行 */
+.resident-hint{
+  font-size:11px;line-height:1.5;padding:3px 8px;margin:4px 0 6px 42px;
+  border-radius:6px;letter-spacing:.3px;
+  background:#fbfaf6;color:var(--text-sub);
+  border:1px solid var(--card-line);
+}
+.resident-hint b{color:var(--accent-deep);font-weight:600;}
+.resident-hint.hint-unvisited{
+  background:var(--soft);color:var(--accent-deep);
+  border:1px dashed var(--accent);
+  animation:hint-pulse 2s ease-in-out infinite;
+}
+.resident-hint.hint-low{
+  background:#fbf1e3;color:#a96a2a;border-color:#ecd9bd;
+}
+.resident-hint.hint-half{
+  background:#f4eee0;color:#7a5a1a;border-color:#e0d2a8;
+}
+.resident-hint.hint-done{
+  background:#e8f0e8;color:#3a6a3a;border-color:#cce0cc;
+}
+.resident-hint .hint-tap{color:var(--accent);font-weight:500;}
+@keyframes hint-pulse{
+  0%,100%{opacity:1;}
+  50%{opacity:.7;}
+}
 .slots{
   display:flex;flex-wrap:wrap;gap:8px;min-height:52px;
   padding:6px;border:1.5px dashed var(--card-line);border-radius:10px;
@@ -662,8 +689,19 @@ input{font-family:inherit;}
 }
 .dl-line{
   display:block;
-  animation:dl-line-in .45s ease-out both;
   white-space:pre-line;
+}
+/* 逐字浮现光标：放在 dl-line 后方，跟随字符 */
+.dl-cursor{
+  display:inline-block;width:.5em;
+  color:var(--accent);font-weight:600;
+  animation:dl-cursor-blink .8s steps(2) infinite;
+  margin-left:1px;vertical-align:baseline;
+  user-select:none;
+}
+@keyframes dl-cursor-blink{
+  0%,49%{opacity:1;}
+  50%,100%{opacity:0;}
 }
 .dl-statement{
   font-size:14px;line-height:1.85;color:var(--text);
@@ -683,6 +721,42 @@ input{font-family:inherit;}
   animation:dl-line-in .5s ease-out both;
 }
 .dl-opening::before{content:"· ";color:var(--accent);font-style:normal;}
+/* 首次进入提示：仅显示在首次走访弹窗，引导玩家理解"听口供 + 追问"流程 */
+.dl-intro-tip{
+  font-size:12px;line-height:1.7;padding:8px 12px;
+  background:var(--soft);color:var(--accent-deep);
+  border-left:3px solid var(--accent);border-radius:6px;
+  margin-bottom:10px;animation:dl-line-in .5s ease-out both;
+}
+.dl-intro-tip b{color:var(--accent-deep);}
+/* 口供揭幕进度条：让玩家知道"还有几句" */
+.dl-progress{
+  display:flex;flex-direction:column;gap:4px;
+  margin-top:6px;padding:6px 8px;
+  background:#fbfaf6;border-radius:8px;
+  border:1px solid var(--card-line);
+  animation:dl-line-in .35s ease-out both;
+}
+.dl-progress[data-state="done"]{
+  background:#eef6ee;border-color:#cce0cc;
+}
+.dl-progress-label{
+  font-size:11px;color:var(--text-sub);letter-spacing:.5px;
+  transition:color .2s;
+}
+.dl-progress[data-state="done"] .dl-progress-label{
+  color:var(--accent-deep);font-weight:600;
+}
+.dl-progress-bar{
+  height:4px;background:#e8e2d4;border-radius:2px;overflow:hidden;
+}
+.dl-progress-fill{
+  height:100%;background:var(--accent);border-radius:2px;
+  transition:width .3s ease;
+}
+.dl-progress[data-state="done"] .dl-progress-fill{
+  background:linear-gradient(90deg,var(--accent),#5f8f6d);
+}
 /* 跳过揭幕按钮 */
 .walk-skip{
   display:inline-block;font-size:12px;color:var(--text-sub);
@@ -1532,9 +1606,11 @@ const DialogSystem = {
       '<p class="bio-lock-sub walk-tip">以上线索已加入下方线索池：浅米色为有效线索，可拖入下方时间轴排序；灰色「干扰」线索请留在池中。</p>' +
       secretHtml;
   },
-  /** 替罪羊判定：居民无 bindClue 视为次要人物 */
+  /** 替罪羊判定：优先用 isScapegoat 显式字段，否则回退到 bindClue 是否为空 */
   _isScapegoat(resident) {
     if (!resident) return false;
+    if (resident.isScapegoat === true) return true;
+    if (resident.isScapegoat === false) return false;
     const b = resident.bindClue;
     if (!b) return true;
     if (Array.isArray(b)) return b.length === 0;
@@ -1560,40 +1636,84 @@ const DialogSystem = {
     return '<div class="walk-clue-item"><span class="walk-clue-tag' + extraCls + '">' + tag +
       '</span><span class="walk-clue-text">' + esc(c.text) + "</span></div>";
   },
-  /** 启动口供逐句揭幕：第一句立即出现，后续每 ~700ms 追加一句；
+  /** 启动口供逐字揭幕：每个字 50ms 出现，句末标点处停顿 500ms；
    *  点"跳过"则一次性补齐并露出追问区；元素缺失时降级为一次性渲染 */
   _startStatementReveal(box, sentences, followups, asked, resident) {
     const esc = ClueCards.escapeHtml;
     const stmt = box.querySelector("#dl-statement");
     const after = box.querySelector("#dl-after-statement");
+    const progress = box.querySelector("#dl-progress");
+    const progressLabel = box.querySelector(".dl-progress-label");
+    const progressFill = box.querySelector("#dl-progress-fill");
+    // 拼接完整口供：句子之间无空格（按句末标点切分时已经保留了标点）
+    const fullText = sentences.join("");
+    const total = fullText.length;
+    // 预扫描：找出所有"句末标点"位置（这些字之后停顿 500ms 再继续）
+    const pausePoints = new Set();
+    for (let i = 0; i < total; i++) {
+      if (/[。！？!?…；;]/.test(fullText[i])) pausePoints.add(i);
+    }
+    // 进度更新：done = 已显示字符数
+    const updateProgress = (done) => {
+      if (!progress || !progressLabel) return;
+      const ratio = total > 0 ? Math.min(100, Math.round((done / total) * 100)) : 100;
+      if (progressFill) progressFill.style.width = ratio + "%";
+      if (done < total) {
+        progressLabel.innerHTML = "TA 正在说话 · <b>" + done + "</b> / " + total + " 字";
+        progress.setAttribute("data-state", "reveal");
+      } else {
+        progressLabel.innerHTML = "✅ 全部说完（共 " + total + " 字）";
+        progress.setAttribute("data-state", "done");
+      }
+    };
     if (!stmt || !after) {
+      updateProgress(total);
       this._finishReveal(box, followups, asked, resident);
       return;
     }
     this._clearRevealTimer();
     this._skipRequested = false;
-    if (!sentences.length) {
+    if (!fullText) {
       stmt.innerHTML = '<span class="dl-line">（TA 沉默着，没接话。）</span>';
+      updateProgress(0);
       this._finishReveal(box, followups, asked, resident);
       return;
     }
-    stmt.innerHTML = '<span class="dl-line">' + esc(sentences[0]) + '</span>';
-    if (sentences.length <= 1) {
-      this._finishReveal(box, followups, asked, resident);
-      return;
-    }
+    // 写入光标 span 容器（打字机模式），初始为空
+    stmt.innerHTML = '<span class="dl-line"></span><span class="dl-cursor" aria-hidden="true">▍</span>';
+    updateProgress(0);
     const skipBtn = box.querySelector("#dl-skip");
     if (skipBtn) skipBtn.hidden = false;
-    let i = 1;
+    let charIdx = 0;
     const self = this;
     const tick = function () {
-      if (self._skipRequested) { self._finishReveal(box, followups, asked, resident); return; }
-      if (i >= sentences.length) { self._finishReveal(box, followups, asked, resident); return; }
-      stmt.insertAdjacentHTML("beforeend", '<span class="dl-line">' + esc(sentences[i]) + '</span>');
-      i++;
-      self._revealTimer = setTimeout(tick, 700);
+      if (self._skipRequested) {
+        // skip：一次性显示全部 + 移除光标
+        const lineEl = stmt.querySelector(".dl-line");
+        if (lineEl) lineEl.textContent = fullText;
+        const cursor = stmt.querySelector(".dl-cursor");
+        if (cursor) cursor.remove();
+        updateProgress(total);
+        self._finishReveal(box, followups, asked, resident);
+        return;
+      }
+      if (charIdx >= total) {
+        const cursor = stmt.querySelector(".dl-cursor");
+        if (cursor) cursor.remove();
+        self._finishReveal(box, followups, asked, resident);
+        return;
+      }
+      // 追加一个字符
+      const lineEl = stmt.querySelector(".dl-line");
+      if (lineEl) lineEl.appendChild(document.createTextNode(fullText[charIdx]));
+      charIdx++;
+      updateProgress(charIdx);
+      // 计算下一个延迟：句末标点后停 500ms，普通字符 50ms
+      const justTypedIsPunctuation = pausePoints.has(charIdx - 1);
+      const nextDelay = justTypedIsPunctuation ? 500 : 50;
+      self._revealTimer = setTimeout(tick, nextDelay);
     };
-    self._revealTimer = setTimeout(tick, 700);
+    self._revealTimer = setTimeout(tick, 50);
   },
   /** 立即完成揭幕：补齐剩余句子 + 露出追问区 + 绑定事件 */
   _finishReveal(box, followups, asked, resident) {
@@ -1606,6 +1726,9 @@ const DialogSystem = {
     }
     const skipBtn = box.querySelector("#dl-skip");
     if (skipBtn) skipBtn.hidden = true;
+    // 口供揭完后：标记进度为完成（"✅ 全部听完"），不再隐藏（玩家能看到"听完了"的视觉确认）
+    const progress = box.querySelector("#dl-progress");
+    if (progress) progress.setAttribute("data-state", "done");
   },
   /** 绑定 after-statement 区域的事件（继续询问） */
   _bindAfterEvents(after, resident, followups) {
@@ -1637,6 +1760,11 @@ const DialogSystem = {
     const sentences = this._splitSentences(talkText);
     const opening = this._openingFor(resident, visitCount);
     const openingHtml = opening ? '<p class="dl-opening">' + esc(opening) + '</p>' : "";
+    // 首次进入引导：仅当本次是该居民首次走访时显示（避免老玩家反复被骚扰）
+    const isFirstVisit = visitCount <= 1;
+    const introTip = isFirstVisit
+      ? '<p class="dl-intro-tip">💡 <b>TA 正在回忆</b>，听完口供后可点下方「追问」让 TA 说更多 — 追问能解锁新线索（💡/🔑/🤥 标识）</p>'
+      : "";
     box.innerHTML =
       '<div class="bio-head">' +
         '<span class="bio-avatar">' + AvatarFactory.build(resident, { size: 52 }) + "</span>" +
@@ -1649,8 +1777,13 @@ const DialogSystem = {
       "</div>" +
       '<div class="bio-body">' +
         openingHtml +
+        introTip +
         '<p class="bio-sec-title">· 口供</p>' +
         '<div class="dl-statement" id="dl-statement" data-total="' + sentences.length + '"></div>' +
+        '<div class="dl-progress" id="dl-progress" data-state="reveal">' +
+          '<span class="dl-progress-label">TA 正在回忆 · <b>1</b> / ' + sentences.length + ' 句</span>' +
+          '<div class="dl-progress-bar"><div class="dl-progress-fill" id="dl-progress-fill" style="width:0%"></div></div>' +
+        '</div>' +
         '<button type="button" class="walk-skip" id="dl-skip" hidden>跳过揭幕</button>' +
         '<div class="dl-after-statement" id="dl-after-statement" hidden></div>' +
       "</div>";
@@ -1661,8 +1794,9 @@ const DialogSystem = {
     if (skipBtn) skipBtn.addEventListener("click", function () { self._skipRequested = true; });
     mask.classList.add("show");
     this._markSpoken(resident);
-    // 无追问分支的居民（如替罪羊）：保留原"一键全给"行为，立即解锁绑定的全部线索
-    if (!followups) this._unlockBoundClue(resident);
+    // 一打开居民就解锁 bindClue（无论有无追问分支）—— bindClue 是"打开就拿"的，
+    // 之前只对替罪羊（旧逻辑"!followups"）调用，导致正常居民 bindClue 永远进不了 pool
+    this._unlockBoundClue(resident);
     this._startStatementReveal(box, sentences, followups, asked, resident);
   },
   /** 回答某条追问：解锁对应线索 + 记录已追问 + 局部刷新 after-statement */
@@ -3139,7 +3273,7 @@ const LevelData = [
     },
     residents: [
       {
-        id: "r1", name: "王婶", tagShort: "菜市场摊主", bindClue: ["c1", "c2", "c9"],
+        id: "r1", name: "王婶", tagShort: "菜市场摊主", bindClue: ["c1", "c2", "c9", "c14"],
         avatar: { hair: "#5a5040", hairStyle: "bun", hat: "straw", skin: "#e8b58a" },
         bio: "王婶在镇东菜市场卖菜二十多年，天不亮出摊，收摊总比谁都晚。年轻时她随丈夫从乡下搬来小镇，丈夫走得早，她一个人把女儿拉扯大。她记性极好，谁家爱吃什么菜都记得，摊位上总放着几把送老街坊的葱，从不收钱。每天清早，扫街的赵大爷会绕到摊前歇脚；退休教师老张隔三差五帮她修门轴，她则回赠一把自家种的葱。她手上那只磨旧的帆布菜篮跟了她大半辈子，谁要碰，她都要先叮咛一句「轻些」。",
         secret: "那只磨旧的帆布菜篮，是女儿上小学时攒了半年零花钱偷偷给她买的。篮底补了又补，她从不舍得换新的。女儿三年前去了省城，回过家的次数一只手数得过来，王婶嘴上从不说想，只是每天收摊后把照片一张张存进旧手机，再拎着那只菜篮，把一天里最软的话都说给它听。那天菜篮不见了，她急的不是那一篮鸡蛋——是怕女儿买的那点念想，也弄丢了。"
@@ -3151,7 +3285,7 @@ const LevelData = [
         secret: "他晨跑时会故意绕远，经过镇口那家花店，只为多看一眼门口那个系围裙的姑娘。这件事他谁都没告诉，连路线都是算好角度才绕的。只是他始终不知道，那姑娘每天清晨也总在店门口多站一会儿，像是在等一阵从河堤那边跑来的风。"
       },
       {
-        id: "r3", name: "老张", tagShort: "退休老教师", bindClue: ["c6", "c7", "c10", "c16"],
+        id: "r3", name: "老张", tagShort: "退休老教师", bindClue: ["c6", "c7", "c10", "c16", "c17"],
         avatar: { hair: "#cccccc", hairStyle: "bald", hat: "glasses", skin: "#eac098", cloth: "#3a4a66", cloth2: "#ffffff" },
         bio: "老张在镇小学教了一辈子语文，退休后闲不住，每天清晨遛鸟、买菜，顺带帮街坊刷墙、修栅栏、换个灯泡，王婶家那扇老木门的门轴，也是他修的。他说话慢条斯理，做事总是先动手后解释，衣兜里常年揣着一条擦汗的褪色旧毛巾，街坊说他是个闷葫芦，心肠却是好的。",
         secret: "老张年轻时在乡下教书，有一回村里起火，他腿有旧伤没能跟人一起抬水，只能眼睁睁看着火扑灭。这事他记了很多年，此后谁家有事他总抢着搭把手，像是要把当年那一步补回来。那天清晨他看见王婶门口那只菜篮淋着雨，想着她收摊回来准要糟蹋，便顺手拎到垃圾站墙角先护着，打算回来再送还——谁知转头就被垃圾车收走了。他怕被当成贪小便宜，又怕说不清，便编了两套不在场的谎话，又在阳台伪装成目击者反咬小李，企图把水搅浑——可他自己的两段「位置」本来就在打架，再加上一条「目击」破绽只会更大。"
@@ -3239,7 +3373,7 @@ const LevelData = [
       { id: "c2", text: "阿明：八点我下夜班路过花坛，靠外侧蹲下系过鞋带——鞋底是干净的，我一点都没踩进去。", type: "valid", timeMin: 480, timeText: "8:00", exclude: "r3" },
       { id: "c3", text: "小胖：七点到七点二十我一直在家吃早饭，绝对没出过门。", type: "valid", timeMin: 420, timeMax: 440, timeText: "自称 7:00~7:20", isSuspectStatement: true, conflictGroup: "G-lie-1", conflictType: "lie" },
       { id: "c4", text: "小胖：七点半我下楼追球时看见小乐从花坛那边跑出来，一看就是他踩的——我鞋底可干净。", type: "valid", timeMin: 450, timeText: "7:30", isSuspectStatement: true, conflictGroup: "G-lie-2", conflictType: "lie" },
-      { id: "c5", text: "花坛新鲜脚印：泥土里压出一枚 36 码的圆头球鞋印，鞋底花纹像小学生穿的那种廉价蓝布鞋；旁边还有一道被球砸出的浅坑。", type: "valid", timeMin: 448, timeText: "约 7:28", isEvidence: true, evidenceOwnerTag: "小学高年级男童" },
+      { id: "c5", text: "花坛新鲜脚印：泥土里压出一枚 36 码的圆头球鞋印，鞋底花纹像小学生穿的那种廉价蓝布鞋；旁边还有一道被球砸出的浅坑。", type: "valid", timeMin: 448, timeText: "约 7:28", isEvidence: true, evidenceOwnerTag: "小学高年级男童", pointsTo: "r2" },
       { id: "c6", text: "花坛边捡到一枚 5 号橙色小橡皮球，表面印着「三年级男子组·亚军」几个字。", type: "valid", timeMin: 448, timeText: "约 7:28", isEvidence: true, evidenceOwnerTag: "小学高年级男童" },
       { id: "c7", text: "小乐：那天我一直在西边空地拍球，根本没靠近过花坛——要不信你去问赵奶奶。", type: "valid", timeMin: 450, timeText: "7:30", exclude: "r4", conflictGroup: "G-lie-2", conflictType: "lie" },
       { id: "c8", text: "赵奶奶：我在三楼阳台上看下去，模模糊糊看着像是有个圆滚滚的小身影从花坛里钻出来——穿的像是件蓝外套，我以为是楼下常来玩的小胖，可那会儿天没全亮，我没敢认死。", type: "valid", timeMin: 425, timeText: "约 7:05", isWitness: true, conflictGroup: "G-mis-1", conflictType: "misunderstand" },
@@ -3284,7 +3418,7 @@ const LevelData = [
         secret: "刘姐年轻时在乡下弄丢过一只养了多年的老猫，找了三天没找着，第四天它竟自己找回了家。这事过去快二十年，可她每次看见走失的猫，还是会放下锅铲去找。那天中午她在院子里洗菜，瞧见橘猫从东边巷子窜进阿伟车底下——她没多想，叫了一声'团子'，猫没应。"
       },
       {
-        id: "r2", name: "阿伟", tagShort: "程序员铲屎官", bindClue: ["c3", "c4"],
+        id: "r2", name: "阿伟", tagShort: "程序员铲屎官", bindClue: ["c3", "c4", "c6", "c9"],
         avatar: { hair: "#1a1a1a", hairStyle: "curly", hat: "glasses", skin: "#f4d4b0" },
         bio: "阿伟是镇上软件公司的程序员，作息混乱是常态，唯独对猫格外上心。他的工位上贴满了流浪猫的照片，办公桌底下还常年藏着几只从快递箱裁出来的「猫窝」，谁问起他都说是顺手玩的。小区东头的高中女生小蕊常喂的那只橘猫，他其实摸过好几回，只是嘴上从不认。",
         secret: "阿伟的房间其实偷偷养了四只捡来的猫，纸箱窝就藏在床底下。他怕房东发现，从没跟任何人提过，连同事都想不通他为什么每天下班都急着往家赶。那天中午他从工位偷跑回家拿 U 盘，一开车库门就看见团子钻进了车底——他犹豫了几秒，到底还是抱进了屋。他怕同事知道他偷养猫，又怕这件事被邻居发现，于是先跟同事说「下午在工位」，回到家又想把锅甩给小蕊。"
@@ -3352,7 +3486,7 @@ const LevelData = [
         secret: "陈伯的耳朵其实不太好了，那天「听见」花盆摔碎，更多是靠着多年的习惯判断的。他怕儿女操心，一直瞒着全家，连助听器都没敢去配。他嘴上总说「老了耳朵背点正常」，心里却清楚自己不肯认老——就像花盆碎了，他总想着还能补，补不好也舍不得扔。"
       },
       {
-        id: "r2", name: "阿杰", tagShort: "快递站小哥", bindClue: ["c3", "c4"],
+        id: "r2", name: "阿杰", tagShort: "快递站小哥", bindClue: ["c3", "c4", "c5", "c6"],
         avatar: { hair: "#1a1a1a", hairStyle: "short", hat: "cap", skin: "#d4a078" },
         bio: "阿杰是快递站的送货员，一天要派几百件包裹，风里来雨里去。他干活麻利、嗓门大、笑点低，是整个小区最眼熟的年轻人。他那只工具腰包里，常年垫着脚放着一瓶跌打油，谁也没见他拿出来用过。",
         secret: "那瓶跌打油是给奶奶备的——奶奶腰不好，他每天收工回家都要帮奶奶揉腰。他总在同事面前嘻嘻哈哈，从不提这些，可谁家老人腿脚不便的件，他送时总会多上心码整齐。他嗓门大，心却细得很——可他那天推着满车的纸箱拐过三楼，没看清花盆就撞了上去。他怕赔钱，更怕被客户投诉，于是回家先跟同事说「我没上楼」，又想把锅甩给楼上搬家的老李。"
@@ -3370,7 +3504,7 @@ const LevelData = [
         secret: "阿芳年轻时在省城的花店打过工，店主是个她暗暗仰慕的插花师傅。那人后来远走他乡，阿芳却把插花这门手艺留在了小镇，一晃就是十年。她插花从不挑名贵，专挑路边没人看的花——她说，越不起眼的花，越该有人记得。她那天傍晚下楼取快递，亲眼看见阿杰蹲在碎瓷片前收拾，听到有脚步声才装作没事走开。"
       },
       {
-        id: "r5", name: "老李", tagShort: "楼上租户",
+        id: "r5", name: "老李", tagShort: "楼上租户", bindClue: ["c9"], isScapegoat: true,
         avatar: { hair: "#1a1a1a", hairStyle: "short", hat: null, skin: "#f4d4b0", cloth: "#5a5a5a" },
         bio: "老李是四楼新搬来的租户，白天在小区门卫室当班。搬家那天把整条楼道都堆满了纸箱，邻居们嘴上不说什么，心里都有些嫌。他不爱说话，能用点头解决的绝不开口。",
         secret: "老李其实早就搬完了家，他搬走那天都过去两周了，门口的纸箱也早就清干净了——他压根没在花盆摔碎那段时间出现过。可不知道为什么，「箱子」「老李」「撞花盆」这几个词在邻居中间传得绘声绘色，他懒得解释。"
@@ -3432,13 +3566,13 @@ const LevelData = [
         secret: "阿强年轻时干活毛躁，被师傅说过一句「笨手笨脚，一辈子干不了细活」。这些年他干货运，分拣、码件、对单号，规矩得不能再规矩——「别人的东西我不碰」不只是规矩，是他拿命挣回的自尊。他手上总沾着机油味，那是他的骄傲。他那天傍晚的确按了手印拿了自己的件，但手印一压完就洗了手。"
       },
       {
-        id: "r3", name: "小红", tagShort: "在校大学生", bindClue: ["c4"],
+        id: "r3", name: "小红", tagShort: "在校大学生", bindClue: ["c3", "c4", "c10"],
         avatar: { hair: "#4a2e1a", hairStyle: "long", hat: "ribbon", skin: "#fde0c4" },
         bio: "小红是镇上少数考去省城上大学的姑娘，放假回镇上，常帮驿站店老板照看店面。她眼睛尖、爱管「闲事」，小区里谁家出了岔子，她常常是第一个留意的。",
         secret: "小红偷偷攒钱报了一个摄影夏令营，谁也没告诉。她拍的第一组照片入选了社团巡展，那张入围通知被她藏在日记本里，怕爸妈说她「不务正业」。她总说自己「爱管闲事」，其实她拍照，是想把小镇每个常被忽略的角落，都好好记下来——她怕出去久了，这些地方会慢慢忘了。那天她蹲在驿站门口取自己的件，亲眼瞧见一个戴鸭舌帽的老头把别人的件塞进了布袋。"
       },
       {
-        id: "r4", name: "老周", tagShort: "退休老木匠", bindClue: ["c5", "c9"],
+        id: "r4", name: "老周", tagShort: "退休老木匠", bindClue: ["c5", "c6", "c9", "c13"],
         avatar: { hair: "#cccccc", hairStyle: "bald", hat: "glasses", skin: "#eac098" },
         bio: "老周是镇上有名的老木匠，退休后收了两个徒弟，家里的花架、邻居的小板凳，多半出自他的手。他性子慢，做事讲究，最看不得东西乱放。隔三差五，他会拎着新打的小板凳上陈伯家坐坐，两位老伙计一说就是一下午；路过驿站，也常进去找店老板沏壶茶、下一盘棋。",
         secret: "老周的儿子在外地打工，三年春节没回家。他嘴上说着「男人就该闯事业」，夜里却把儿子小时候坐过的小板凳从仓库搬到了床头。那天傍晚他本想给儿子寄一盒手作木器，心想着事情多走得急，错把驿站门口一只陌生人的快递盒也一起塞进布袋——等他发现时，已经迟了。他这一辈子做事讲究「不差一厘」，偏偏败在一时走神上。他最怕的是被人说「老糊涂」，于是守口如瓶，还把锅甩给了阿强。"
@@ -3496,7 +3630,7 @@ const LevelData = [
         secret: "吴先生怕黑。他房间里永远留一盏小夜灯，起夜从来不敢关——这件事只有他母亲知道，而母亲已经过世三年，他再没对谁提起过。他耳朵灵，邻里说他是「半只耳朵都在值班」，可那天深夜他听见走廊的动静，犹豫了很久到底没开门——他怕黑，也怕管了不该管的事。第二天早晨他出门，看见摆件底座下那根粉色纤维才明白过来。"
       },
       {
-        id: "r2", name: "林姐", tagShort: "社区护士", bindClue: ["c3", "c4", "c16"],
+        id: "r2", name: "林姐", tagShort: "社区护士", bindClue: ["c3", "c4", "c5", "c8", "c16"],
         avatar: { hair: "#2a1d12", hairStyle: "bun", hat: "nurse", skin: "#fde0c4" },
         bio: "林姐是镇卫生院的护士，值完班回到家常常已是深夜。她性子稳，遇事不慌，走廊上那尊摆件是大家给退休老院长凑钱买的，她一直当宝贝那样护着。楼里赵姨家那只白猫雪球打疫苗、看病，都是来找她。",
         secret: "林姐有值完夜班回家，先在楼下那盏路灯下站一会儿，把白天的委屈都消化掉再上楼的习惯。那晚她上楼时，衣袖一甩挂到了摆件，整个底座哐啷摔到了地上。她一整晚都在自责，却不敢把责任讲出来——她怕自己「稳」了大半辈子的人设，在旁人眼里塌了。她治病救人十几年，最不会的，居然是承认自己的一次失手。她先说「一上床就睡着了」，又想把锅甩给赵姨的猫，最后干脆伪装成目击者，反咬在卧室一觉睡到天亮的小宇「深夜蹲在摆件旁鬼鬼祟祟」——可她连小宇几点睡、人在哪儿都说不清。"
@@ -3508,7 +3642,7 @@ const LevelData = [
         secret: "小宇的闹钟定在五点五十，比闹铃早响十分钟——那是他背着爸妈留给自己的晨读时间，他想考上市里的重点高中。他总说「考上才是正经」，可班里那个成绩倒数的同桌，他其实偷偷给人家讲了一学期的题，从没让老师知道。他闷头沉默，心却热。"
       },
       {
-        id: "r4", name: "赵姨", tagShort: "养猫的邻居", bindClue: ["c6"],
+        id: "r4", name: "赵姨", tagShort: "养猫的邻居", bindClue: ["c6", "c9"],
         avatar: { hair: "#6a4423", hairStyle: "bun", hat: "ribbon", skin: "#f4d4b0", cloth: "#a45e7a", cloth2: "#f3e7c1" },
         bio: "赵姨退休后独居，身边作伴的是一只养了七年的白猫「雪球」。她对猫的作息如数家珍，也最容易被夜里猫叫惊得睡不安稳。雪球打疫苗、看病都找楼里的护士林姐，一来二去，两家也走动起来。",
         secret: "雪球是女儿离家前捡回来的。女儿去外地工作后，赵姨把对女儿的牵挂都移到了猫身上：猫打个喷嚏她都要紧张半天，嘴上却说「猫比人省心」。她那天晚上九点喂过雪球后就睡了，一整夜猫没叫过——第二天听林姐说「是雪球撞的」，她气得直笑。"
@@ -3569,7 +3703,7 @@ const LevelData = [
         secret: "大刘来当门卫，是因为在城里工地干伤了腰，干不动重活了。他把媳妇儿给他揉腰的药油藏在值班室抽屉最里头，从不让来往的人看见他那条贴满膏药的腰。他记性好，谁几点出门、拎了什么，都逃不过他的眼睛——可他最想记住不忘的，其实是家里那盏总给他留的灯。那天他巡逻时看见围墙前站着个六年级男孩，没看清脸。"
       },
       {
-        id: "r2", name: "小凯", tagShort: "六年级学生", bindClue: ["c3", "c4"],
+        id: "r2", name: "小凯", tagShort: "六年级学生", bindClue: ["c3", "c4", "c5", "c10", "c13"],
         avatar: { hair: "#1a1a1a", hairStyle: "short", hat: "ribbon", skin: "#f4d4b0" },
         bio: "小凯读六年级，是小区里画画最好的孩子，墙报、黑板报都找他。他性子急，也爱面子，最受不了别人说他画得不如人。五年级的小彤总羡慕他，蹲在墙根捡他丢的粉笔头练字，他嘴上嫌烦，心里其实受用。",
         secret: "小凯其实练过整整一个暑假的喷漆画——他在老家废院墙上偷偷学的，就为了让新来的同学多看他两眼。那天他拎着喷漆罐出门，心里想的只是「画给谁看」，没想过后果。等他第二天看着自己刷满墙的「作品」，才后知后觉地慌了——他想要的是被人记住，不是让人责怪。他先跟同学说「是小彤画的」，又跟门卫说「我先回家了」。"
@@ -3639,7 +3773,7 @@ const LevelData = [
         secret: "那辆二八大杠是他和老伴结婚时买的，老伴前年走了，车成了老王心里唯一的伴。他每天擦车时都絮絮叨叨说几句话，像是车能听懂似的。他嘴上说「车就是车」，可谁要是碰了那辆车，他准要急眼——他护着的哪里是车，是那段没人懂的话。那天早上他看见链条上的油是「防雨型」而非「普通黄油」，心里就开始画问号。"
       },
       {
-        id: "r2", name: "阿成", tagShort: "外卖骑手", bindClue: ["c3", "c4"],
+        id: "r2", name: "阿成", tagShort: "外卖骑手", bindClue: ["c3", "c4", "c5", "c10", "c13"],
         avatar: { hair: "#1a1a1a", hairStyle: "short", hat: "helmet", skin: "#d4a078" },
         bio: "阿成是镇上最早一批外卖骑手，一天要跑几十单，电动车充电、换胎、上油都是自己来。他手脚麻利，也够朋友，谁的车坏了推到他楼下，他顺手就给你捯饬好——住的久了，和老王老爷子的车来车往也就熟了。",
         secret: "阿成以前在省城跑过一夜的雨，膝盖落下风湿，天阴下雨就疼。他不舍得请假，疼得厉害时就在坡道上一圈一圈地慢慢蹬——这单挣的是孩子的奶粉钱。他总笑呵呵说「没事」，可车座底下那瓶热敷贴，他比谁都记得换。那天早上他的电动车没电，他急单又没来得及换电池，瞄见老王那辆二八大杠在车棚里，犹豫了两秒，骑走赶了两单就还了。他怕老王怪他，又想把锅甩给一同住楼的小乐。"
@@ -3704,13 +3838,13 @@ const LevelData = [
     },
     residents: [
       {
-        id: "r1", name: "保安老李", tagShort: "门卫室值班保安", bindClue: ["c1", "c7"],
+        id: "r1", name: "保安老李", tagShort: "门卫室值班保安", bindClue: ["c1", "c7", "c12"],
         avatar: { hair: "#5a5040", hairStyle: "short", hat: "cap", skin: "#c08862" },
         bio: "老李在门卫室干了十五年，一把自行车铃铛似的嗓子，声音洪亮。他值夜班最仔细，每晚十点准时落锁，门卫室里的收音机是他唯一的夜伴，雷打不动开到深夜。清洁的陈秀兰每天清早来门卫室收垃圾袋，他总留一杯热茶在桌上。门卫岗上他与白班的大刘轮转，新建岗亭那边是老韩守着，三人一套班；上个月他在四号楼租了间房搬进去，白天当班、夜里落锁，两头都不耽误。",
         secret: "那台收音机是女儿送给他的六十岁生日礼物，他天天宝贝似的带在身边，谁碰一下都不高兴。收音机不见那天夜里，他没敢声张，自己摸着黑在门卫室翻了三遍。他嘴上说「不就是台收音机」，可那一夜，他把门卫室每一道缝都摸遍了——他怕丢的，是女儿那句「爸，你辛苦了」。"
       },
       {
-        id: "r2", name: "租客小马", tagShort: "刚毕业的外地租客", bindClue: ["c3", "c4"],
+        id: "r2", name: "租客小马", tagShort: "刚毕业的外地租客", bindClue: ["c3", "c4", "c9", "c10", "c11", "c15"],
         avatar: { hair: "#1a1a1a", hairStyle: "curly", hat: null, skin: "#f4d4b0", cloth: "#4a6c8a", cloth2: "#ffffff" },
         bio: "小马是外地来镇里上班的毕业生，租住在小区三楼。他一个人住，不爱说话，晚上回来得晚，和邻居的交集一只手数得过来。退休的老孙见他是外地来的年轻人，总找借口跟他搭话，他回得两句，就又低头走开了。",
         secret: "小马家里有个生病的妹妹，药钱不便宜。他白天上班晚上又去跑夜班代驾，攒的每一分钱都往家里寄。他一个人住，不爱说话，可房间桌上那摞写了一半没敢寄出去的信，字字都写着「等妹妹好了，哥带你去镇上走走」。他总盼着有一天，能光明正大把妹妹接来看他住的这个小镇。那晚他提前半小时下班，去门卫室想蹭点热水喝，一眼看到桌上那台收音机——他知道那台机是「老李心头肉」，可他转念一想，妹妹在医院里正等这笔钱买新药包，犹豫了十秒，把收音机塞进自己黑外套里。被追问时他不仅谎称在工位赶 bug，还伪装成目击者，反咬老李「十点二十抱着收音机出门卫室」——想把这口锅，扣在失主自己头上。"
@@ -3746,7 +3880,7 @@ const LevelData = [
       { id: "c15", text: "小马：十点二十八我回宿舍接电话，根本没下楼——你问老孙他十点一刻也没听见我下楼。", type: "valid", timeMin: 628, timeText: "自称 22:28", isSuspectStatement: true, conflictGroup: "G-lie-3", conflictType: "lie" },
       { id: "c16", text: "物业群通知：今晚十点起，小区电梯例行停运维保一小时。", type: "fake" },
       { id: "c17", text: "小马：十点二十我去楼下打水，正好看见老李抱着收音机从门卫室出来，往宿舍楼下走——我当他是拿去修，就没当回事。", type: "valid", timeMin: 620, timeText: "22:20", isSuspectStatement: true, pointsTo: "r1", conflictGroup: "G-lie-1", conflictType: "lie" },
-      { id: "c18", text: "门卫室那盏监控（带红外）22:15~22:30 那段拍到：走廊里根本没出现「黑外套年轻人」的身影；倒是窗台上那只常驻的野猫（纯黑色、身形瘦长）从 22:18~22:26 一直在窗台晒太阳。", type: "valid", timeMin: 622, timeText: "22:22 物证", isEvidence: true, evidenceOwnerTag: "刚毕业的外地租客" }
+      { id: "c18", text: "门卫室那盏监控（带红外）22:15~22:30 那段拍到：走廊里根本没出现「黑外套年轻人」的身影；倒是窗台上那只常驻的野猫（纯黑色、身形瘦长）从 22:18~22:26 一直在窗台晒太阳。", type: "valid", timeMin: 622, timeText: "22:22 物证", isEvidence: true, evidenceOwnerTag: "刚毕业的外地租客", pointsTo: "r2" }
     ],
     conflictPairs: [],
     solution: { r1: ["c1", "c7", "c12"], r2: ["c3", "c4", "c9", "c10", "c11", "c15"], r3: ["c2", "c8"], r4: ["c5", "c6"] },
@@ -3797,7 +3931,7 @@ const LevelData = [
         secret: "大勇的媳妇儿在县医院做护理，倒班倒了十年，两人同住一个屋檐下，一个月碰不上几面。他那晚说「没出过门」，其实是趴在窗台上看了半夜的路——等媳妇儿的车灯。他嘴上嫌媳妇忙，可汽修厂休息室的墙上，贴着媳妇儿给全家求的平安符，他谁也不让碰。"
       },
       {
-        id: "r4", name: "访客阿海", tagShort: "常年跑外的水电工", bindClue: ["c4", "c10", "c11"],
+        id: "r4", name: "访客阿海", tagShort: "常年跑外的水电工", bindClue: ["c4", "c9", "c10", "c11", "c14"],
         avatar: { hair: "#1a1a1a", hairStyle: "short", hat: "cap", skin: "#c08862" },
         bio: "阿海是跑外地的水电工，一单活儿接在哪个镇，人就在哪个镇住上一阵。他性子豪爽，喝酒敞亮，走到哪儿都能和人搭上话。路过汽修厂就进去跟大勇讨口水喝，一来二去混了个脸熟。",
         secret: "阿海好几年没回过自己的家了，母亲的电话他从来不敢拒接，却总在接通前深呼吸三次。那凌晨他踩着一鞋泥回来，看见楼道灯亮了又灭，忽然特别想有个能回的家——所以他没忍住，把脚上那双沾满泥的雨鞋塞进了单元门口的塑料桶里，自己光着脚跑回了走廊。"
@@ -3812,7 +3946,7 @@ const LevelData = [
       { id: "c6", text: "大勇：那天雨下得稀里哗啦，下到半夜才停。", type: "valid" },
       { id: "c7", text: "阿琳：走廊的声控灯我听见亮过两次。", type: "valid", timeMin: 1420, timeText: "23:40", isWitness: true },
       { id: "c8", text: "物业查岗记录：那天晚上 23:45 大勇的电动车还停在一楼充电桩上，充电指示灯亮着。", type: "valid", timeMin: 1425, timeText: "23:45 查岗", isWitness: true, conflictGroup: "G-lie-2", conflictType: "lie" },
-      { id: "c9", text: "走廊那串泥脚印是赤脚的，左右脚深浅明显不同——左脚更深，鞋底还夹着一枚压扁的「水电工专用胶带」。", type: "valid", timeMin: 1425, timeText: "23:45 物证", isEvidence: true },
+      { id: "c9", text: "走廊那串泥脚印是赤脚的，左右脚深浅明显不同——左脚更深，鞋底还夹着一枚压扁的「水电工专用胶带」。", type: "valid", timeMin: 1425, timeText: "23:45 物证", isEvidence: true, pointsTo: "r4" },
       { id: "c10", text: "阿海：二十三点四十我从外面回来时，正好看见大勇也下楼了——他穿的也是拖鞋，跑得比我快。", type: "valid", timeMin: 1420, timeText: "23:40", isSuspectStatement: true, conflictGroup: "G-lie-2", conflictType: "lie" },
       { id: "c11", text: "阿海：我穿的是黄雨衣，里面还有双干袜子——根本不可能光脚。", type: "valid", timeMin: 1435, timeText: "23:55", isSuspectStatement: true, conflictGroup: "G-lie-3", conflictType: "lie" },
       { id: "c12", text: "老韩：那人回来那会儿是赤脚踩在岗亭前的水泥地上的——我开窗问他，他愣了愣才说「鞋陷泥里了」。", type: "valid", timeMin: 1435, timeText: "23:55", isWitness: true, involve: ["r4"], conflictGroup: "G-lie-3", conflictType: "lie" },
@@ -3858,25 +3992,25 @@ const LevelData = [
     },
     residents: [
       {
-        id: "r1", name: "管理员方姐", tagShort: "社区活动室管理员", bindClue: ["c1", "c12"],
+        id: "r1", name: "管理员方姐", tagShort: "社区活动室管理员", bindClue: ["c1", "c5", "c12"],
         avatar: { hair: "#2a1d12", hairStyle: "bun", hat: "glasses", skin: "#fde0c4" },
         bio: "方姐是社区活动室的管理员，管着钥匙、设备、排班，事无巨细，条理分明。她爱护公物出了名，谁乱动设备都要被她念叨半天。和常驻的维修工老蔡搭档多年，老蔡修东西她总要盯着看；热心的志愿者丁丁也常来搭把手。",
         secret: "活动室的投影仪是街道奖给社区的，方姐天天擦拭那台机器，像是在擦自己年轻时在厂里荣誉墙上的照片。她离退休还有三年，最怕的是「把公家的东西看没了」。她嘴上念叨得凶，可每次放完电影，她都会多留一盏灯，等最后一个观众走远才关——她说，那是她年轻时就学会的，送人一段路。"
       },
       {
-        id: "r2", name: "租客小柯", tagShort: "小镇青年", bindClue: ["c2", "c13"],
+        id: "r2", name: "租客小柯", tagShort: "小镇青年", bindClue: ["c2", "c8", "c13"],
         avatar: { hair: "#1a1a1a", hairStyle: "curly", hat: null, skin: "#f4d4b0", cloth: "#4a6c8a", cloth2: "#ffffff" },
         bio: "小柯在镇上租房子住，白天在一家培训中心做助教，晚上接网约课到十点。他住得近，来活动室取落下的东西是常有的事，和常在活动室忙活的丁丁碰过好几回面。",
         secret: "小柯的房租是父母想着他留在镇上安稳，咬咬牙供的。他想考研去省城，申请表填了三年，压在最底下的抽屉里——每次看见，都像是看见自己还没敢跨出去的那半步。他总说「再想想」，可那张申请表他改了一版又一版，像是不敢填，又像是终有一天会填完。"
       },
       {
-        id: "r3", name: "志愿者丁丁", tagShort: "社区青年志愿者", bindClue: ["c3", "c7"],
+        id: "r3", name: "志愿者丁丁", tagShort: "社区青年志愿者", bindClue: ["c3", "c6", "c7", "c14"],
         avatar: { hair: "#4a2e1a", hairStyle: "long", hat: "ribbon", skin: "#fde0c4" },
         bio: "丁丁是社区里的热心志愿者，活动室办讲座、放电影，他总是第一个到场搬椅子。他心细眼尖，谁进出哪有异常，他都有印象。在活动室里，他常和维修工老蔡搭伴整理器材，一老一少配合得挺好。",
         secret: "丁丁考上大学那年，家里正赶上难处，是社区的助学款送他一程。他如今天天泡在社区做志愿者，只为还那四年的人情。他总说「就当锻炼」，可活动室那本他偷偷记的困难家庭名单，笔迹密密麻麻——他是在替那些曾经帮过他的人，把这份善传下去。"
       },
       {
-        id: "r4", name: "维修工老蔡", tagShort: "活动室常驻维修工", bindClue: ["c4", "c10", "c11"],
+        id: "r4", name: "维修工老蔡", tagShort: "活动室常驻维修工", bindClue: ["c4", "c9", "c10", "c11", "c15"],
         avatar: { hair: "#cccccc", hairStyle: "bald", hat: "glasses", skin: "#eac098" },
         bio: "老蔡是社区的常驻维修工，水管、电灯、门锁、投影仪，坏了都归他修。他工具不离手，总拎着个黑箱子，工具箱比谁都沉。每日傍晚他都会擦拭维修箱，和志愿者丁丁经常搭伴整理器材，性子沉稳，不爱多争辩。",
         secret: "老蔡的箱子底下压着一张旧照片：照片里他年轻时站在县剧团舞台的幕布边，手里拎着的正是如今这个黑箱子。那里面本是他攒了半辈子、想再登台用的家当。他总说「修东西就是要稳」，可只有他自己知道，那晚他八点一刻进活动室「修插座」是假，悄悄把投影仪装进黑箱才是真——他想把那台机搬回家，连一晚，对着老照片放一出当年没演完的戏。他也清楚那是公家的东西，搬回来的路上手心里全是汗；到家对着老照片坐了一宿，越想越心虚，第二天一早想过还回去，「还了就没人知道」——可「再放一晚」这个念头赢了。不是坏，是侥幸。"
@@ -3891,7 +4025,7 @@ const LevelData = [
       { id: "c6", text: "丁丁：八点一刻我看见那个穿灰工装的老汉出门后，特地绕到活动室窗户外瞄了一眼——投影仪的位置空了。", type: "valid", timeMin: 495, timeText: "20:15", isWitness: true, involve: ["r4"] },
       { id: "c7", text: "丁丁：八点半我又看见那个穿灰工装的老汉，把黑箱子放进了他停在楼下的电动三轮里。", type: "valid", timeMin: 510, timeText: "20:30", isWitness: true, involve: ["r4"] },
       { id: "c8", text: "小柯：我八点二十就在活动室门口抽烟——没看见任何人拎箱子进出。", type: "valid", timeMin: 500, timeText: "20:20", isWitness: true, conflictGroup: "G-lie-2", conflictType: "lie" },
-      { id: "c9", text: "一只黑箱子的底部，沾着几道新鲜的投影仪外壳塑料划痕——划痕里还嵌着半截投影仪散热孔的金属网。", type: "valid", timeMin: 530, timeText: "20:50 物证", isEvidence: true },
+      { id: "c9", text: "一只黑箱子的底部，沾着几道新鲜的投影仪外壳塑料划痕——划痕里还嵌着半截投影仪散热孔的金属网。", type: "valid", timeMin: 530, timeText: "20:50 物证", isEvidence: true, pointsTo: "r4" },
       { id: "c10", text: "老蔡：我走的时候，小柯还在活动室里翻他落下的笔记本——他比我晚走至少五分钟。", type: "valid", timeMin: 495, timeText: "20:15", isSuspectStatement: true, conflictGroup: "G-lie-2", conflictType: "lie" },
       { id: "c11", text: "老蔡：我从进屋到离开，前后不超过三分钟——根本没时间动投影仪。", type: "valid", timeMin: 495, timeText: "20:15", isSuspectStatement: true, conflictGroup: "G-lie-3", conflictType: "lie" },
       { id: "c12", text: "方姐：八点我锁门之后没再回去过——可我那天特意在门把手上系了根红绳，绳子是整的。", type: "valid", timeMin: 480, timeText: "20:00", isWitness: true },
@@ -4157,6 +4291,8 @@ const GameFlow = {
       const c = App.clueMap[cid];
       if (c && c.isEvidence && c.evidenceOwnerTag) evOwnerTags.add(c.evidenceOwnerTag);
     });
+    // 已走访/已获取线索的累计集合（pool + timeline）
+    const collectedIds = new Set([].concat(App.layout.pool || [], App.layout.timeline || []));
     App.residents.forEach((r) => {
       const block = document.createElement("div");
       block.className = "resident-block";
@@ -4164,6 +4300,24 @@ const GameFlow = {
       const tagMatch = r.tagShort && evOwnerTags.has(r.tagShort);
       // 替罪羊判定：居民无 bindClue 视为次要人物（仅档案/口供，无线索入池）
       const isScapegoat = !r.bindClue || (Array.isArray(r.bindClue) && !r.bindClue.length) || (typeof r.bindClue === "string" && !r.bindClue);
+      // 线索获取进度：bindClue 中有多少条已被收集（pool + timeline）
+      const bindList = Array.isArray(r.bindClue) ? r.bindClue : (r.bindClue ? [r.bindClue] : []);
+      const totalClues = bindList.length;
+      const gotClues = bindList.filter((cid) => collectedIds.has(cid)).length;
+      // 提示行：根据「是否替罪羊 / 是否已走访 / 已获取比例」生成不同文案
+      let hintHtml = "";
+      if (isScapegoat) {
+        hintHtml = '<div class="resident-hint hint-scapegoat">次要人物 · 无线索</div>';
+      } else if (!spoke) {
+        // 未走访：显眼地告诉玩家"点我获取线索"
+        hintHtml = '<div class="resident-hint hint-unvisited">💬 点击交谈获取线索</div>';
+      } else if (totalClues > 0) {
+        // 已走访：显示进度
+        const ratio = gotClues / totalClues;
+        const ratioCls = ratio >= 1 ? "hint-done" : (ratio >= 0.5 ? "hint-half" : "hint-low");
+        hintHtml = '<div class="resident-hint ' + ratioCls + '">✓ 已获取 <b>' + gotClues + '</b> / ' + totalClues + ' 条线索' +
+          (ratio < 1 ? ' · <span class="hint-tap">可追问更多</span>' : ' · 全部到手') + '</div>';
+      }
       block.innerHTML =
         '<div class="resident-head' + (isScapegoat ? " resident-scapegoat" : "") + '" data-resident="' + ClueCards.escapeHtml(r.id) + '"' +
         (isScapegoat ? ' title="次要人物，无可解锁线索"' : ' title="查看人物档案"') + '>' +
@@ -4176,7 +4330,8 @@ const GameFlow = {
                 ClueCards.escapeHtml(r.tagShort) + "</span>"
             : "") +
           (isScapegoat ? '<span class="scapegoat-mark" title="次要人物（无可解锁线索）">次要</span>' : "") +
-        "</div>";
+        "</div>" +
+        hintHtml;
       panel.appendChild(block);
     });
   },
@@ -4411,10 +4566,20 @@ const GameFlow = {
     if (cancel) cancel.addEventListener("click", () => Modal.close());
   },
 
-  /** 决定性证据正确项集合：凶手 solution 线索 ∪ pointsTo 指向凶手的目击线索 */
+  /**
+   * 决定性证据正确项集合：仅取凶手的"物证 isEvidence=true" + pointsTo 凶手的物证。
+   * 之前误用"凶手所有 solution 线索 + 所有目击"，导致 7+ 条全是正确选项，玩家瞎选都对 80%+
+   * 现在限定为"物证"维度（每个案件通常 1-4 条物证）—— 弹窗构成合理（1-4 正确 + 3-4 干扰）
+   * 玩家必须真的"识别铁证"才能通关 */
   _killerKeyIds(cfg) {
-    const key = new Set((cfg.solution && cfg.solution[cfg.culpritId]) || []);
-    (cfg.clues || []).forEach((c) => { if (c.pointsTo === cfg.culpritId) key.add(c.id); });
+    const key = new Set();
+    (cfg.solution && cfg.solution[cfg.culpritId] || []).forEach((cid) => {
+      const c = (cfg.clues || []).find((x) => x.id === cid);
+      if (c && c.isEvidence === true) key.add(cid);
+    });
+    (cfg.clues || []).forEach((c) => {
+      if (c.pointsTo === cfg.culpritId && c.isEvidence === true) key.add(c.id);
+    });
     return key;
   },
 
@@ -5465,11 +5630,10 @@ const Achievement = {
   StorageUtil.migrateIfNeeded();
   // 刷新主菜单按钮文案（首次玩 →"开始游戏"，老玩家 →"继续推理（当前第 N 关）"）
   Menu.refreshStartButton();
-  // 主菜单入口：开始游戏 → 直接进入当前已解锁关卡
+  // 主菜单入口：开始游戏 → 关卡选择页（让玩家自选关卡；首次玩则 highlight 当前已解锁关）
   document.getElementById("btn-start").addEventListener("click", () => {
-    App.currentLevel = StorageUtil.readProgress().unlocked;
-    Menu.showPage("page-game");
-    GameFlow.loadLevelPlaceholder();
+    Menu.showPage("page-levels");
+    Menu.renderLevels();
   });
   // 主菜单"先看新手指引"按钮：主动打开教程（不写已看标记，但会自动弹窗）
   document.getElementById("btn-tutorial-menu").addEventListener("click", () => {

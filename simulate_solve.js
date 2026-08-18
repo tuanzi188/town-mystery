@@ -6,21 +6,8 @@
  * 校验逻辑与 index.html 中的 ValidateUtil / GameFlow 保持一致（提取自源码）。
  * 用法：node simulate_solve.js
  */
-const fs = require("fs");
-const path = require("path");
-
-const HTML_PATH = path.join(__dirname, "index.html");
-const html = fs.readFileSync(HTML_PATH, "utf8");
-
-// === 抽取 LevelData ===
-const startIdx = html.indexOf("const LevelData = [");
-const constIdx = html.indexOf("const GameFlow", startIdx);
-let cutIdx = -1;
-for (let i = constIdx - 1; i > startIdx; i--) {
-  if (html[i] === "]") { cutIdx = i + 1; break; }
-}
-const dataJson = html.slice(startIdx + "const LevelData = ".length, cutIdx).trim();
-const LevelData = (new Function("return " + dataJson + ";"))();
+const { extractLevelData } = require("./lib/extract");
+const LevelData = extractLevelData();
 
 // === 校验逻辑（与 index.html 保持一致） ===
 
