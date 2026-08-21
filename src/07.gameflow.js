@@ -1232,13 +1232,13 @@ const Achievement = {
     if (e.target === e.currentTarget) Achievement.close();
   });
 
-  // 首次进入展示主菜单
-  Menu.showPage("page-menu");
   // 静音按钮：点击切换 BGM 静音状态
   document.getElementById("btn-mute").addEventListener("click", () => Bgm.toggleMute());
-  // 启动背景音乐（两路 Audio + 首次点击解锁）
+  // 启动背景音乐（两路 Audio + 交互解锁）—— 须在 showPage 之前，确保首屏切曲目时对象已就绪
   Bgm.init();
   Bgm._refreshMuteButton();
+  // 首次进入展示主菜单（playForPage 此刻只记录曲目，待首次交互解锁后开始播放）
+  Menu.showPage("page-menu");
   // 监听 mask 打开顺序：class 出现 .show 时打时间戳，供 ESC 关闭"真正最后打开"的弹窗
   // （多个 mask 的 z-index 相同，DOM 顺序 ≠ 打开顺序，必须按打开先后关闭；无 MutationObserver 的环境退化按原顺序）
   const maskOrderSeq = { n: 0 };

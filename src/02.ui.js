@@ -705,7 +705,7 @@ const Bgm = {
   gameplay: null,  // 其余页面曲目（关卡选择 / 游戏全程）
   current: null,   // 当前播放中的 Audio 对象
 
-  /** 初始化：创建两路音频对象，并注册首次点击解锁 */
+  /** 初始化：创建两路音频对象，并注册首次交互解锁 */
   init() {
     if (typeof Audio !== "function") return; // 非浏览器环境（测试 / 受限容器）跳过音乐
     this.menu = new Audio("audio/menu.mp3");
@@ -724,17 +724,37 @@ const Bgm = {
     const warnOnErr = (label) => (e) => console.warn(`[Bgm] ${label} 音频加载失败：`, e && e.message || e);
     this.menu.addEventListener("error", warnOnErr("menu.mp3"));
     this.gameplay.addEventListener("error", warnOnErr("gameplay.mp3"));
-    // 任何位置的首次点击都作为启动信号（只触发一次）
-    document.addEventListener("click", () => Bgm.unlock(), { once: true });
+    // 首次交互解锁：
+    // - pointerdown：预试播（不落下 started），启动快，桌面/多数移动端即可起播
+    // - click/touchend：真正可靠 user-activation 事件，此时落下 started 并正式播放，
+    //   解决部分移动端 WebView（如微信 iOS）只认 click 时「首屏菜单无声、切页才响」的问题
+    const tryPlay = function () { Bgm._tryStart(false); };
+    const commit = function () { Bgm._tryStart(true); };
+    ["pointerdown"].forEach(function (ev) { document.addEventListener(ev, tryPlay, true); });
+    ["touchend", "click"].forEach(function (ev) { document.addEventListener(ev, commit, true); });
   },
 
-  /** 首次点击解锁：启动当前应播曲目（失败静默，例如文件缺失） */
-  unlock() {
-    if (this.started) return;
-    this.started = true;
+  /** 安全播放：play() 被浏览器拦截或音频未就绪时，等 canplay 后补播一次（只补一次，防无限重试） */
+  _safePlay(audio) {
+    if (!audio) return;
+    audio.play().catch(function () {
+      const retry = function () {
+        audio.removeEventListener("canplay", retry);
+        audio.play().catch(function () { /* 仍失败则静默（资源缺失等场景） */ });
+      };
+      audio.addEventListener("canplay", retry);
+    });
+  },
+
+  /** 交互启动：final=true 时落下 started（防多事件重复解锁），false 仅预试播；
+   *  统一播放当前曲目，资源缺失等失败场景由 _safePlay 兜底静默 */
+  _tryStart(final) {
     if (this.muted) return; // 静音状态不启动
-    const target = this.current || this.menu;
-    target.play().catch((e) => console.warn("[Bgm] 解锁播放失败（用户尚未交互或被浏览器拦截）：", e && e.message || e));
+    if (final) {
+      if (this.started) return;
+      this.started = true;
+    }
+    this._safePlay(this.current || this.menu);
   },
 
   /** 按页面切换曲目：menu/archive 播 menu.mp3，其余播 gameplay.mp3 */
@@ -744,7 +764,7 @@ const Bgm = {
     if (this.current === target) return; // 同一曲目内跳转保持连贯，不重播
     if (this.current) this.current.pause();
     this.current = target;
-    if (this.started && !this.muted) target.play().catch((e) => console.warn("[Bgm] 切换曲目播放失败：", e && e.message || e));
+    if (this.started && !this.muted) this._safePlay(target);
   },
   /** 切换静音状态：暂停/恢复当前曲目 + 持久化 + 触发 UI 刷新 */
   toggleMute() {
@@ -759,7 +779,7 @@ const Bgm = {
     if (this.gameplay) this.gameplay.muted = this.muted;
     if (this.muted && this.current && !this.current.paused) this.current.pause();
     if (!this.muted && this.started && this.current && this.current.paused) {
-      this.current.play().catch((e) => { /* 静默 */ });
+      this._safePlay(this.current);
     }
   },
   /** 刷新顶栏静音按钮的图标 */
