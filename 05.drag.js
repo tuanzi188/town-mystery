@@ -1,5 +1,7 @@
 "use strict";
 const DRAG_HOLD_MS = 300;
+/** 时间轴落点「长按确认」时长：拖到时间轴上方按住该时长即可松手落点（桌面 / 触屏统一） */
+const DRAG_CONFIRM_MS = 300;
 /** 长按锁定前的位移容差（px）：手指小幅抖动不算滑动；超过即放弃拖拽、归还滚动 */
 const DRAG_ARM_TOLERANCE = 8;
 const DragManager = {
@@ -64,7 +66,7 @@ const DragManager = {
   },
 
   /** 移动中：越过阈值则进入拖拽，随后幽灵卡片跟随并高亮目标卡槽。
-   *  拖到时间轴上方时启动「长按 1 秒」确认；移出时间轴则取消。 */
+   *  拖到时间轴上方时启动「长按 0.3 秒」确认；移出时间轴则取消。 */
   _handlePointerMove(e) {
     if (!this.card) return;
     const dx = e.clientX - this.startX;
@@ -85,7 +87,7 @@ const DragManager = {
     const target = this._getDropTarget(e);
     this._highlightSlot(target);
     this._updateGhostValidity(target);
-    // 时间轴落点 → 长按 1 秒确认
+    // 时间轴落点 → 长按 0.3 秒确认
     const overTl = !!(target && target.type === "timeline");
     if (overTl) this._startConfirm();
     else this._cancelConfirm();
@@ -178,7 +180,7 @@ const DragManager = {
     return null;
   },
 
-  /** 松手：时间轴落点需「长按 1 秒」确认；其他目标即时生效；无效区域抖动反馈。 */
+  /** 松手：时间轴落点需「长按 0.3 秒」确认；其他目标即时生效；无效区域抖动反馈。 */
   _handlePointerUp(e) {
     if (e.pointerId !== this._activePointerId) return; // 非起始指针的 up/cancel 不结束本手势
     if (!this.card) return;
@@ -198,8 +200,8 @@ const DragManager = {
     this._clearSlotHighlight();
     if (!wasMoving) { this._resetConfirm(); return; } // 未滑动，按点击处理
     const target = this._getDropTarget(e);
-    // 触屏设备：时间轴落点直接放（省略 1s 长按确认，避免体感卡顿）
-    // 桌面端：时间轴落点需「长按 1 秒」确认，否则抖动反馈并复位
+    // 触屏设备：时间轴落点直接放（省略 0.3s 长按确认，避免体感卡顿）
+    // 桌面端：时间轴落点需「长按 0.3 秒」确认，否则抖动反馈并复位
     if (target && target.type === "timeline" && !this._isTouch && !this._confirmed) {
       this._shakeFail(card);
       this._resetConfirm();
@@ -226,7 +228,7 @@ const DragManager = {
     }
     this._resetConfirm();
   },
-  /** 启动「长按 1 秒」确认：幂等，已在计时或已完成则直接返回。 */
+  /** 启动「长按 0.3 秒」确认：幂等，已在计时或已完成则直接返回。 */
   _startConfirm() {
     if (this._confirmed) return;
     if (this._confirmTimer) return; // 已经在计时
@@ -240,7 +242,7 @@ const DragManager = {
     if (!this._hintEl) {
       this._hintEl = document.createElement("div");
       this._hintEl.className = "confirm-hint";
-      this._hintEl.textContent = "按住 1 秒确认落点";
+      this._hintEl.textContent = "按住 0.3 秒确认落点";
       this.ghost.appendChild(this._hintEl);
     }
     // 触发动画（移除后重加，确保连续进入/离开/进入能重新启动）
@@ -265,9 +267,9 @@ const DragManager = {
         this._hintEl.classList.add("done");
         this._hintEl.textContent = "✓ 落点已锁定 · 松手确认";
       }
-    }.bind(this), 1000);
+    }.bind(this), DRAG_CONFIRM_MS);
   },
-  /** 取消「长按 1 秒」确认：清除计时器 + 重置视觉（用户移出时间轴或松手时调用） */
+  /** 取消「长按 0.3 秒」确认：清除计时器 + 重置视觉（用户移出时间轴或松手时调用） */
   _cancelConfirm() {
     if (this._confirmTimer) {
       clearTimeout(this._confirmTimer);
@@ -278,7 +280,7 @@ const DragManager = {
     if (this._ringEl) this._ringEl.classList.remove("active", "done");
     if (this._hintEl) {
       this._hintEl.classList.remove("active", "done");
-      this._hintEl.textContent = "按住 1 秒确认落点";
+      this._hintEl.textContent = "按住 0.3 秒确认落点";
     }
   },
   /** 完整重置确认状态机：清空 DOM、计时器、_confirmed 标记。拖拽结束（pointerup / cancel）时调用。 */
