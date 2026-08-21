@@ -16,7 +16,7 @@ const GameFlow = {
     if (!raw) return null;
     // 浅拷贝一层：阻止 future 启用 conflictPairs 时对 LevelData 数组的字段赋值污染
     // （关卡数据本身只读，没有更深层 mutate，无需深拷贝）
-    const cfg = { ...raw };
+    const cfg = Object.assign({}, raw);
     (cfg.conflictPairs || []).forEach((pair, idx) => {
       const group = "auto_" + idx;
       pair.forEach((cid) => {
@@ -1272,7 +1272,7 @@ const Achievement = {
         const el = document.getElementById(m.id);
         if (!el || !el.classList.contains("show")) return null;
         const order = parseInt(el.dataset.openOrder || "0", 10) || 0;
-        return { ...m, order };
+        return Object.assign({}, m, { order: order });
       })
       .filter(Boolean)
       .sort((a, b) => b.order - a.order);

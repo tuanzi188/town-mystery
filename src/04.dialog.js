@@ -64,7 +64,12 @@ const DialogSystem = {
   /** 切分句子：按句末标点 。！？!?…；; 拆分，保留原标点，过滤空白 */
   _splitSentences(text) {
     if (!text) return [];
-    return String(text).split(/(?<=[。！？!?…]|[；;])/g).map(function (s) { return s.trim(); }).filter(Boolean);
+    // 不依赖 ES2018 行后断言（?<=），兼容微信内置浏览器等旧版 WebView
+    return String(text)
+      .replace(/([。！？!?…；;])/g, "$1\u0001")
+      .split("\u0001")
+      .map(function (s) { return s.trim(); })
+      .filter(Boolean);
   },
   /** 渲染内嵌线索 chip：贴在对白末尾，hover 显示完整线索文本 */
   _renderEmbeddedClueChips(cids) {
