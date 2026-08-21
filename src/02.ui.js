@@ -613,24 +613,31 @@ const AvatarFactory = {
   },
 
   /** 取居民立绘 URL：有映射返回 webp 路径，否则 null（无图走 SVG 回退）。
+   *  小头像（size < 64，如卡槽/缩略）优先用 thumbs/ 缩略图，大图场景走原图。
    *  @param {object} resident 居民对象（须含 id）
-   *  @param {number} [levelIndex] 关卡序号（缺省 App.currentLevel） */
-  portraitUrl(resident, levelIndex) {
+   *  @param {number} [levelIndex] 关卡序号（缺省 App.currentLevel）
+   *  @param {number} [size] 期望显示像素尺寸，<64 视为小头像走缩略图 */
+  portraitUrl(resident, levelIndex, size) {
     const r = resident || {};
     const lv = levelIndex || (typeof App !== "undefined" ? App.currentLevel : 0);
     if (!lv || !r.id) return null;
     const py = this.PORTRAITS["L" + lv + "_" + r.id];
-    return py ? this.PORTRAIT_DIR + "L" + lv + "_" + r.id + "_" + py + "_normal.webp" : null;
+    if (!py) return null;
+    const file = "L" + lv + "_" + r.id + "_" + py + "_normal.webp";
+    const small = !!(size && size < 64);
+    return this.PORTRAIT_DIR + (small ? "thumbs/" : "") + file;
   },
 
   /** 大图场景头像：有立绘用 webp（加载失败自动回退 SVG），无映射直接返回 SVG。
+   *  小头像（size<64）自动走 thumbs/ 缩略图，减轻微信等弱环境加载压力。
    *  用于对话弹窗 / 档案详情；小头像与缩略网格请继续用 build() 保 SVG 省资源。
    *  @param {object} resident 居民对象
    *  @param {object} [opts] { size: 像素尺寸 }
    *  @param {number} [levelIndex] 关卡序号（缺省 App.currentLevel） */
   buildWithPortrait(resident, opts, levelIndex) {
     const svg = this.build(resident, opts);
-    const url = this.portraitUrl(resident, levelIndex);
+    const size = (opts && opts.size) || 0;
+    const url = this.portraitUrl(resident, levelIndex, size);
     if (!url || !this._supportsWebp()) return svg;
     const esc = (typeof ClueCards !== "undefined" && ClueCards.escapeHtml)
       ? ClueCards.escapeHtml
