@@ -50,6 +50,7 @@ const Modal = {
     this._init();
     this.titleEl.textContent = title;
     this.textEl.textContent = text;
+    this.textEl.style.textAlign = ""; // 每次渲染重置为居中；引导卡等会自行改为左对齐
     if (this.extraEl) {
       if (extraHtml) {
         this.extraEl.innerHTML = extraHtml;

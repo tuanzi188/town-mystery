@@ -1098,7 +1098,22 @@ input{font-family:inherit;}
 .bio-body .fu-list{display:none;}
 
 /* —— 跨关人物关系（LorePanel） —— */
+/* 弹窗框统一样式：复用 town-map-box 基线，确保 lore/chronicle 与 town-map 视觉一致 */
+#lore-mask .town-map-box,
+#chronicle-mask .town-map-box,
+#town-map-mask .town-map-box{
+  width:min(560px,calc(100vw - 40px));max-height:88vh;overflow:auto;
+  background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);
+  padding:18px 16px 22px;transform:scale(.92);
+  transition:transform .25s ease;
+}
+#lore-mask.show .town-map-box,
+#chronicle-mask.show .town-map-box,
+#town-map-mask.show .town-map-box{transform:scale(1);}
+/* town-map 弹窗特殊：宽屏可到 760px 容纳 8 个地点 */
+#town-map-mask .town-map-box{width:min(760px,calc(100vw - 40px));}
 #lore-mask .town-map-box{max-width:560px;}
+#chronicle-mask .town-map-box{max-width:480px;}
 .lore-progress{font-size:12px;color:var(--text-sub);text-align:center;margin-bottom:10px;}
 .lore-progress b{color:var(--accent-deep);}
 .lore-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
@@ -1128,20 +1143,14 @@ input{font-family:inherit;}
   content:"";position:absolute;left:-17px;top:5px;width:9px;height:9px;border-radius:50%;
   background:var(--accent);border:2px solid var(--card);
 }
-.chron-item.locked::before{background:var(--card-line);}
+.chron-item.locked::before{background:var(--card-line);border-color:var(--card);}
 .chron-title{font-size:13px;color:var(--accent-deep);font-weight:600;margin-bottom:2px;}
 .chron-tag{font-size:11px;color:var(--text-sub);}
 .chron-event{font-size:12px;color:var(--text);line-height:1.7;margin-top:2px;}
 .chron-lock{font-size:12px;color:var(--text-sub);}
 
 /* —— 小镇群像总图 SVG 弹窗 —— */
-#town-map-mask .town-map-box{
-  width:min(94vw,760px);max-height:88vh;overflow:auto;
-  background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);
-  padding:18px 16px 22px;transform:scale(.92);
-  transition:transform .25s ease;
-}
-#town-map-mask.show .town-map-box{transform:scale(1);}
+/* town-map-box 通用样式已在上面 #lore/chronicle/town-map 三处共用块定义，此处只补 SVG/节点视觉 */
 .town-map-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
 .town-map-head h3{font-size:16px;color:var(--accent-deep);}
 .town-map-close{
@@ -1165,8 +1174,8 @@ input{font-family:inherit;}
 }
 .tm-tooltip.show{opacity:1;}
 
-/* —— 全收集成就纪念弹窗 —— */
-.achievement-mask{z-index:260;}
+/* 全收集成就纪念弹窗：层级在普通 mask 之上，但低于 toast-tip 提示（z 序稳定） */
+.achievement-mask{z-index:280;}
 .achievement-box{
   width:min(90vw,420px);text-align:center;
   background:linear-gradient(160deg,#fffaf0,#fdf6e8);
@@ -1265,6 +1274,8 @@ input{font-family:inherit;}
   .bio-related-tag{min-height:44px;padding:8px 16px;font-size:13px;}
   .bio-close{width:40px;height:40px;font-size:20px;}
   .town-map-close{width:40px;height:40px;font-size:18px;}
+  /* 人物关系/大事记 窄屏：单列布局，避免卡片挤换行 */
+  .lore-grid{grid-template-columns:1fr;}
 
   /* 2. 拖拽幽灵卡片放大 1.2 倍 + 上移避开手指，降低遮挡看不清 */
   .drag-ghost{transform:rotate(2deg) scale(1.2) translateY(-72px);}
