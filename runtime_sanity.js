@@ -10,81 +10,19 @@
  *
  * 用法：node runtime_sanity.js
  */
-const fs = require("fs");
-const path = require("path");
-
-const HTML_PATH = path.join(__dirname, "index.html");
-const html = fs.readFileSync(HTML_PATH, "utf8");
-
-// 抽取 <script>...</script>
-const scriptStart = html.indexOf("<script>") + "<script>".length;
-const scriptEnd = html.lastIndexOf("</script>");
-if (scriptStart < 0 || scriptEnd < 0) {
-  console.error("未找到 <script>");
-  process.exit(1);
-}
-const scriptCode = html.slice(scriptStart, scriptEnd);
-
-// === 最小 DOM mock ===
-function makeStub() {
-  const stub = {};
-  ["addEventListener", "removeEventListener", "appendChild", "removeChild", "classList", "setAttribute", "getAttribute", "hasAttribute", "dataset", "style", "parentNode"].forEach((k) => {
-    if (k === "classList") stub.classList = { add() {}, remove() {}, toggle() {}, contains: () => false };
-    else if (k === "dataset") stub.dataset = {};
-    else if (k === "style") stub.style = {};
-    else if (k === "parentNode") stub.parentNode = null;
-    else stub[k] = () => {};
-  });
-  stub.cloneNode = () => makeStub();
-  stub.closest = () => null;
-  stub.getBoundingClientRect = () => ({ left: 0, top: 0, right: 0, bottom: 0, width: 0, height: 0 });
-  stub.querySelector = () => null;
-  stub.querySelectorAll = () => [];
-  return stub;
-}
-
-const documentMock = {
-  addEventListener() {},
-  removeEventListener() {},
-  body: makeStub(),
-  createElement: () => makeStub(),
-  createElementNS: () => makeStub(),
-  elementFromPoint: () => null,
-  getElementById: () => makeStub(),
-  querySelector: () => null,
-  querySelectorAll: () => [],
-};
-
-const localStorageMock = (() => {
-  const s = {};
-  return {
-    getItem: (k) => (k in s ? s[k] : null),
-    setItem: (k, v) => { s[k] = String(v); },
-    removeItem: (k) => { delete s[k]; },
-    clear: () => { Object.keys(s).forEach((k) => delete s[k]); },
-  };
-})();
-
-const windowMock = { innerWidth: 1024, innerHeight: 768, addEventListener() {} };
-const CSSMock = { escape: (s) => String(s).replace(/[^a-zA-Z0-9_-]/g, "\\$&") };
-
-// === 用 Function 注入 mock 后执行真实脚本 ===
-const wrapped = `
-"use strict";
-const document = arguments[0];
-const window = arguments[1];
-const localStorage = arguments[2];
-const CSS = arguments[3];
-const requestAnimationFrame = arguments[4];
-const navigator = arguments[5];
-${scriptCode}
-return { App, LevelData, ValidateUtil, GameFlow, StorageUtil };
-`;
+const { loadRuntime } = require("./lib/extract");
+const { createMocks } = require("./lib/mocks");
 
 let ctx;
+let localStorageMock;
 try {
-  const fn = new Function(wrapped);
-  ctx = fn(documentMock, windowMock, localStorageMock, CSSMock, () => {}, { userAgent: "node-runtime-sanity" });
+  const r = loadRuntime({
+    expose: ["App", "LevelData", "ValidateUtil", "GameFlow", "StorageUtil"],
+    includeTownData: false,
+    userAgent: "node-runtime-sanity",
+  });
+  ctx = r.ctx;
+  localStorageMock = r.mocks.localStorageMock;
 } catch (e) {
   console.error("✗ 真实脚本加载失败：", e.message);
   console.error(e.stack.split("\n").slice(0, 5).join("\n"));

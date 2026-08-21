@@ -2,20 +2,8 @@
  * 精确诊断：按 index.html 中 _getMissingEvidence 的判定逻辑，找出每关缺失的物证。
  * 与游戏运行时完全一致。
  */
-const fs = require("fs");
-const path = require("path");
-
-const HTML_PATH = path.join(__dirname, "index.html");
-const html = fs.readFileSync(HTML_PATH, "utf8");
-
-const startIdx = html.indexOf("const LevelData = [");
-const constIdx = html.indexOf("const GameFlow", startIdx);
-let cutIdx = -1;
-for (let i = constIdx - 1; i > startIdx; i--) {
-  if (html[i] === "]") { cutIdx = i + 1; break; }
-}
-const dataJson = html.slice(startIdx + "const LevelData = ".length, cutIdx).trim();
-const LevelData = (new Function("return " + dataJson + ";"))();
+const { extractLevelData } = require("./lib/extract");
+const LevelData = extractLevelData();
 
 console.log("=== 物证缺失精确诊断（与游戏判定一致）===\n");
 

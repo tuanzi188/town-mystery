@@ -4,46 +4,23 @@
  * 判定标准：cids 包含 isEvidence / isWitness / isSuspectStatement / conflictGroup 之一 → 推进推理
  * 用法：node analyze_followups.js
  */
-const fs = require("fs");
-const path = require("path");
-const HTML_PATH = path.join(__dirname, "index.html");
-const TOWN_PATH = path.join(__dirname, "town_data.js");
-const html = fs.readFileSync(HTML_PATH, "utf8");
-const scriptStart = html.indexOf("<script>") + "<script>".length;
-const scriptEnd = html.lastIndexOf("</script>");
-const scriptCode = html.slice(scriptStart, scriptEnd);
-const townSrc = fs.readFileSync(TOWN_PATH, "utf8");
+const { loadRuntime } = require("./lib/extract");
+const { createMocks } = require("./lib/mocks");
 
-function makeEl() {
-  return { innerHTML: "", value: "", dataset: {}, style: {}, _listeners: {},
-    addEventListener() {}, removeEventListener() {}, appendChild() {}, removeChild() {},
-    querySelector() { return null; }, querySelectorAll() { return []; }, closest() { return null; },
-    classList: { add() {}, remove() {}, contains() { return false; }, toggle() {} } };
+let ctx;
+try {
+  const r = loadRuntime({
+    expose: ["App", "LevelData", "GameFlow", "StorageUtil", "DialogSystem", "TOWN_FOLLOWUPS"],
+    includeTownData: true,
+    userAgent: "analyze",
+  });
+  ctx = r.ctx;
+} catch (e) {
+  console.error("✗ 真实脚本 + town_data 加载失败：", e.message);
+  console.error(e.stack.split("\n").slice(0, 4).join("\n"));
+  process.exit(1);
 }
-const documentMock = { addEventListener() {}, removeEventListener() {}, body: makeEl(),
-  createElement: () => makeEl(), createElementNS: () => makeEl(), elementFromPoint: () => null,
-  getElementById: () => makeEl(), querySelector: () => null, querySelectorAll: () => [] };
-const localStorageMock = (() => {
-  const s = {};
-  return { getItem: (k) => (k in s ? s[k] : null), setItem: (k, v) => { s[k] = String(v); },
-    removeItem: (k) => { delete s[k]; }, clear: () => { Object.keys(s).forEach((k) => delete s[k]); } };
-})();
-const windowMock = { innerWidth: 1024, innerHeight: 768, addEventListener() {} };
-const CSSMock = { escape: (s) => String(s).replace(/[^a-zA-Z0-9_-]/g, "\\$&") };
 
-const wrapped = `
-"use strict";
-const document = arguments[0];
-const window = arguments[1];
-const localStorage = arguments[2];
-const CSS = arguments[3];
-const requestAnimationFrame = arguments[4];
-const navigator = arguments[5];
-${townSrc}
-${scriptCode}
-return { App, LevelData, GameFlow, StorageUtil, DialogSystem, TOWN_FOLLOWUPS };
-`;
-const ctx = new Function(wrapped)(documentMock, windowMock, localStorageMock, CSSMock, () => {}, { userAgent: "analyze" });
 const { LevelData, TOWN_FOLLOWUPS } = ctx;
 
 const counts = { advance: 0, sideinfo: 0, total: 0 };
