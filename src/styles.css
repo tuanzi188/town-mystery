@@ -1,0 +1,1268 @@
+/* ============================================================
+   一、全局基础样式（浅色治愈系）
+   ============================================================ */
+:root{
+  --bg:#f6f3ec;            /* 页面底色：暖米白 */
+  --card:#ffffff;          /* 卡片底色 */
+  --card-line:#e8e2d4;     /* 卡片描边 */
+  --text:#4a4238;          /* 主文字 */
+  --text-sub:#9a9184;      /* 次要文字 */
+  --accent:#7fae8b;        /* 主强调：治愈绿 */
+  --accent-deep:#5f8f6d;   /* 强调深色 */
+  --soft:#eef3ec;          /* 柔和浅绿底 */
+  --warn:#d98a5f;          /* 提示橙 */
+  --danger:#c96a5f;        /* 冲突红 */
+  --radius:14px;           /* 圆角 */
+  --shadow:0 4px 14px rgba(90,80,60,.08);
+  --font-body:"PingFang SC","Microsoft YaHei","Noto Sans SC",sans-serif;
+  --font-title:"Songti SC","STSong","SimSun","Noto Serif SC",serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;}
+body{
+  font-family:var(--font-body);
+  background:var(--bg);
+  color:var(--text);
+  font-size:15px;
+  overflow:hidden;
+}
+button{font-family:inherit;font-size:inherit;color:inherit;background:none;border:none;cursor:pointer;}
+input{font-family:inherit;}
+/* 页面容器：所有页面绝对铺满，切换时淡入 */
+.page{
+  position:fixed;inset:0;
+  display:flex;flex-direction:column;
+  opacity:0;visibility:hidden;transition:opacity .35s ease,visibility .35s;
+}
+.page.active{opacity:1;visibility:visible;}
+.page-inner{
+  flex:1;min-height:0;
+  display:flex;flex-direction:column;
+  padding:18px;gap:14px;
+  max-width:1100px;width:100%;margin:0 auto;
+}
+
+/* ============================================================
+   二、主菜单页
+   ============================================================ */
+#page-menu{justify-content:center;align-items:center;position:fixed;}
+/* 氛围底：径向暗角 + 远山屋脊剪影，不阻挡点击 */
+#page-menu::before{
+  content:"";position:absolute;inset:0;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(ellipse at 50% -10%, rgba(95,143,109,.18), transparent 55%),
+    radial-gradient(ellipse at 50% 110%, rgba(74,66,56,.10), transparent 60%);
+}
+#page-menu::after{
+  content:"";position:absolute;left:0;right:0;bottom:0;height:30%;
+  pointer-events:none;z-index:0;opacity:.10;
+  background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 200' preserveAspectRatio='none'><path d='M0,200 L0,130 L80,110 L150,140 L230,95 L300,120 L380,85 L460,125 L540,100 L640,135 L720,90 L820,130 L900,105 L1000,140 L1100,110 L1200,135 L1200,200 Z' fill='%234a4238'/></svg>") center bottom / 100% 100% no-repeat;
+}
+/* 浮尘/光斑层：8-10 个慢速上浮光点，不阻挡点击 */
+.menu-particles{position:absolute;inset:0;pointer-events:none;z-index:0;overflow:hidden;}
+.menu-particle{
+  position:absolute;bottom:-12px;left:var(--x);width:var(--s);height:var(--s);
+  border-radius:50%;background:radial-gradient(circle,rgba(255,225,170,.85),rgba(255,225,170,0) 70%);
+  filter:blur(.3px);opacity:0;
+  animation:menuParticleFloat var(--t) linear var(--d) infinite;
+}
+@keyframes menuParticleFloat{
+  0%{transform:translateY(0) scale(.6);opacity:0;}
+  10%{opacity:.7;}
+  85%{opacity:.55;}
+  100%{transform:translateY(-105vh) scale(1.1);opacity:0;}
+}
+.menu-box{
+  position:relative;z-index:1;text-align:center;padding:30px 24px 24px;
+  width:calc(100% - 32px);max-width:380px;
+  background:linear-gradient(180deg,#fff 0%,#fbfaf4 100%);
+  border:1px solid var(--card-line);border-radius:22px;
+  box-shadow:
+    0 1px 0 rgba(255,255,255,.7) inset,
+    0 2px 8px rgba(90,80,60,.06),
+    0 14px 40px rgba(90,80,60,.12);
+  animation:menuBoxIn .5s cubic-bezier(.22,1.3,.5,1) both;
+}
+.menu-box::before{
+  content:"";position:absolute;top:0;left:14px;right:14px;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(127,174,139,.45),transparent);
+  border-radius:1px;
+}
+@keyframes menuBoxIn{from{opacity:0;transform:translateY(10px) scale(.97);}to{opacity:1;transform:none;}}
+@keyframes menuFadeUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:none;}}
+/* 印章徽章：缩小为顶部装饰徽章，进度环保留 */
+.menu-mark{
+  position:relative;width:48px;height:48px;margin:0 auto 10px;color:var(--accent-deep);
+  animation:menuStampIn .5s cubic-bezier(.22,1.5,.4,1) .05s both;
+}
+.menu-mark-svg{width:100%;height:100%;display:block;overflow:visible;}
+.menu-mark-glyph{font-family:var(--font-title);font-weight:700;fill:var(--accent-deep);}
+@keyframes menuStampIn{
+  0%{opacity:0;transform:scale(.6) translateY(-6px);}
+  60%{opacity:1;transform:scale(1.1) translateY(1px);}
+  100%{opacity:1;transform:scale(1) translateY(0);}
+}
+/* 进度环：填充动效由 JS 设置 stroke-dashoffset */
+.menu-mark-ring{transition:stroke-dashoffset 1.2s cubic-bezier(.22,1,.36,1);}
+/* 排版：标题衬线 + 渐变描边 */
+.menu-title{
+  position:relative;font-family:var(--font-title);font-size:40px;font-weight:900;letter-spacing:10px;
+  margin:0;line-height:1.1;
+  background:linear-gradient(180deg,#6ba07c 0%,#3f6b51 55%,#355c45 100%);
+  -webkit-background-clip:text;background-clip:text;
+  -webkit-text-fill-color:transparent;
+  filter:drop-shadow(0 1px 0 rgba(255,255,255,.6));
+  opacity:0;animation:menuFadeUp .5s ease-out .08s forwards;
+}
+.menu-title::after{
+  content:"";position:absolute;left:50%;bottom:-6px;width:44px;height:2px;
+  transform:translateX(-50%);border-radius:2px;
+  background:linear-gradient(90deg,transparent,var(--accent-deep) 30%,var(--accent-deep) 70%,transparent);
+  opacity:.65;
+}
+.menu-title::before{
+  content:"";position:absolute;left:50%;bottom:-6px;width:6px;height:6px;
+  transform:translateX(-50%) rotate(45deg);margin-top:-2px;
+  background:var(--accent-deep);opacity:.45;
+}
+.menu-sub{color:var(--text-sub);font-size:13px;letter-spacing:2px;margin:14px 0 18px;opacity:0;animation:menuFadeUp .45s ease-out .15s forwards;}
+/* 今日提示：便签式左侧色条 */
+.menu-tip{
+  display:flex;align-items:center;justify-content:center;gap:7px;
+  margin:0 0 20px;padding:9px 12px 9px 14px;
+  background:linear-gradient(90deg,var(--soft),#f4f8f1);border:1px solid #d8e3d4;border-left:3px solid var(--accent);border-radius:10px;
+  color:var(--text);font-size:12px;line-height:1.5;letter-spacing:.5px;
+  opacity:0;animation:menuFadeUp .45s ease-out .18s forwards;
+}
+.menu-tip-icon{color:var(--accent-deep);font-size:11px;flex:none;animation:menuTipSpin 6s linear infinite;}
+@keyframes menuTipSpin{to{transform:rotate(360deg);}}
+/* 按钮：卡片化（icon + 文本 + 副标），主次区分 */
+.menu-btn{
+  position:relative;display:grid;grid-template-columns:28px 1fr;column-gap:12px;
+  align-items:center;text-align:left;overflow:hidden;
+  width:100%;padding:14px 15px;margin-bottom:11px;
+  background:var(--card);color:var(--text);
+  border:1px solid var(--card-line);border-radius:14px;
+  box-shadow:0 1px 0 rgba(255,255,255,.5) inset, var(--shadow);
+  transition:transform .2s cubic-bezier(.22,1,.36,1),box-shadow .2s ease,background .18s ease,border-color .18s ease;
+  opacity:0;animation:menuFadeUp .45s cubic-bezier(.22,1,.36,1) forwards;
+}
+#btn-start{animation-delay:.26s;}
+#btn-tutorial-menu{animation-delay:.34s;}
+#btn-archive{animation-delay:.42s;}
+.menu-btn:hover{transform:translateY(-2px);box-shadow:0 1px 0 rgba(255,255,255,.5) inset, 0 10px 24px rgba(90,80,60,.14);}
+.menu-btn:active{transform:translateY(0) scale(.985);transition-duration:.08s;}
+.menu-btn:focus-visible{outline:3px solid var(--accent-deep);outline-offset:3px;box-shadow:0 0 0 6px rgba(127,174,139,.18);}
+.menu-btn-icon{width:28px;height:28px;display:grid;place-items:center;color:var(--accent-deep);flex:none;}
+.menu-btn-icon svg{width:22px;height:22px;display:block;}
+.menu-btn-body{display:flex;flex-direction:column;min-width:0;}
+.menu-btn-text{display:block;font-size:16px;letter-spacing:3px;color:inherit;line-height:1.2;}
+.menu-btn-hint{display:block;font-size:12px;letter-spacing:.5px;color:var(--text-sub);margin-top:3px;line-height:1.3;}
+/* 主按钮：深渐变 + 内高光 + 衬线文字 */
+.menu-btn.primary{
+  background:linear-gradient(180deg,#6ba07c 0%,var(--accent-deep) 52%,#3f6b51 100%);
+  color:#fff;border-color:transparent;
+  box-shadow:0 1px 0 rgba(255,255,255,.28) inset, 0 6px 18px rgba(95,143,109,.34);
+}
+.menu-btn.primary::after{
+  content:"";position:absolute;top:0;left:-60%;width:50%;height:100%;
+  background:linear-gradient(105deg,transparent,rgba(255,255,255,.22),transparent);
+  transform:skewX(-18deg);pointer-events:none;
+}
+.menu-btn.primary:hover::after{left:120%;transition:left .6s ease;}
+.menu-btn.primary .menu-btn-icon{color:#fff;}
+.menu-btn.primary .menu-btn-text{font-family:var(--font-title);font-weight:800;}
+.menu-btn.primary .menu-btn-hint{color:rgba(255,255,255,.82);}
+.menu-btn.primary:hover{box-shadow:0 1px 0 rgba(255,255,255,.32) inset, 0 12px 28px rgba(95,143,109,.44);}
+/* 次按钮 */
+.menu-btn.ghost{background:var(--card);}
+.menu-btn.ghost:hover{background:var(--soft);border-color:#cdd9c8;box-shadow:0 1px 0 rgba(255,255,255,.5) inset, 0 6px 16px rgba(90,80,60,.08);}
+/* 脚注：实时进度 */
+.menu-foot{
+  display:flex;justify-content:center;align-items:center;gap:8px;flex-wrap:wrap;
+  color:var(--text-sub);font-size:12px;margin-top:18px;
+  opacity:0;animation:menuFadeUp .42s ease-out .52s forwards;
+}
+.menu-foot-dot{opacity:.5;}
+/* 静音/响铃悬浮按钮：右下角小圆按钮，所有页面通用 */
+.mute-fab{
+  position:fixed;right:max(14px,env(safe-area-inset-right));bottom:max(14px,env(safe-area-inset-bottom));z-index:200;
+  width:42px;height:42px;border-radius:50%;
+  background:var(--card);border:1px solid var(--card-line);color:var(--text);
+  font-size:18px;box-shadow:var(--shadow);cursor:pointer;
+  transition:transform .12s,background .15s;
+}
+.mute-fab:hover{transform:scale(1.06);background:var(--soft);}
+.mute-fab[aria-pressed="true"]{background:#efece4;color:var(--text-sub);}
+/* 减少动效：跳过入场动画 + 隐藏浮尘粒子 + 去除光斑 */
+@media (prefers-reduced-motion: reduce){
+  .menu-box,.menu-mark,.menu-btn,.menu-foot,.menu-tip,.menu-title,.menu-sub{animation:none !important;opacity:1 !important;transform:none !important;}
+  .menu-particles{display:none;}
+  .menu-particle,.menu-tip-icon{animation:none !important;}
+  .menu-btn.primary::after{display:none;}
+  .menu-btn{transition:background .15s,border-color .15s;}
+  .menu-mark-ring{transition:none;}
+}
+/* 小屏断点：窄屏脚注换行 + 卡片留白收紧 */
+@media (max-width:640px){
+  .menu-box{padding:24px 18px 20px;}
+  .menu-foot{flex-direction:column;gap:4px;}
+  .menu-foot-dot{display:none;}
+}
+@media (max-width:360px){
+  .menu-title{font-size:30px;letter-spacing:6px;}
+  .menu-btn-text{font-size:15px;letter-spacing:2px;}
+}
+
+/* ============================================================
+   三、关卡选择页
+   ============================================================ */
+.top-bar{display:flex;align-items:center;gap:10px;}
+.back-btn{
+  padding:8px 14px;background:var(--card);border:1px solid var(--card-line);
+  border-radius:10px;font-size:14px;color:var(--text-sub);transition:background .15s;
+}
+.back-btn:hover{background:var(--soft);}
+.top-bar h2{font-size:20px;flex:1;text-align:center;}
+.progress-tip{color:var(--text-sub);font-size:13px;text-align:center;margin-bottom:4px;}
+.level-grid{
+  flex:1;min-height:0;overflow-y:auto;
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));
+  gap:14px;align-content:start;padding:6px 2px 20px;
+}
+.level-card{
+  aspect-ratio:1/1.1;border-radius:var(--radius);
+  background:var(--card);border:1px solid var(--card-line);box-shadow:var(--shadow);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+  transition:transform .15s;
+}
+.level-card:not(.locked):hover{transform:translateY(-3px);}
+.level-card.locked{background:#efece4;color:#b7b0a3;box-shadow:none;cursor:not-allowed;}
+.level-card .lv-num{font-size:26px;font-weight:700;color:var(--accent-deep);}
+.level-card.locked .lv-num{color:#c3bcae;}
+.level-card .lv-name{font-size:13px;color:var(--text-sub);}
+.level-card .lv-state{font-size:11px;color:var(--accent);}
+
+/* ============================================================
+   三·补：居民档案馆页（全局人物收集总览）
+   ============================================================ */
+.archive-filter{
+  display:flex;flex-wrap:wrap;gap:8px;justify-content:center;
+}
+.archive-filter-btn{
+  padding:6px 14px;border-radius:20px;font-size:13px;
+  background:var(--card);border:1px solid var(--card-line);color:var(--text-sub);
+  transition:background .15s,color .15s,border-color .15s;
+}
+.archive-filter-btn.active{background:var(--accent);color:#fff;border-color:transparent;}
+.archive-filter-btn:hover{background:var(--soft);}
+.archive-grid{
+  flex:1;min-height:0;overflow-y:auto;
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));
+  gap:14px;align-content:start;padding:6px 2px 20px;
+}
+.archive-card{
+  aspect-ratio:1/1.15;border-radius:var(--radius);
+  background:var(--card);border:1px solid var(--card-line);box-shadow:var(--shadow);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+  padding:10px;transition:transform .15s;
+}
+.archive-card:not(.locked):hover{transform:translateY(-3px);}
+.archive-card.locked{background:#efece4;color:#b7b0a3;box-shadow:none;cursor:not-allowed;}
+.arc-avatar{
+  width:52px;height:52px;border-radius:50%;overflow:hidden;
+  background:var(--soft);color:var(--accent-deep);
+  display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:600;
+}
+.arc-avatar .avatar-svg{display:block;width:100%;height:100%;}
+.arc-avatar .avatar-svg.fallback{display:none;}
+.arc-avatar .avatar-portrait{display:block;width:100%;height:100%;object-fit:cover;object-position:center 20%;}
+.archive-card.locked .arc-avatar{background:transparent;color:#c3bcae;font-size:24px;}
+.arc-name{font-size:14px;font-weight:600;color:var(--accent-deep);}
+.archive-card.locked .arc-name{color:#b7b0a3;}
+.arc-tag{font-size:11px;color:var(--text-sub);background:var(--bg);border-radius:20px;padding:2px 8px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.arc-level{font-size:11px;color:var(--accent);}
+.archive-card.locked .arc-level{color:#c3bcae;}
+
+/* ============================================================
+   四、游戏主界面：固定四分区
+   ============================================================ */
+#page-game .page-inner{padding:0 0 82px;max-width:1200px;}
+/* 1. 顶部案件背景区 */
+.case-header{
+  padding:14px 18px;background:var(--card);border:1px solid var(--card-line);
+  border-radius:0 0 var(--radius) var(--radius);box-shadow:var(--shadow);
+  display:flex;flex-direction:column;gap:8px;
+}
+.case-header .row{display:flex;align-items:center;gap:10px;}
+.case-header h2{font-size:18px;flex:1;color:var(--accent-deep);}
+.case-back{white-space:nowrap;}
+/* 常驻「新手指引」小按钮：与难度标签并列，随时可重看引导 */
+.tutorial-btn{
+  white-space:nowrap;font-size:12px;color:var(--accent-deep);
+  background:var(--soft);border:1px solid var(--card-line);border-radius:20px;
+  padding:4px 10px;transition:background .15s;
+}
+.tutorial-btn:hover{background:#e2ecdf;}
+.case-bg{font-size:13px;color:var(--text-sub);line-height:1.6;}
+.case-goal{font-size:13px;color:var(--accent-deep);background:var(--soft);border-radius:8px;padding:6px 10px;}
+/* 2+3. 主区域：左侧居民卡槽 + 右侧线索池 */
+.game-main{
+  flex:1;min-height:0;display:flex;gap:14px;
+}
+/* 左侧居民列表（仅展示身份信息，不再承载卡槽） */
+.residents-panel{
+  flex:0 0 220px;min-height:0;overflow-y:auto;padding:14px;
+  background:var(--card);border:1px solid var(--card-line);border-radius:var(--radius);
+  box-shadow:var(--shadow);display:flex;flex-direction:column;gap:12px;
+}
+.panel-title{font-size:14px;color:var(--text-sub);letter-spacing:2px;}
+.resident-block{display:flex;flex-direction:column;gap:8px;}
+.resident-head{display:flex;align-items:center;gap:8px;}
+.avatar{
+  width:34px;height:34px;border-radius:50%;flex:none;overflow:hidden;
+  background:var(--soft);color:var(--accent-deep);
+  display:flex;align-items:center;justify-content:center;font-size:15px;
+}
+.avatar .avatar-svg{display:block;width:100%;height:100%;}
+.avatar .avatar-svg.fallback{display:none;}
+.avatar .avatar-portrait{display:block;width:100%;height:100%;object-fit:cover;object-position:center 20%;}
+/* 全局头像浅描边：圆形裁切后与暖背景分离，对抬头像也让轮廓更清晰 */
+.avatar-svg{outline:1px solid var(--card-line);outline-offset:-1px;border-radius:50%;}
+.resident-head{position:relative;}
+/* 已交谈居民头像角落的绿色气泡角标（混合模式） */
+.speak-badge{
+  position:absolute;top:-3px;right:-3px;width:12px;height:12px;border-radius:50%;
+  background:#2e9e44;border:2px solid #fff;
+}
+.resident-name{font-size:15px;font-weight:600;}
+.resident-tag{
+  font-size:11px;color:var(--text-sub);background:var(--bg);
+  border-radius:20px;padding:2px 8px;white-space:nowrap;
+}
+/* 居民身份标签高亮：当标签命中线索池中已解锁物证的 evidenceOwnerTag 时，柔和绿色 + 绿色描边 */
+.resident-tag.tag-match{
+  color:var(--accent-deep);background:#e2efe4;
+  border:1px solid var(--accent);
+  box-shadow:0 0 0 2px rgba(127,174,139,.18);
+  font-weight:600;
+}
+/* 替罪羊/次要人物：整体灰化 + 行末"次要"小角标 */
+.resident-head.resident-scapegoat .avatar{opacity:.55;filter:grayscale(.6);}
+.resident-head.resident-scapegoat .resident-name{color:var(--text-sub);}
+.scapegoat-mark{
+  display:inline-block;margin-left:auto;
+  font-size:10px;padding:1px 7px;border-radius:8px;
+  background:#efece4;color:#a09886;border:1px solid var(--card-line);
+  letter-spacing:1px;flex:none;
+}
+/* 居民卡片下方的「获取线索」提示行 */
+.resident-hint{
+  font-size:11px;line-height:1.5;padding:3px 8px;margin:4px 0 6px 42px;
+  border-radius:6px;letter-spacing:.3px;
+  background:#fbfaf6;color:var(--text-sub);
+  border:1px solid var(--card-line);
+}
+.resident-hint b{color:var(--accent-deep);font-weight:600;}
+.resident-hint.hint-unvisited{
+  background:var(--soft);color:var(--accent-deep);
+  border:1px dashed var(--accent);
+  animation:hint-pulse 2s ease-in-out infinite;
+}
+.resident-hint.hint-low{
+  background:#fbf1e3;color:#a96a2a;border-color:#ecd9bd;
+}
+.resident-hint.hint-half{
+  background:#f4eee0;color:#7a5a1a;border-color:#e0d2a8;
+}
+.resident-hint.hint-done{
+  background:#e8f0e8;color:#3a6a3a;border-color:#cce0cc;
+}
+.resident-hint .hint-tap{color:var(--accent);font-weight:500;}
+@keyframes hint-pulse{
+  0%,100%{opacity:1;}
+  50%{opacity:.7;}
+}
+.slots{
+  display:flex;flex-wrap:wrap;gap:8px;min-height:52px;
+  padding:6px;border:1.5px dashed var(--card-line);border-radius:10px;
+  background:#fbfaf6;
+}
+.slot-empty{
+  font-size:11px;color:#cfc8ba;align-self:center;margin:0 auto;
+}
+/* 右侧线索卡片池 */
+.clues-pool{
+  flex:1;min-height:0;overflow-y:auto;padding:14px;
+  background:var(--card);border:1px solid var(--card-line);border-radius:var(--radius);
+  box-shadow:var(--shadow);display:flex;flex-direction:column;gap:12px;
+}
+.pool-hint{font-size:12px;color:var(--text-sub);line-height:1.6;background:var(--bg);border-radius:8px;padding:8px 10px;}
+.clue-group{display:flex;flex-direction:column;gap:8px;}
+.clue-group h4{font-size:13px;color:var(--text-sub);letter-spacing:1px;}
+.clue-list{display:flex;flex-wrap:wrap;gap:8px;}
+/* 线索卡片通用样式（浅米色有效 / 浅灰色干扰） */
+.clue-card{
+  position:relative; /* 供 case-toggle 绝对定位；不影响拖拽 */
+  width:150px;min-height:64px;padding:8px 10px;border-radius:10px;
+  border:1px solid var(--card-line);box-shadow:var(--shadow);
+  font-size:12px;line-height:1.5;cursor:grab;user-select:none;
+  -webkit-touch-callout:none; /* 移动端长按不弹系统菜单；touch-action 由拖拽 JS 长按锁定后按需设置，保证列表滚动优先 */
+  transition:transform .15s,box-shadow .15s;
+}
+.clue-card:hover{box-shadow:0 6px 16px rgba(90,80,60,.14);}
+.clue-card:active{cursor:grabbing;}
+.clue-card.valid{background:#f5ecd8;border-color:#e6d7b4;} /* 浅米色：有效线索 */
+.clue-card.fake{background:#e9e7e2;border-color:#d8d4cc;} /* 浅灰色：干扰线索 */
+.clue-card .clue-text{word-break:break-all;}
+.clue-card .clue-type{font-size:10px;color:var(--text-sub);margin-top:4px;}
+/* 说话人角标：卡面顶部小标签（物证用绿底，说话人用米色底） */
+.clue-speak{
+  display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font-size:10px;line-height:1;padding:2px 6px;margin-bottom:4px;border-radius:6px;
+  background:#f2e3c4;color:#8a6d3b;
+}
+.clue-speak.ev{background:#e2efe4;color:var(--accent-deep);}
+/* 物证对应居民身份小标签：紧贴「物证」徽标右侧，使用柔和米色，便于和居民面板的 tag 视觉呼应 */
+.clue-speak.ev-owner{
+  background:#fbeed2;color:#8a6d3b;border:1px dashed #e2cfa6;
+}
+/* 反向物证：与嫌疑人命中但语义是为其脱罪（如 L6 c9 替赵姨洗白） */
+.clue-speak.ev-owner--clear{
+  background:#e7eef7;color:#4d6b91;border:1px dashed #b8c8de;
+}
+/* 卡片被拖起时的样式 */
+.clue-card.dragging{opacity:.6;transform:scale(1.04);box-shadow:0 10px 22px rgba(90,80,60,.2);}
+/* 卡片标红（冲突） */
+.clue-card.conflict{border:2px solid var(--danger);animation:shake .4s;}
+/* 缺陷 A：时间区间配对软提示（同时窗/时间互斥）——弱化样式，不阻断，仅给推理提示 */
+.clue-card.time-overlap{border-color:#a8b89a;border-style:dashed;}
+.clue-card.time-mutex{border-color:#c08a4a;border-style:dashed;background:#fbf3e2;}
+.tl-pair-tag{
+  display:inline-block;font-size:10px;line-height:1;padding:1px 5px;border-radius:6px;
+  margin-left:2px;vertical-align:middle;
+}
+.tl-pair-tag.overlap{background:#e2efe4;color:#5a7a4a;}
+.tl-pair-tag.mutex{background:#fbeed2;color:#a07030;}
+.tl-pair-tag.mis{background:#e7e2f5;color:#6a5a9a;}
+/* 丢到空白区域的抖动反馈 */
+.clue-card.drop-fail{animation:shake .4s;}
+
+/* —— 线索分层 4 种外观（口供 / 目击 / 自白 / 物证） + 入卷仪式 —— */
+/* 物证：金边 + 🔑 角标 + 轻微金辉 */
+.clue-card.evidence{
+  background:linear-gradient(135deg,#fff5d8 0%,#f5ecd8 100%);
+  border:1.5px solid #c89a3a;
+  box-shadow:0 0 0 2px rgba(200,154,58,.08),0 2px 8px rgba(200,154,58,.12);
+}
+.clue-card.evidence .clue-badge{
+  background:#c89a3a;color:#fff;font-weight:600;
+  box-shadow:0 1px 4px rgba(200,154,58,.35);
+}
+/* 自白：橙边 + 🗣 角标 */
+.clue-card.statement{
+  background:linear-gradient(135deg,#fdeede 0%,#f8e4c2 100%);
+  border:1.5px solid #c4804a;
+}
+.clue-card.statement .clue-badge{background:#c4804a;color:#fff;}
+/* 目击：蓝边 + 👁 角标 */
+.clue-card.witness{
+  background:linear-gradient(135deg,#e6efff 0%,#d8e4f7 100%);
+  border:1.5px solid #5a7ba8;
+}
+.clue-card.witness .clue-badge{background:#5a7ba8;color:#fff;}
+/* 普通口供：保持原有米色（.valid），无需额外样式 */
+/* 干扰线索：保持原有灰色（.fake），统一降级视觉 */
+.clue-card.fake.evidence,
+.clue-card.fake.statement,
+.clue-card.fake.witness{opacity:.85;}
+/* 类型角标：统一徽标样式 */
+.clue-badge{
+  display:inline-block;font-size:10px;line-height:1;padding:2px 7px;margin-bottom:4px;
+  border-radius:6px;letter-spacing:.5px;
+}
+/* 入卷动画：新解锁的卡片从右上方"飞入"池子 */
+@keyframes clue-enter{
+  0%{opacity:0;transform:translate(40px,-30px) scale(.85) rotate(4deg);}
+  60%{opacity:1;transform:translate(-4px,2px) scale(1.04) rotate(-1deg);}
+  100%{opacity:1;transform:translate(0,0) scale(1) rotate(0);}
+}
+.clue-card.entering{animation:clue-enter .55s cubic-bezier(.18,.78,.34,1.18) both;}
+/* 物证入卷时再补一次金辉 */
+@keyframes clue-evidence-glow{
+  0%,100%{box-shadow:0 0 0 2px rgba(200,154,58,.08),0 2px 8px rgba(200,154,58,.12);}
+  35%{box-shadow:0 0 0 5px rgba(255,210,120,.55),0 4px 18px rgba(200,154,58,.35);}
+}
+.clue-card.evidence.entering{animation:clue-enter .55s cubic-bezier(.18,.78,.34,1.18) both,clue-evidence-glow 1.4s ease-out .25s 2;}
+/* 入卷气泡：右上角浮出，~1.6s 后淡出 */
+.clue-toast{
+  position:fixed;right:24px;top:80px;z-index:230;
+  background:linear-gradient(135deg,#fffdf7 0%,#f5ecd8 100%);
+  border:1px solid #d6c79c;border-radius:14px;
+  padding:10px 14px;font-size:13px;line-height:1.5;color:var(--text);
+  box-shadow:0 8px 22px rgba(60,55,45,.18);
+  max-width:280px;pointer-events:none;
+  opacity:0;transform:translateX(20px) scale(.95);
+  transition:opacity .25s ease,transform .25s ease;
+}
+.clue-toast.show{opacity:1;transform:translateX(0) scale(1);}
+.clue-toast .clue-toast-title{
+  display:flex;align-items:center;gap:5px;
+  font-size:12px;color:#8a6d3b;letter-spacing:1px;margin-bottom:4px;
+}
+.clue-toast .clue-toast-text{font-size:13px;color:var(--text);line-height:1.55;}
+.clue-toast.evidence{border-color:#c89a3a;background:linear-gradient(135deg,#fffaf0 0%,#f5e2b0 100%);}
+.clue-toast.evidence .clue-toast-title{color:#a07820;}
+.clue-toast.fake{border-color:#b9a8a8;background:linear-gradient(135deg,#f4f2f0 0%,#e9e7e2 100%);opacity:.95;}
+.clue-toast.fake .clue-toast-title{color:#7a6a6a;}
+/* 多个气泡上下错开，避免重叠 */
+.clue-toast[data-stack="1"]{top:140px;}
+.clue-toast[data-stack="2"]{top:200px;}
+.clue-toast[data-stack="3"]{top:260px;}
+/* 时间轴推理区（三层机制·第二层：时间诡计） */
+.timeline-panel{margin:14px 0 0;padding:12px 14px;background:#fffdf7;border:1px dashed var(--card-line);border-radius:14px;}
+.timeline-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px;}
+.timeline-head .panel-title{margin:0;}
+/* 时间轴新手指引小标签：放在标题旁，提醒新人拖入即自动排序 */
+.timeline-tip{
+  display:inline-flex;align-items:center;gap:3px;
+  font-size:11px;line-height:1;color:var(--accent-deep);
+  background:var(--soft);border:1px solid var(--card-line);
+  border-radius:20px;padding:3px 9px;
+}
+.timeline-track{display:flex;flex-wrap:wrap;gap:12px;min-height:76px;padding:10px 10px 10px 26px;border-radius:10px;background:#faf6ec;position:relative;}
+.timeline-track.tl-target{outline:2px dashed var(--accent);background:#f3f9f0;}
+.timeline-empty{width:100%;margin:0;color:var(--text-sub);font-size:12px;line-height:1.6;}
+.timeline-track .clue-card{flex:0 0 auto;width:180px;position:relative;}
+.timeline-track .clue-type{color:#8a6d3b;}
+/* 背景时间线：左侧一条灰色虚线主轴，卡片上用小点锚定各自的时间点 */
+.timeline-track::before{content:"";position:absolute;left:13px;top:8px;bottom:8px;width:2px;background:repeating-linear-gradient(180deg,#cbbfa6 0 5px,rgba(203,191,166,0) 5px 10px);}
+.timeline-track .clue-card::before{content:"";position:absolute;left:-18px;top:20px;width:12px;height:12px;border-radius:50%;background:#fff;border:3px solid var(--accent);box-shadow:0 0 0 1px var(--accent);}
+.timeline-track .tl-flag{display:inline-block;width:0;height:0;margin-right:5px;border-left:7px solid var(--accent);border-top:4px solid transparent;border-bottom:4px solid transparent;vertical-align:middle;}
+/* 拖拽幽灵卡片：跟随指针的视觉副本 */
+.drag-ghost{
+  position:fixed;z-index:200;pointer-events:none;
+  opacity:.92;transform:rotate(2deg);
+  box-shadow:0 12px 26px rgba(90,80,60,.18);
+  transition:outline-color .15s;
+  outline:2px dashed transparent;outline-offset:4px;
+}
+/* 拖到无效区域时（空白处）的红色虚线提示 */
+.drag-ghost.drag-invalid{
+  outline-color:var(--danger);
+  animation:invalid-shake .35s ease-in-out infinite;
+}
+@keyframes invalid-shake{
+  0%,100%{transform:rotate(2deg) translateX(0);}
+  25%{transform:rotate(2deg) translateX(-2px);}
+  75%{transform:rotate(2deg) translateX(2px);}
+}
+/* 拖到时间轴时的「长按 0.3 秒」确认视觉（环形进度 + 提示文字） */
+.drag-ghost .confirm-ring{
+  position:absolute;right:-12px;bottom:-12px;
+  width:34px;height:34px;border-radius:50%;
+  background:conic-gradient(var(--accent) 0deg,rgba(0,0,0,.18) 0deg);
+  border:2px solid #fff;box-shadow:0 3px 8px rgba(0,0,0,.25);
+  opacity:0;transform:scale(.55);
+  transition:opacity .18s,transform .18s;
+  z-index:2;
+}
+.drag-ghost .confirm-ring.active{opacity:1;transform:scale(1);animation:confirm-ring-fill 1s linear forwards;}
+.drag-ghost .confirm-ring.done{animation:none;background:conic-gradient(var(--accent) 360deg,rgba(0,0,0,.18) 360deg);}
+@keyframes confirm-ring-fill{
+  from{background:conic-gradient(var(--accent) 0deg,rgba(0,0,0,.18) 0deg);}
+  to{background:conic-gradient(var(--accent) 360deg,rgba(0,0,0,.18) 360deg);}
+}
+.drag-ghost .confirm-hint{
+  position:absolute;left:50%;bottom:-32px;transform:translateX(-50%) translateY(2px);
+  background:rgba(40,32,22,.85);color:#fff;
+  font-size:11px;line-height:1;padding:5px 10px;border-radius:12px;
+  white-space:nowrap;letter-spacing:.5px;
+  opacity:0;pointer-events:none;
+  transition:opacity .2s,transform .2s;
+  z-index:2;
+}
+.drag-ghost .confirm-hint.active{opacity:1;transform:translateX(-50%) translateY(0);}
+.drag-ghost .confirm-hint.done{background:rgba(76,141,97,.95);}
+/* 磁吸：拖拽经过目标卡槽时的高亮反馈 */
+.slots.slot-target{
+  border-color:var(--accent);background:var(--soft);
+  box-shadow:inset 0 0 0 2px rgba(127,174,139,.35);
+}
+
+/* ============================================================
+   五、底部功能按钮栏
+   ============================================================ */
+.bottom-bar{
+  position:fixed;left:0;right:0;bottom:0;z-index:50;
+  background:var(--card);border-top:1px solid var(--card-line);
+  padding:8px 16px calc(8px + env(safe-area-inset-bottom));
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+  box-shadow:0 -4px 14px rgba(90,80,60,.06);
+}
+/* 底部栏第一行：调查进度条（走访 / 矛盾 / 关键物证） */
+.case-progress{
+  display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;
+  width:100%;max-width:680px;
+}
+.cp-pill{
+  display:inline-flex;align-items:center;gap:4px;
+  font-size:12px;line-height:1;padding:5px 10px;border-radius:999px;white-space:nowrap;
+  background:var(--soft);color:var(--accent-deep);border:1px solid var(--card-line);
+}
+.cp-pill.warn{background:#fbf1e3;color:var(--warn);border-color:#ecd9bd;}
+.cp-pill.danger{background:#fbeae6;color:var(--danger);border-color:#eec7bf;}
+/* 已完成态：绿色实底，与进行中/告警视觉明确区分 */
+.cp-pill.done{background:var(--accent);color:#fff;border-color:var(--accent);}
+.cp-pill .cp-num{font-weight:600;}
+/* 底部栏第二行：功能按钮 */
+.bb-row{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;width:100%;max-width:680px;}
+.action-btn{
+  padding:10px 18px;border-radius:12px;font-size:14px;letter-spacing:2px;
+  background:var(--soft);color:var(--accent-deep);border:1px solid var(--card-line);
+  transition:background .15s,transform .15s;
+}
+.action-btn:hover{background:#e2ecdf;}
+.action-btn:active{transform:scale(.96);}
+.action-btn.primary{background:var(--accent);color:#fff;border-color:transparent;}
+.action-btn.primary:hover{background:var(--accent-deep);}
+.action-btn:disabled{background:#efece4;color:#c0b9ab;cursor:not-allowed;transform:none;}
+/* ============================================================
+   六、弹窗组件（提示 / 确认）
+   ============================================================ */
+.modal-mask{
+  position:fixed;inset:0;z-index:100;background:rgba(60,55,45,.35);
+  display:flex;align-items:center;justify-content:center;padding:20px;
+  opacity:0;visibility:hidden;transition:opacity .25s,visibility .25s;
+}
+.modal-mask.show{opacity:1;visibility:visible;}
+.modal-box{
+  width:100%;max-width:360px;background:var(--card);border-radius:18px;
+  box-shadow:0 12px 30px rgba(60,55,45,.2);padding:22px;text-align:center;
+  max-height:calc(100vh - 48px);overflow-y:auto;overflow-x:hidden;
+  transform:scale(.92);transition:transform .25s;
+}
+.modal-mask.show .modal-box{transform:scale(1);}
+.modal-title{font-size:17px;color:var(--accent-deep);margin-bottom:10px;}
+.modal-text{font-size:14px;line-height:1.7;color:var(--text);white-space:pre-line;}
+/* 通关弹窗的「小镇番外」分段：柔和绿色次要文字，与真相文字视觉区分 */
+.modal-extra{
+  display:none;margin-top:14px;padding-top:12px;border-top:1px dashed var(--card-line);
+  text-align:left;color:var(--accent-deep);font-size:13px;line-height:1.8;
+}
+.modal-extra-title{display:block;font-size:12px;color:var(--accent);letter-spacing:2px;margin-bottom:6px;margin-top:10px;}
+.clue-review-list{list-style:none;padding:0;margin:6px 0 0 0;}
+.clue-review-list li{
+  font-size:12px;line-height:1.6;padding:5px 8px;border-radius:6px;
+  background:var(--bg);margin-bottom:4px;display:flex;gap:6px;align-items:flex-start;
+}
+.clue-review-list .review-icon{flex:none;font-size:13px;line-height:1.6;}
+.clue-review-list .review-icon.decoy{color:var(--danger);}
+.clue-review-list.decoy-list li{background:#fbf1e3;border:1px solid #ecd9bd;}
+.clue-review-list .review-icon.flawed{color:#c96a5f;}
+.clue-review-list .review-icon.role-core{color:#c96a5f;}
+.clue-review-list .review-icon.role-aux{color:#5f8f6d;}
+.clue-review-list .review-icon.role-red{color:#d98a5f;}
+.clue-review-list .review-icon.role-amb{color:#9a9184;}
+.clue-review-list.core-list li{background:#fbeeea;border:1px solid #ecc8c0;}
+.clue-review-list.aux-list li{background:#eef3ec;border:1px solid #cfe1d5;}
+.clue-review-list.red-list li{background:#fbf1e3;border:1px solid #ecd9bd;}
+.clue-review-list.amb-list li{background:#f4f1ea;border:1px solid #e8e2d4;}
+
+/* —— 证据链 (case file) UI —— */
+/* 卡片右上角 ⊕ 按钮：把线索加入 / 移出证据链 */
+.clue-case-toggle{
+  position:absolute;top:5px;right:5px;
+  width:22px;height:22px;border-radius:50%;
+  background:var(--card);border:1px solid var(--card-line);
+  color:var(--text-sub);font-size:13px;line-height:1;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:background .15s,color .15s,transform .12s;
+  z-index:2;padding:0;
+}
+.clue-case-toggle:hover{background:var(--soft);color:var(--accent-deep);transform:scale(1.08);}
+.clue-case-toggle.in-case{background:var(--accent);color:#fff;border-color:transparent;}
+.clue-case-toggle.in-case:hover{background:var(--accent-deep);}
+.clue-card.in-case{border-color:var(--accent);box-shadow:0 0 0 2px var(--soft);}
+/* 移动端时间轴快捷按钮：一键入轴/出轴，免去长距离拖拽。桌面端隐藏（拖拽是主玩法）。 */
+.clue-tl-toggle{
+  position:absolute;left:5px;top:5px;
+  width:22px;height:22px;border-radius:50%;
+  background:var(--card);border:1px solid var(--card-line);
+  color:var(--text-sub);font-size:11px;line-height:1;cursor:pointer;
+  display:none;align-items:center;justify-content:center;
+  transition:background .15s,color .15s,transform .12s;
+  z-index:2;padding:0;
+}
+.clue-tl-toggle:hover{background:var(--soft);color:var(--accent-deep);transform:scale(1.08);}
+.clue-tl-toggle.in-tl{background:var(--accent);color:#fff;border-color:transparent;}
+.clue-tl-toggle.in-tl:hover{background:var(--accent-deep);}
+@media (max-width:768px){
+  .clue-tl-toggle{display:flex;}
+  /* E5：触屏可点区 ≥44px（Apple HIG / WCAG 2.5.5 要求） */
+  .clue-case-toggle,.clue-tl-toggle{width:44px;height:44px;font-size:18px;}
+}
+/* 底部「证据链」计数条 */
+.case-file-bar{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  width:100%;max-width:680px;
+  padding:6px 12px;border-radius:10px;
+  background:var(--card);border:1px solid var(--card-line);
+  font-size:12px;color:var(--accent-deep);
+}
+.case-file-bar .cfb-left{display:flex;align-items:center;gap:8px;min-width:0;flex:1;}
+.case-file-bar .cfb-count{font-weight:bold;font-size:14px;}
+.case-file-bar .cfb-hint{color:var(--text-sub);font-size:11px;}
+.case-file-bar .cfb-clear{
+  background:none;border:none;color:var(--text-sub);
+  font-size:12px;cursor:pointer;padding:2px 6px;
+}
+.case-file-bar .cfb-clear:hover{color:var(--danger);}
+/* 指认弹窗里的证据链 pill 列表 */
+.case-file-pills{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;max-height:200px;overflow-y:auto;}
+.case-file-pill{
+  display:inline-flex;align-items:center;gap:5px;
+  font-size:12px;line-height:1.4;padding:5px 8px;border-radius:8px;
+  background:var(--card);border:1px solid var(--card-line);
+  color:var(--text);
+}
+.case-file-pill .cfp-remove{
+  cursor:pointer;color:var(--text-sub);font-size:14px;line-height:1;
+  display:inline-flex;align-items:center;justify-content:center;
+  width:16px;height:16px;border-radius:50%;
+  background:none;border:none;padding:0;
+}
+.case-file-pill .cfp-remove:hover{color:#fff;background:var(--danger);}
+.cf-empty{color:var(--text-sub);font-size:12px;font-style:italic;}
+/* verdict 徽标 */
+.verdict-badge{
+  display:inline-block;padding:8px 18px;border-radius:999px;
+  font-size:15px;letter-spacing:3px;font-weight:bold;
+  margin:10px 0;
+}
+.verdict-badge.perfect{background:#e2ecdf;color:var(--accent-deep);border:1px solid #b6d4be;}
+.verdict-badge.standard{background:#eef3ec;color:var(--accent-deep);border:1px solid #c8dbcd;}
+.verdict-badge.flawed{background:#fbf1e3;color:#a05a2a;border:1px solid #ecd9bd;}
+.verdict-badge.insufficient{background:#f4f1ea;color:#7a7363;border:1px solid #d8d2c4;}
+.modal-btns{display:flex;gap:10px;margin-top:18px;justify-content:center;}
+.modal-btn{
+  flex:1;padding:10px 0;border-radius:10px;font-size:14px;
+  background:var(--soft);color:var(--accent-deep);border:1px solid var(--card-line);
+}
+.modal-btn.primary{background:var(--accent);color:#fff;border-color:transparent;}
+.modal-btn:hover{filter:brightness(.96);}
+/* 「指认凶手」居民选择网格：复用通用弹窗，按钮区置于番外分段位，两列排布 */
+.culprit-pick-grid{
+  display:flex;flex-wrap:wrap;gap:8px;
+}
+.culprit-pick-grid .modal-btn{
+  flex:0 0 calc(50% - 4px);padding:11px 4px;letter-spacing:1px;
+}
+/* 指认弹窗：分步标题 / 选中高亮 / 已排除置灰 / 证据按钮整行 / 确认键禁用态 */
+.pick-sec-title{font-size:12px;color:var(--accent-deep);letter-spacing:1px;margin:14px 0 2px;text-align:left;}
+.pk-resident .pk-x{display:block;font-size:10px;color:var(--danger);margin-top:2px;letter-spacing:0;}
+.pk-resident.excluded{opacity:.55;background:#efece4;}
+.pk-resident.picked,.pk-evidence.picked{background:var(--accent);color:#fff;border-color:transparent;}
+.pk-evidence{flex:0 0 100%;text-align:left;font-size:12px;line-height:1.45;padding:9px 6px;}
+.pk-evidence.decoy{border-color:var(--danger);background:#fff3ee;color:#9a4a3e;}
+.pk-evidence.decoy.picked{background:var(--danger);color:#fff;border-color:transparent;}
+.pk-decoy-tag{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:8px;background:var(--danger);color:#fff;font-size:10px;letter-spacing:0;vertical-align:1px;}
+/* 困难关证据分类筛选条 */
+.pk-filter-bar{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 8px;}
+.pk-filter{
+  flex:none;padding:4px 10px;border-radius:14px;font-size:12px;
+  background:var(--soft);color:var(--text-sub);border:1px solid var(--card-line);
+  cursor:pointer;transition:background .15s,color .15s;
+}
+.pk-filter:hover{background:#e2ecdf;color:var(--accent-deep);}
+.pk-filter.active{background:var(--accent);color:#fff;border-color:transparent;}
+#picker-ok:disabled{opacity:.5;cursor:not-allowed;}
+/* 失败时关键证据线索卡高亮（脉动提示） */
+@keyframes keyPulse{
+  0%,100%{border-color:var(--danger);box-shadow:0 0 0 3px rgba(201,106,95,0);}
+  50%{border-color:var(--danger);box-shadow:0 0 0 5px rgba(201,106,95,.35);}
+}
+.clue-card.key-hint{animation:keyPulse .9s ease 3;border:2px solid var(--danger);}
+
+/* ============================================================
+   六·补：人物档案弹窗 / 上锁蒙版 / 解锁轻提示（叙事收集，增量）
+   ============================================================ */
+/* 居民头像 / 姓名区：可点击查看人物档案 */
+.resident-head{cursor:pointer;flex-wrap:wrap;}
+.resident-head:hover .avatar{background:var(--accent);color:#fff;}
+/* 人物档案弹窗：独立于通用弹窗（复用遮罩视觉），支持富文本排版 */
+#bio-mask .bio-box{
+  width:100%;max-width:400px;max-height:80vh;overflow:hidden;
+  background:var(--card);border-radius:18px;box-shadow:0 12px 30px rgba(60,55,45,.25);
+  padding:22px;text-align:left;display:flex;flex-direction:column;gap:12px;
+  transform:scale(.92);transition:transform .25s;
+}
+#bio-mask.show .bio-box{transform:scale(1);}
+.bio-head{display:flex;align-items:center;gap:12px;flex:none;}
+.bio-avatar{
+  width:80px;height:80px;border-radius:50%;flex:none;overflow:hidden;
+  background:var(--soft);color:var(--accent-deep);
+  display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:600;
+}
+.bio-avatar .avatar-svg{display:block;width:100%;height:100%;}
+.bio-avatar .avatar-svg.fallback{display:none;}
+.bio-avatar .avatar-portrait{display:block;width:100%;height:100%;object-fit:cover;object-position:center 20%;}
+.bio-id{flex:1;min-width:0;}
+.bio-name{font-size:17px;color:var(--accent-deep);margin-bottom:4px;}
+.bio-tag{
+  display:inline-block;font-size:11px;color:var(--accent-deep);background:var(--soft);
+  border-radius:20px;padding:2px 10px;
+}
+.bio-close{
+  width:30px;height:30px;border-radius:50%;flex:none;font-size:18px;line-height:1;
+  background:var(--bg);color:var(--text-sub);
+  display:flex;align-items:center;justify-content:center;
+}
+.bio-close:hover{background:#e9e2d3;color:var(--text);}
+.bio-body{overflow-y:auto;min-height:0;padding-right:4px;}
+.bio-sec-title{font-size:12px;color:var(--text-sub);letter-spacing:2px;margin:6px 0 8px;}
+.bio-text{font-size:14px;line-height:1.8;color:var(--text);white-space:pre-line;}
+.bio-secret-box{
+  background:var(--soft);border:1px dashed var(--accent);border-radius:12px;
+  padding:12px 14px;margin-top:12px;
+}
+.bio-secret-box .bio-sec-title{color:var(--accent-deep);}
+.bio-secret{color:var(--accent-deep);}
+/* 档案上锁蒙版（未通关时 bio / secret 以灰色蒙版呈现） */
+.bio-lock-veil{
+  background:var(--bg);border:1.5px dashed var(--card-line);border-radius:12px;
+  text-align:center;padding:28px 16px;color:var(--text-sub);
+}
+.bio-lock-icon{font-size:28px;display:block;margin-bottom:10px;opacity:.85;}
+.bio-lock-tip{font-size:14px;color:var(--text);}
+.bio-lock-sub{font-size:12px;color:var(--text-sub);margin-top:6px;}
+/* 首次解锁轻提示（淡入淡出 toast，层级高于一切弹窗） */
+.toast-tip{
+  position:fixed;left:50%;top:16%;z-index:220;transform:translateX(-50%) translateY(-10px);
+  background:var(--accent-deep);color:#fff;padding:12px 22px;border-radius:30px;
+  font-size:14px;letter-spacing:1px;box-shadow:0 8px 22px rgba(60,55,45,.28);
+  opacity:0;visibility:hidden;transition:opacity .35s ease,transform .35s ease,visibility .35s;
+  pointer-events:none;text-align:center;max-width:80%;
+}
+.toast-tip.show{opacity:1;visibility:visible;transform:translateX(-50%) translateY(0);}
+
+/* —— 档案馆进度条 + 群像总图入口 —— */
+.archive-progress-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;}
+.archive-action-btn{
+  white-space:nowrap;padding:8px 16px;border-radius:20px;font-size:13px;
+  background:var(--accent);color:#fff;border:none;cursor:pointer;
+  transition:background .15s,transform .15s;
+}
+.archive-action-btn:hover{background:var(--accent-deep);transform:translateY(-1px);}
+
+/* —— 档案馆操作按钮组（人物关系 / 大事记 / 群像总图） —— */
+.archive-actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;}
+
+/* —— 走访追问分支（DialogSystem） —— */
+.fu-list{display:flex;flex-direction:column;gap:8px;margin:2px 0 4px;}
+.fu-item.btn{
+  display:block;width:100%;text-align:left;padding:10px 12px;border-radius:10px;
+  background:var(--soft);border:1px solid var(--card-line);color:var(--accent-deep);
+  font-size:13px;line-height:1.55;cursor:pointer;transition:transform .12s,background .15s;
+}
+.fu-item.btn:hover{background:#e2ecdf;transform:translateY(-1px);}
+.fu-tag{
+  display:inline-block;font-size:11px;background:var(--accent);color:#fff;
+  border-radius:20px;padding:1px 8px;margin-right:6px;
+}
+.fu-item.asked{
+  width:100%;text-align:left;padding:8px 12px;border-radius:10px;
+  background:var(--bg);border:1px dashed var(--card-line);font-size:12px;color:var(--text-sub);
+}
+.fu-head{font-size:13px;color:var(--text);line-height:1.6;margin-bottom:6px;}
+.fu-answer{
+  font-size:13px;line-height:1.75;color:var(--text);margin:0 0 8px;
+  padding:8px 12px;border-radius:10px;background:var(--card);
+  border-left:3px solid var(--accent);
+}
+.fu-done{
+  display:inline-block;font-size:11px;background:var(--soft);color:var(--accent-deep);
+  border-radius:20px;padding:1px 8px;margin-right:6px;
+}
+.fu-item.asked .walk-clue-item{background:var(--card);}
+
+/* 追问回答的出场反馈：先金色闪烁提示「套出了话」，再回落常规底色 */
+.fu-item.asked.fu-fresh{animation:fu-fresh-pop 1.1s ease-out;}
+.fu-item.asked.fu-fresh .fu-answer{animation:fu-answer-in .5s ease-out .28s both;}
+.fu-item.asked.fu-fresh .walk-clue-item{animation:fu-clue-in .45s ease-out .34s both;}
+
+/* —— 追问追问区不区分视觉 —— 不给任何"关键/必问/旁证"角标
+   玩家必须通过追问文本和线索文本自己分析判断（沉浸式推理设计） */
+@keyframes fu-fresh-pop{
+  0%{background:#fff6d9;border-color:var(--accent);box-shadow:0 0 0 3px rgba(76,141,97,.16);}
+  60%{background:#fdf0c0;border-color:var(--accent);}
+  100%{background:var(--bg);border-color:var(--card-line);box-shadow:none;}
+}
+@keyframes fu-answer-in{
+  0%{opacity:0;transform:translateY(6px);}
+  100%{opacity:1;transform:translateY(0);}
+}
+@keyframes fu-clue-in{
+  0%{opacity:0;transform:translateY(4px) scale(.98);}
+  100%{opacity:1;transform:translateY(0) scale(1);}
+}
+
+/* —— 走访弹窗 沉浸感增强：逐句揭幕 / 走访次数开场 / 引导追问 / 内嵌线索 chip —— */
+@keyframes dl-line-in{
+  0%{opacity:0;transform:translateY(5px);}
+  100%{opacity:1;transform:translateY(0);}
+}
+@keyframes dl-prompt-in{
+  0%{opacity:0;transform:translateY(3px);}
+  100%{opacity:1;transform:translateY(0);}
+}
+.dl-line{
+  display:block;
+  white-space:pre-line;
+}
+/* 逐字浮现光标：放在 dl-line 后方，跟随字符 */
+.dl-cursor{
+  display:inline-block;width:.5em;
+  color:var(--accent);font-weight:600;
+  animation:dl-cursor-blink .8s steps(2) infinite;
+  margin-left:1px;vertical-align:baseline;
+  user-select:none;
+}
+@keyframes dl-cursor-blink{
+  0%,49%{opacity:1;}
+  50%,100%{opacity:0;}
+}
+.dl-statement{
+  font-size:14px;line-height:1.85;color:var(--text);
+  margin:2px 0 6px;
+}
+.dl-statement .dl-line + .dl-line{margin-top:2px;}
+/* 走访次数小标签 */
+.bio-visit-tag{
+  display:inline-block;margin-left:6px;font-size:11px;color:#8a7a5c;
+  background:#ece5d3;padding:1px 8px;border-radius:8px;letter-spacing:.5px;
+  vertical-align:middle;
+}
+/* 场景化开场白：斜体 + 缩进 */
+.dl-opening{
+  font-size:13px;color:#6a6253;font-style:italic;line-height:1.7;
+  padding:6px 0 8px;border-bottom:1px dashed #d8d0bf;margin-bottom:6px;
+  animation:dl-line-in .5s ease-out both;
+}
+.dl-opening::before{content:"· ";color:var(--accent);font-style:normal;}
+/* 首次进入提示：仅显示在首次走访弹窗，引导玩家理解"听口供 + 追问"流程 */
+.dl-intro-tip{
+  font-size:12px;line-height:1.7;padding:8px 12px;
+  background:var(--soft);color:var(--accent-deep);
+  border-left:3px solid var(--accent);border-radius:6px;
+  margin-bottom:10px;animation:dl-line-in .5s ease-out both;
+}
+.dl-intro-tip b{color:var(--accent-deep);}
+/* 口供揭幕进度条：让玩家知道"还有几句" */
+.dl-progress{
+  display:flex;flex-direction:column;gap:4px;
+  margin-top:6px;padding:6px 8px;
+  background:#fbfaf6;border-radius:8px;
+  border:1px solid var(--card-line);
+  animation:dl-line-in .35s ease-out both;
+}
+.dl-progress[data-state="done"]{
+  background:#eef6ee;border-color:#cce0cc;
+}
+.dl-progress-label{
+  font-size:11px;color:var(--text-sub);letter-spacing:.5px;
+  transition:color .2s;
+}
+.dl-progress[data-state="done"] .dl-progress-label{
+  color:var(--accent-deep);font-weight:600;
+}
+.dl-progress-bar{
+  height:4px;background:#e8e2d4;border-radius:2px;overflow:hidden;
+}
+.dl-progress-fill{
+  height:100%;background:var(--accent);border-radius:2px;
+  transition:width .3s ease;
+}
+.dl-progress[data-state="done"] .dl-progress-fill{
+  background:linear-gradient(90deg,var(--accent),#5f8f6d);
+}
+/* 跳过揭幕按钮 */
+.walk-skip{
+  display:inline-block;font-size:12px;color:var(--text-sub);
+  background:transparent;border:1px dashed var(--card-line);
+  border-radius:14px;padding:2px 10px;margin-top:4px;cursor:pointer;
+  transition:background .15s,color .15s;
+}
+.walk-skip:hover{background:var(--soft);color:var(--accent-deep);}
+/* 引导行：「你看着TA……」「TA 似乎没再多说……」 */
+.dl-prompt{
+  font-size:13px;color:#6a6253;font-style:italic;line-height:1.7;
+  padding:8px 0 4px;margin-top:10px;
+  border-top:1px dashed #d8d0bf;
+  animation:dl-prompt-in .4s ease-out both;
+}
+.dl-prompt::before{content:"👁 ";font-style:normal;}
+/* 追问块（多选下拉 + 进度） */
+.dl-fu-block{margin-top:8px;}
+.dl-fu-head{
+  display:flex;align-items:center;justify-content:space-between;
+  font-size:12px;color:var(--text-sub);padding:4px 2px;letter-spacing:1px;
+}
+.dl-fu-progress{
+  display:inline-block;padding:1px 8px;border-radius:10px;
+  background:var(--accent);color:#fff;font-size:11px;letter-spacing:0.5px;
+}
+.dl-fu-list{display:flex;flex-direction:column;gap:6px;margin-top:4px;}
+.dl-next-fu{
+  display:block;width:100%;text-align:left;
+  padding:10px 12px;border-radius:10px;
+  background:var(--soft);border:1px solid var(--card-line);color:var(--accent-deep);
+  font-size:13px;line-height:1.55;cursor:pointer;
+  transition:transform .12s,background .15s;
+  animation:dl-prompt-in .35s ease-out both;
+}
+.dl-next-fu:hover{background:#e2ecdf;transform:translateY(-1px);}
+.dl-next-fu .fu-tag{margin-right:6px;}
+/* 已完成所有追问的结束行 */
+.dl-done{
+  font-size:12px;color:var(--text-sub);text-align:center;
+  padding:8px 0 4px;letter-spacing:1px;
+  animation:dl-prompt-in .4s ease-out both;
+}
+.dl-done::before{content:"· ";color:var(--accent);}
+.dl-done::after{content:" ·";color:var(--accent);}
+/* 对白区：每次追问的回答作为一条新对白 */
+.dl-dialog{
+  margin-top:6px;display:flex;flex-direction:column;gap:6px;
+}
+.dl-q{
+  font-size:12px;color:#8a7a5c;font-style:italic;line-height:1.6;
+  padding:2px 0 0;letter-spacing:.5px;
+  animation:dl-prompt-in .35s ease-out both;
+}
+.dl-q::before{content:"你 · ";}
+.dl-a{
+  font-size:14px;line-height:1.85;color:var(--text);
+  padding:8px 12px;border-radius:10px;background:var(--card);
+  border-left:3px solid var(--accent);
+  animation:dl-prompt-in .4s ease-out both;
+  white-space:pre-line;
+}
+/* 内嵌线索 chip：贴在对白末尾，不破坏沉浸感 */
+.dl-clue-chip{
+  display:inline-flex;align-items:center;gap:3px;
+  padding:1px 8px;margin:2px 3px 0 0;font-size:12px;line-height:1.5;
+  background:rgba(255,240,200,.85);border:1px dashed #c0a978;
+  border-radius:10px;color:#6b4f1a;cursor:help;
+  vertical-align:baseline;
+  transition:background .15s,border-color .15s;
+}
+.dl-clue-chip:hover{background:#fbecb9;border-color:#a68650;}
+.dl-clue-chip.evidence{background:rgba(255,232,180,.95);border-color:#b88a3a;color:#5a3f10;}
+.dl-clue-chip.fake{background:#f0ecec;border-color:#b9a8a8;color:#7a4a4a;}
+/* chip 紧贴上一句，在对白末尾另起一行 */
+.dl-clue-row{
+  display:flex;flex-wrap:wrap;gap:2px;margin-top:6px;
+  padding-top:6px;border-top:1px dotted var(--card-line);
+  animation:dl-prompt-in .4s ease-out both;
+}
+.dl-clue-row::before{
+  content:"💭 你记下：";font-size:12px;color:#8a7a5c;width:100%;
+  margin-bottom:2px;letter-spacing:.5px;
+}
+/* 口供区下方原本的 walk-clue-list 改为隐藏：线索已全部上提到对白中 */
+.bio-body .walk-clue-list{display:none;}
+.bio-body .walk-clue-list:empty{display:none;}
+/* 旧版 fu-list（追问列表）整体隐藏：改用「继续询问」单条入口 */
+.bio-body .fu-list{display:none;}
+
+/* —— 跨关人物关系（LorePanel） —— */
+#lore-mask .town-map-box{max-width:560px;}
+.lore-progress{font-size:12px;color:var(--text-sub);text-align:center;margin-bottom:10px;}
+.lore-progress b{color:var(--accent-deep);}
+.lore-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.lore-card{
+  padding:10px 12px;border-radius:12px;background:var(--bg);border:1px solid var(--card-line);
+}
+.lore-card.locked{opacity:.62;}
+.lore-pair{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;}
+.lore-avatar{width:34px;height:34px;border-radius:50%;overflow:hidden;flex:none;background:var(--soft);color:var(--accent-deep);}
+.lore-pname{font-size:13px;color:var(--accent-deep);font-weight:600;cursor:pointer;}
+.lore-pname:hover{text-decoration:underline;}
+.lore-pname.locked{color:var(--text-sub);cursor:not-allowed;}
+.lore-and{font-size:11px;color:var(--text-sub);}
+.lore-rel{font-size:12px;color:var(--text);line-height:1.7;}
+.lore-lock-tip{font-size:11px;color:var(--text-sub);margin-top:6px;}
+
+/* —— 小镇大事记（ChroniclePanel，时间线） —— */
+#chronicle-mask .town-map-box{max-width:480px;}
+.chron-list{position:relative;padding-left:20px;margin:2px 0 4px;}
+.chron-list::before{
+  content:"";position:absolute;left:6px;top:6px;bottom:6px;width:1.5px;
+  background:var(--card-line);
+}
+.chron-item{position:relative;padding:0 0 16px 4px;}
+.chron-item:last-child{padding-bottom:0;}
+.chron-item::before{
+  content:"";position:absolute;left:-17px;top:5px;width:9px;height:9px;border-radius:50%;
+  background:var(--accent);border:2px solid var(--card);
+}
+.chron-item.locked::before{background:var(--card-line);}
+.chron-title{font-size:13px;color:var(--accent-deep);font-weight:600;margin-bottom:2px;}
+.chron-tag{font-size:11px;color:var(--text-sub);}
+.chron-event{font-size:12px;color:var(--text);line-height:1.7;margin-top:2px;}
+.chron-lock{font-size:12px;color:var(--text-sub);}
+
+/* —— 小镇群像总图 SVG 弹窗 —— */
+#town-map-mask .town-map-box{
+  width:min(94vw,760px);max-height:88vh;overflow:auto;
+  background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);
+  padding:18px 16px 22px;transform:scale(.92);
+  transition:transform .25s ease;
+}
+#town-map-mask.show .town-map-box{transform:scale(1);}
+.town-map-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.town-map-head h3{font-size:16px;color:var(--accent-deep);}
+.town-map-close{
+  border:none;background:var(--soft);color:var(--text);
+  width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:16px;
+}
+.town-map-close:hover{background:var(--card-line);}
+.town-map-svg{display:block;width:100%;height:auto;background:var(--bg);border-radius:10px;}
+.tm-zone-label{font-size:11px;font-weight:600;fill:var(--accent-deep);}
+.tm-node{cursor:pointer;transition:transform .15s;}
+.tm-node:hover{transform:scale(1.15);}
+.tm-node-circle{fill:var(--soft);stroke:var(--accent);stroke-width:1.5;}
+.tm-node.locked .tm-node-circle{fill:#efece4;stroke:#c3bcae;}
+.tm-node-text{font-size:10px;fill:var(--accent-deep);text-anchor:middle;}
+.tm-node.locked .tm-node-text{fill:#b7b0a3;}
+.tm-tooltip{
+  position:fixed;z-index:240;max-width:220px;background:var(--accent-deep);color:#fff;
+  border-radius:8px;padding:8px 12px;font-size:12px;line-height:1.5;
+  box-shadow:0 6px 18px rgba(60,55,45,.3);pointer-events:none;opacity:0;
+  transition:opacity .15s;white-space:normal;
+}
+.tm-tooltip.show{opacity:1;}
+
+/* —— 全收集成就纪念弹窗 —— */
+.achievement-mask{z-index:260;}
+.achievement-box{
+  width:min(90vw,420px);text-align:center;
+  background:linear-gradient(160deg,#fffaf0,#fdf6e8);
+  border:2px solid var(--accent);border-radius:var(--radius);
+  box-shadow:0 12px 40px rgba(60,55,45,.3);padding:36px 28px 28px;
+  transform:scale(.85) translateY(20px);opacity:0;
+  transition:transform .4s cubic-bezier(.22,1,.36,1),opacity .4s;
+}
+.achievement-mask.show .achievement-box{transform:scale(1) translateY(0);opacity:1;}
+.achievement-trophy{font-size:56px;line-height:1;margin-bottom:10px;}
+.achievement-title{font-size:22px;color:var(--accent-deep);margin-bottom:12px;letter-spacing:2px;}
+.achievement-text{font-size:14px;color:var(--text-sub);line-height:1.8;margin-bottom:22px;}
+.achievement-btn{
+  display:block;width:100%;padding:11px;margin-bottom:10px;border-radius:22px;
+  font-size:14px;cursor:pointer;border:none;background:var(--accent);color:#fff;
+  transition:background .15s;
+}
+.achievement-btn:hover{background:var(--accent-deep);}
+.achievement-btn.secondary{background:transparent;color:var(--accent);border:1.5px solid var(--accent);}
+.achievement-btn.secondary:hover{background:var(--soft);}
+
+/* —— 居民弹窗「相关人物」标签 —— */
+.bio-related{margin-top:14px;padding-top:12px;border-top:1px dashed var(--card-line);}
+.bio-related-title{font-size:12px;color:var(--text-sub);margin-bottom:8px;}
+.bio-related-tags{display:flex;flex-wrap:wrap;gap:6px;}
+.bio-related-tag{
+  font-size:12px;padding:4px 10px;border-radius:16px;
+  background:var(--soft);color:var(--accent-deep);border:1px solid var(--card-line);
+  cursor:pointer;transition:background .15s,transform .15s;
+}
+.bio-related-tag:hover{background:var(--accent);color:#fff;transform:translateY(-1px);}
+.bio-related-tag.locked{color:var(--text-sub);cursor:default;opacity:.6;}
+.bio-related-tag.locked:hover{background:var(--soft);color:var(--text-sub);transform:none;}
+
+/* —— 走访弹窗「走访所得线索」清单 —— */
+.walk-clue-list{margin-top:4px;display:flex;flex-direction:column;gap:8px;}
+.walk-clue-item{
+  display:flex;align-items:flex-start;gap:8px;
+  background:var(--card);border:1px solid var(--card-line);border-radius:10px;
+  padding:8px 10px;
+}
+.walk-clue-tag{
+  flex:none;min-width:32px;text-align:center;
+  font-size:11px;line-height:18px;padding:0 6px;border-radius:6px;
+  background:var(--soft);color:var(--accent-deep);
+}
+.walk-clue-tag.fake{background:#f3ece0;color:var(--warn);}
+.walk-clue-text{flex:1;min-width:0;font-size:13px;line-height:1.7;color:var(--text);}
+
+/* ============================================================
+   七、动画关键帧
+   ============================================================ */
+@keyframes shake{
+  0%,100%{transform:translateX(0);}
+  20%{transform:translateX(-6px);}
+  40%{transform:translateX(6px);}
+  60%{transform:translateX(-4px);}
+  80%{transform:translateX(4px);}
+}
+
+/* ============================================================
+   八、移动端适配（<=768px）
+   ============================================================ */
+@media (max-width:768px){
+  body{font-size:14px;}
+  /* 主内容整体纵向滚动：避免固定高度下居民区溢出压住下方时间轴 */
+  .page-inner{flex:1 1 auto;overflow-y:auto;padding:12px 12px 96px;gap:10px;}
+  /* 主区域上下堆叠；游戏区改为随内容高度展开，不再锁死视口高度 */
+  .game-main{flex-direction:column;flex:0 0 auto;min-height:0;}
+  .residents-panel{flex:0 0 auto;max-height:44vh;border-radius:var(--radius);}
+  .clues-pool{flex:1 1 auto;min-height:0;border-radius:var(--radius);}
+  .case-header h2{font-size:16px;}
+  .clue-card{width:calc(50% - 6px);}
+  /* 移动端时间轴卡尺寸与线索池一致（覆盖 desktop 的 180px 硬宽） */
+  .timeline-track .clue-card{width:calc(50% - 6px);}
+  /* 底部栏换行 */
+  .bottom-bar{flex-wrap:wrap;justify-content:center;}
+  .action-btn{flex:1;padding:11px 8px;font-size:13px;}
+  .level-grid{grid-template-columns:repeat(auto-fill,minmax(96px,1fr));}
+  .archive-grid{grid-template-columns:repeat(auto-fill,minmax(96px,1fr));}
+}
+
+/* ============================================================
+   八·补：移动端触屏交互优化（<=768px）
+   1. 操作按钮最小触屏点击区域 44px
+   2. 地图标签删除按钮加大 + 左右留白
+   3. 拖拽幽灵卡片放大 1.2 倍
+   4. 时间轴左右滑动缓冲
+   5. 人物档案弹窗压缩上下边距、行高放大
+   6. 小屏 toast 自适应宽度自动换行
+   ============================================================ */
+@media (max-width:768px){
+  /* 1. 统一放大可点击操作按钮至 44px 触屏标准 */
+  .archive-filter-btn{min-height:44px;padding:8px 16px;}
+  .archive-action-btn{min-height:44px;padding:10px 18px;}
+  .bio-related-tag{min-height:44px;padding:8px 16px;font-size:13px;}
+  .bio-close{width:40px;height:40px;font-size:20px;}
+  .town-map-close{width:40px;height:40px;font-size:18px;}
+
+  /* 2. 拖拽幽灵卡片放大 1.2 倍 + 上移避开手指，降低遮挡看不清 */
+  .drag-ghost{transform:rotate(2deg) scale(1.2) translateY(-72px);}
+
+  /* 3. 人物档案弹窗：压缩上下边距，轻微放大文字行高 */
+  #bio-mask .bio-box{padding:16px;}
+  #bio-mask .bio-text{line-height:1.95;}
+  .bio-lock-veil{padding:22px 16px;}
+
+  /* 6. 小屏 toast 自适应宽度，自动换行不挤压文字 */
+  .toast-tip{
+    width:auto;max-width:92vw;white-space:normal;
+    line-height:1.5;padding:12px 16px;
+  }
+}
+@media (max-width:400px){
+  .clue-card{width:100%;}
+}
+
+/* ============================================================
+   九·补：底部弹层与提示弹窗通用样式
+   ============================================================ */
