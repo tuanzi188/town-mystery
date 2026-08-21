@@ -1,4 +1,4 @@
-﻿"use strict";
+"use strict";
 const ClueCards = {
   /** 转义 HTML 特殊字符，防止线索文本破坏结构 */
   escapeHtml(s) {
@@ -31,14 +31,19 @@ const ClueCards = {
     const locked = lockedIds && lockedIds.indexOf(clue.id) !== -1;
     const cls = this.classify(clue);
     const inCase = (typeof CaseFile !== "undefined") && CaseFile.has(clue.id);
+    // 关键物证角标：evidenceKeys 显式配置的关键佐证在卡面亮「🔍关键」，
+    // 与指认弹窗「缺少关键佐证」一一对应，让玩家提前知晓哪些是必须收集的铁证
+    const evKeys = (App.levelData && App.levelData.ext && App.levelData.ext.evidenceKeys) || [];
+    const isKey = !isFake && evKeys.indexOf(clue.id) !== -1;
+    const keyBadge = isKey ? '<span class="clue-badge key-badge">🔍关键</span>' : "";
     const el = document.createElement("div");
-    el.className = "clue-card" + (isFake ? " fake" : " valid") +
+    el.className = "clue-card foldable" + (isFake ? " fake" : " valid") +
       (cls.typeCls ? " " + cls.typeCls : "") +
       (locked ? " locked" : "") +
       (inCase ? " in-case" : "");
     el.dataset.clueId = clue.id;
     el.dataset.type = clue.type;
-    el.dataset.clueKind = cls.typeCls || (isFake ? "fake" : "statement");
+    el.dataset.clueKind = isFake ? "fake" : (cls.typeCls || "plain");
     el.dataset.locked = locked ? "1" : "0";
     el.draggable = false; // 本游戏用手势拖拽，禁用 HTML5 原生拖拽
     let speak = "";
@@ -73,13 +78,18 @@ const ClueCards = {
     const tlBtn = '<button type="button" class="clue-tl-toggle' + (inTimeline ? " in-tl" : "") +
       '" data-cid="' + this.escapeHtml(clue.id) + '" title="' + (inTimeline ? "从时间轴移回线索池" : "加入时间轴") +
       '" aria-label="' + (inTimeline ? "从时间轴移回线索池" : "加入时间轴") + '">' + (inTimeline ? "◀" : "⏱") + "</button>";
+    const linksHtml = this.linkChipsHtml(clue.id);
     el.innerHTML =
       caseBtn +
       (locked ? "" : tlBtn) +
       speak +
+      keyBadge +
       '<p class="clue-text">' + this.escapeHtml(clue.text) + "</p>" +
       '<span class="clue-type">' + (isFake ? "干扰线索" : "有效线索") +
-        (locked ? '<span class="clue-lock-mark">🔒 已锁定</span>' : "") + "</span>";
+        (locked ? '<span class="clue-lock-mark">🔒 已锁定</span>' : "") + "</span>" +
+      (linksHtml ? '<div class="clue-links">' + linksHtml + "</div>" : "") +
+      '<button type="button" class="clue-fold-toggle" data-cid="' + this.escapeHtml(clue.id) +
+        '" title="展开全文" aria-label="展开全文">▾ 展开</button>';
     return el;
   },
   /** 移动端时间轴快捷操作：带时间的线索在「线索池 ↔ 时间轴」间一键切换（复用拖拽的归档逻辑）。
@@ -116,6 +126,44 @@ const ClueCards = {
         });
       }
     });
+  },
+  /** 构建线索关联 / 物证身份匹配的轻提示角标。
+   *  依赖 App.insights（由 GameFlow.renderLevel 注入）。
+   *  返回 HTML 字符串；无提示时返回空串。 */
+  linkChipsHtml(cid) {
+    const ins = App.insights || {};
+    const list = (ins.byClue && ins.byClue[cid]) || [];
+    if (!list.length) return "";
+    const ownerNames = [];
+    let hasCorroborate = false;
+    list.forEach((link) => {
+      if (link.kind === "owner") {
+        if (link.name && ownerNames.indexOf(link.name) === -1) ownerNames.push(link.name);
+      } else {
+        hasCorroborate = true;
+      }
+    });
+    const chips = [];
+    if (hasCorroborate) {
+      chips.push('<span class="clue-link" title="与其他线索可互相印证">🔗 印证</span>');
+    }
+    ownerNames.forEach((name) => {
+      chips.push('<span class="clue-link owner" title="物证身份与「' + this.escapeHtml(name) +
+        '」匹配，请留意">🔗 身份·' + this.escapeHtml(name) + "</span>");
+    });
+    return chips.join("");
+  },
+  /** 展开 / 收起线索全文（仅线索池卡片绑定了 foldable 样式） */
+  toggleFold(cid) {
+    const card = document.querySelector('.clue-card[data-clue-id="' + CSS.escape(cid) + '"]');
+    if (!card) return;
+    const expanded = card.classList.toggle("expanded");
+    const btn = card.querySelector(".clue-fold-toggle");
+    if (btn) {
+      btn.textContent = expanded ? "▴ 收起" : "▾ 展开";
+      btn.title = expanded ? "收起全文" : "展开全文";
+      btn.setAttribute("aria-label", btn.title);
+    }
   },
 };
 
@@ -184,14 +232,36 @@ const CaseFile = {
     if (!countEl || !hintEl) return;
     const n = this.get().length;
     countEl.textContent = "📂 证据链 (" + n + ")";
-    if (n === 0) hintEl.textContent = "点线索卡片右上角 ⊕ 收集证据；至少 3 条才能指认";
-    else if (n < 3) hintEl.textContent = "至少还要再选 " + (3 - n) + " 条线索才能提交";
-    else hintEl.textContent = "已收集 " + n + " 条，可以提交指认";
+    let hint = "";
+    if (n === 0) {
+      hint = "点线索卡片右上角 ⊕ 收集证据；至少 3 条才能指认";
+    } else {
+      hint = n < 3
+        ? "至少还要再选 " + (3 - n) + " 条线索才能提交"
+        : "已收集 " + n + " 条，可以提交指认";
+      // 证据链质量实时分析：铁证 / 旁证 / 干扰计数 + 缺项提醒（非强制）
+      const quality = (typeof InsightEngine !== "undefined" && InsightEngine.caseQuality)
+        ? InsightEngine.caseQuality()
+        : null;
+      if (quality) {
+        const c = quality.counts || { core: 0, aux: 0, red: 0 };
+        hint += " · 🔴铁证 " + c.core + " · 🟢旁证 " + c.aux + (c.red ? " · 🟡干扰 " + c.red : "");
+        if (c.red > 0) hint += " ⚠混入干扰";
+        if (c.core === 0) hint += " ⚠缺铁证";
+      }
+    }
+    hintEl.textContent = hint;
     const accuseBtn = document.getElementById("btn-accuse");
     if (accuseBtn) {
       // 不强制禁用——玩家可继续选/调整；_checkMix 与 _showCulpritPicker 内部会校验
       accuseBtn.classList.toggle("primary", n >= 3);
     }
+    // 证据链不足时，给池中「未加入证据链」的有效线索 ⊕ 按钮加高亮，择要提示还有可收集证据
+    // （减少反复点击指认才发现「证据链不足」弹窗的打断）
+    document.querySelectorAll(".clue-card.valid .clue-case-toggle").forEach(function (t) {
+      const alreadyInCase = t.classList.contains("in-case");
+      t.classList.toggle("prompt", n < 3 && !alreadyInCase);
+    });
   },
   /** 渲染指认弹窗里的「证据链」展示。返回 HTML 字符串。 */
   renderPillsHtml() {

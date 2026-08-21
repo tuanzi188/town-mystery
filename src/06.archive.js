@@ -49,7 +49,8 @@ const BioArchive = {
     const mask = document.getElementById("bio-mask");
     const box = document.getElementById("bio-box");
     if (!mask || !box || !resident) return;
-    const lv = levelIndex || App.currentLevel;
+    // 用空值判断而非 ||：0/NaN/空串不应被静默回退到当前关卡
+    const lv = levelIndex != null ? levelIndex : App.currentLevel;
     const esc = ClueCards.escapeHtml;
     const headHtml =
       '<div class="bio-head">' +
@@ -86,6 +87,8 @@ const BioArchive = {
     // 增量：渲染「相关人物」标签（同关其他居民，已解锁可点击跳转）
     this._renderRelated(box, resident, lv);
     mask.classList.add("show");
+    // 可用性：弹窗出现后聚焦关闭键，便于键盘 / 读屏用户直接 ESC 或 Tab 操作
+    if (closeBtn) closeBtn.focus();
   },
 
   /** 渲染相关人物标签：取同关其他居民（最多3个），已解锁可点击跳转档案 */
@@ -197,7 +200,9 @@ const Archive = {
     bar.innerHTML = "";
     const mk = (val, label) => {
       const b = document.createElement("button");
-      b.className = "archive-filter-btn" + (String(val) === String(active) ? " active" : "");
+      const isActive = String(val) === String(active);
+      b.className = "archive-filter-btn" + (isActive ? " active" : "");
+      b.setAttribute("aria-pressed", isActive ? "true" : "false");
       b.textContent = label;
       b.addEventListener("click", () => {
         this.setFilter(val);
@@ -265,17 +270,19 @@ const TownMap = {
   ZONE_W: 160,
   NODE_H: 24,
 
-  /** tagShort 关键词 → 地点 id（未命中默认归「小区住宅楼」） */
+  /** tagShort 关键词 → 地点 id（未命中默认归「小区住宅楼」）
+   *  学生类覆盖「学生/备考生/小学/初中/高中/大学/年级/女生/男生」，
+   *  避免「小学五年级」「高中女生」「在校大学生」等称呼漏归。 */
   _zoneOf(tagShort) {
     if (!tagShort) return "residents";
     const t = tagShort;
     if (t.indexOf("摊主") !== -1) return "market";
     if (["老板", "店员", "驿站", "花店", "花艺", "收银员", "汽修", "快递站"].some(k => t.indexOf(k) !== -1)) return "shops";
     if (["门卫", "保安"].some(k => t.indexOf(k) !== -1)) return "gate";
-    if (["学生", "备考生"].some(k => t.indexOf(k) !== -1)) return "school";
-    if (t.indexOf("护士") !== -1) return "clinic";
+    if (["学生", "备考生", "小学", "初中", "高中", "大学", "年级", "女生", "男生"].some(k => t.indexOf(k) !== -1)) return "school";
+    if (["护士", "医生"].some(k => t.indexOf(k) !== -1)) return "clinic";
     if (["活动室", "志愿者", "维修工"].some(k => t.indexOf(k) !== -1)) return "hall";
-    if (["晨跑", "太极", "货运", "外卖", "水电工", "退休老教师", "退休老木匠", "退休职工", "退休钳工"].some(k => t.indexOf(k) !== -1)) return "square";
+    if (["晨跑", "太极", "货运", "外卖", "水电工", "环卫", "退休老教师", "退休老木匠", "退休职工", "退休钳工"].some(k => t.indexOf(k) !== -1)) return "square";
     return "residents";
   },
 
@@ -355,6 +362,7 @@ const TownMap = {
       });
     });
     document.getElementById("town-map-mask").classList.add("show");
+    if (closeBtn) closeBtn.focus();
   },
 
   _onHover(e, resident, lv, unlocked) {
@@ -379,8 +387,11 @@ const TownMap = {
   _moveTooltip(e) {
     const tip = document.getElementById("tm-tooltip");
     if (!tip) return;
-    tip.style.left = Math.min(e.clientX + 14, window.innerWidth - 240) + "px";
-    tip.style.top = (e.clientY + 14) + "px";
+    // 边界兜底：极窄屏下避免负数定位、超出视口
+    const left = Math.max(0, Math.min(e.clientX + 14, window.innerWidth - 240));
+    const top = Math.max(0, e.clientY + 14);
+    tip.style.left = left + "px";
+    tip.style.top = top + "px";
   },
   _hideTooltip() {
     const tip = document.getElementById("tm-tooltip");
@@ -464,6 +475,7 @@ const LorePanel = {
       });
     });
     mask.classList.add("show");
+    if (closeBtn) closeBtn.focus();
   },
   close() {
     const mask = document.getElementById("lore-mask");
@@ -500,10 +512,10 @@ const ChroniclePanel = {
       const ending = (cfg.ext && cfg.ext.endingStory) || "";
       return ok
         ? '<div class="chron-item">' +
-            '<p class="chron-title">' + c.title + ' <span class="chron-tag">第 ' + c.lv + " 章</span></p>" +
+            '<p class="chron-title">' + esc(c.title) + ' <span class="chron-tag">第 ' + c.lv + " 章</span></p>" +
             '<p class="chron-event">' + esc(ending) + "</p></div>"
         : '<div class="chron-item locked">' +
-            '<p class="chron-title">' + c.title + ' <span class="chron-tag">第 ' + c.lv + " 章</span></p>" +
+            '<p class="chron-title">' + esc(c.title) + ' <span class="chron-tag">第 ' + c.lv + " 章</span></p>" +
             '<p class="chron-lock">🔒 通关第 ' + c.lv + ' 关，解锁这段小镇往事</p></div>';
     }).join("");
     box.innerHTML =
@@ -514,6 +526,7 @@ const ChroniclePanel = {
     const closeBtn = box.querySelector("#chron-close");
     if (closeBtn) closeBtn.addEventListener("click", () => this.close());
     mask.classList.add("show");
+    if (closeBtn) closeBtn.focus();
   },
   close() {
     const mask = document.getElementById("chronicle-mask");

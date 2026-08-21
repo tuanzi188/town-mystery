@@ -431,6 +431,25 @@ input{font-family:inherit;}
 .clue-speak.ev-owner--clear{
   background:#e7eef7;color:#4d6b91;border:1px dashed #b8c8de;
 }
+/* 线索卡折叠：线索池卡片默认两行截断，点击「展开/收起」切换全文 */
+.clue-card.foldable .clue-text{
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+}
+.clue-card.foldable.expanded .clue-text{
+  display:block;-webkit-line-clamp:unset;overflow:visible;
+}
+.clue-fold-toggle{
+  display:inline-block;font-size:10px;color:var(--text-sub);background:none;border:none;
+  padding:0;margin-top:4px;cursor:pointer;
+}
+.clue-fold-toggle:hover{color:var(--accent-deep);}
+/* 线索关联 / 物证身份匹配 轻提示角标（非强制） */
+.clue-links{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;}
+.clue-link{
+  display:inline-block;font-size:10px;line-height:1;padding:2px 6px;border-radius:6px;
+  background:#e7e2f5;color:#6a5a9a;cursor:help;
+}
+.clue-link.owner{background:#e2efe4;color:var(--accent-deep);}
 /* 卡片被拖起时的样式 */
 .clue-card.dragging{opacity:.6;transform:scale(1.04);box-shadow:0 10px 22px rgba(90,80,60,.2);}
 /* 卡片标红（冲突） */
@@ -683,6 +702,8 @@ input{font-family:inherit;}
 .clue-case-toggle:hover{background:var(--soft);color:var(--accent-deep);transform:scale(1.08);}
 .clue-case-toggle.in-case{background:var(--accent);color:#fff;border-color:transparent;}
 .clue-case-toggle.in-case:hover{background:var(--accent-deep);}
+/* 证据链不足时 ⊕ 高亮：提醒还有可收集证据（减少反复点指认才发现不足） */
+.clue-case-toggle.prompt{background:#fff5d8;color:var(--danger);border-color:var(--danger);animation:badge-pulse 1.1s ease infinite;}
 .clue-card.in-case{border-color:var(--accent);box-shadow:0 0 0 2px var(--soft);}
 /* 移动端时间轴快捷按钮：一键入轴/出轴，免去长距离拖拽。桌面端隐藏（拖拽是主玩法）。 */
 .clue-tl-toggle{

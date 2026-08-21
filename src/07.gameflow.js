@@ -5,6 +5,9 @@
    说明：复用 B1 的 DragManager / ValidateUtil / StorageUtil / ClueCards / Modal
    ============================================================ */
 const GameFlow = {
+  /** 线索池当前分类筛选（UI 状态，不落盘）：all/evidence/witness/statement/plain/fake */
+  _poolFilter: "all",
+
   /**
    * 关卡配置：从 LevelData 读取并规范化。
    * 将 conflictPairs 转为线索上的 conflictGroup 字段（供 detectTimelineConflict 使用）。
@@ -135,6 +138,10 @@ const GameFlow = {
     this._sanitizeLayout();
     // 混合模式：线索池与「已交谈居民」严格对应，避免切换模式后泄露未走访线索
     this._reconcileMixPool(cfg);
+    // 推理提示：预计算线索关联 / 物证身份匹配（供卡片与时间轴渲染，非强制）
+    App.insights = (typeof InsightEngine !== "undefined" && InsightEngine.detectCorroboration)
+      ? InsightEngine.detectCorroboration(cfg)
+      : { byClue: {} };
     this.renderResidents();
     this.renderPool((opts && opts.newCids) || []);
     this.renderTimeline();
@@ -265,10 +272,15 @@ const GameFlow = {
       const tagMatch = r.tagShort && evOwnerTags.has(r.tagShort);
       // 替罪羊判定：isScapegoat 显式字段优先，否则看是否无 bindClue（仅档案/口供，无线索入池）
       const isScapegoat = r.isScapegoat === true || !r.bindClue || (Array.isArray(r.bindClue) && !r.bindClue.length) || (typeof r.bindClue === "string" && !r.bindClue);
-      // 线索获取进度：bindClue 中有多少条已被收集（pool + timeline）
+      // 线索获取进度：统计该居民实际可解锁的线索数（bindClue + 追问 cids），与线索池真实数量对齐
       const bindList = Array.isArray(r.bindClue) ? r.bindClue : (r.bindClue ? [r.bindClue] : []);
-      const totalClues = bindList.length;
-      const gotClues = bindList.filter((cid) => collectedIds.has(cid)).length;
+      const clueSet = new Set(bindList);
+      const fups = DialogSystem._followupsOf(r);
+      if (Array.isArray(fups)) {
+        fups.forEach((fu) => { (fu.cids || []).forEach((cid) => clueSet.add(cid)); });
+      }
+      const totalClues = clueSet.size;
+      const gotClues = Array.from(clueSet).filter((cid) => collectedIds.has(cid)).length;
       // 提示行：根据「是否替罪羊 / 是否已走访 / 已获取比例」生成不同文案
       let hintHtml = "";
       if (isScapegoat) {
@@ -312,6 +324,7 @@ const GameFlow = {
     const fakeList = document.getElementById("fake-clue-list");
     validList.innerHTML = "";
     fakeList.innerHTML = "";
+    this._renderPoolFilter();
     if (!App.levelData) {
       const vTip = document.createElement("p");
       vTip.className = "slot-empty";
@@ -340,6 +353,45 @@ const GameFlow = {
       vTip.textContent = "点击左侧居民头像交谈，解锁口供线索。";
       validList.appendChild(vTip);
     }
+    // 应用当前分类筛选（保留上次选中的分类）
+    this._applyPoolFilter();
+  },
+
+  /** 渲染线索池顶部的分类筛选条（全部 / 物证 / 目击 / 自白 / 口供 / 干扰） */
+  _renderPoolFilter() {
+    const bar = document.getElementById("clue-filter-bar");
+    if (!bar) return;
+    const kinds = [
+      { kind: "all", label: "全部" },
+      { kind: "evidence", label: "🔑 物证" },
+      { kind: "witness", label: "👁 目击" },
+      { kind: "statement", label: "🗣 自白" },
+      { kind: "plain", label: "📁 口供" },
+      { kind: "fake", label: "⚠ 干扰" },
+    ];
+    bar.innerHTML = kinds.map((k) =>
+      '<button type="button" class="clue-filter pk-filter' +
+      (this._poolFilter === k.kind ? " active" : "") +
+      '" data-kind="' + k.kind + '">' + k.label + "</button>"
+    ).join("");
+  },
+
+  /** 按当前分类筛选显隐线索池卡片（不重渲染，直接切换 display） */
+  _applyPoolFilter() {
+    const kind = this._poolFilter || "all";
+    document.querySelectorAll("#clues-pool .clue-list .clue-card").forEach((card) => {
+      const k = card.dataset.clueKind || "";
+      card.style.display = (kind === "all" || k === kind) ? "" : "none";
+    });
+  },
+
+  /** 切换线索池分类筛选并即时刷新显隐 */
+  _setPoolFilter(kind) {
+    this._poolFilter = kind || "all";
+    document.querySelectorAll("#clue-filter-bar .clue-filter").forEach((b) => {
+      b.classList.toggle("active", b.dataset.kind === this._poolFilter);
+    });
+    this._applyPoolFilter();
   },
 
   /** 渲染时间轴推理区（副本式展示：不影响主布局 slots/pool，来源卡片仍留在原处）。
@@ -378,13 +430,20 @@ const GameFlow = {
       const pairTag = inMutex
         ? ' · <span class="tl-pair-tag mutex">时间互斥</span>'
         : (inOverlap ? ' · <span class="tl-pair-tag overlap">同时窗</span>' : "");
+      // 高亮角标：冲突（撒谎/误会）在卡片右上角浮出，替代只看边框红，减少玩家来回确认
+      const issueBadge = inConflict
+        ? '<span class="issue-badge conflict">⚡ 矛盾</span>'
+        : (inMis ? '<span class="issue-badge mis">⚠ 对不上</span>' : "");
+      const linksHtml = ClueCards.linkChipsHtml(id);
       return '<div class="clue-card timeline-card' + (c.type === "fake" ? " fake" : " valid") +
         (locked ? " locked" : "") + (inConflict ? " conflict" : "") + pairCls + '" data-clue-id="' +
         ClueCards.escapeHtml(id) + '"' + (locked ? ' data-locked="1"' : "") + ">" +
+        issueBadge +
         '<p class="clue-text">' + ClueCards.escapeHtml(c.text) + "</p>" +
         '<span class="clue-type"><i class="tl-flag"></i>' + ClueCards.escapeHtml(c.timeText || "时间未知") +
         (inConflict ? " · 时序矛盾" : (inMis ? ' · <span class="tl-pair-tag mis">误会对</span>' : "")) +
-        pairTag + "</span></div>";
+        pairTag + "</span>" +
+        (linksHtml ? '<div class="clue-links">' + linksHtml + "</div>" : "") + "</div>";
     }).join("");
   },
 
@@ -412,7 +471,7 @@ const GameFlow = {
     // D1：证据链 ≥3 真实门槛（与 index.html「至少 3 条才能指认」文案对齐）
     if (CaseFile.get().length < 3) {
       Modal.alert("证据链不足", "当前证据链 " + CaseFile.get().length +
-        " 条。请先在卡片上点 ⊕ 收集至少 3 条、并重点收集与凶手相关的证据。");
+        " 条。页面上亮起 ⊕ 高亮的卡片都在提醒你还能收集证据，点 ⊕ 至少收满 3 条再来指认。");
       return;
     }
     this._checkMix(cfg, { onPass: () => this._showCulpritPicker(cfg) });
@@ -829,7 +888,7 @@ const GameFlow = {
           return "【" + (m && m.id ? m.id : m) + "】";
         }).join("、");
         Modal.alert("缺少关键佐证", "还缺少关键物证 " + parts +
-          "。\n\n该物证对应特殊身份，请结合居民身份标签继续排查。");
+          "。\n\n线索池里标 🔍关键 的卡片即是这类铁证，请结合居民身份标签继续排查（优先走访后再看）。");
         return;
       }
     }
@@ -1182,6 +1241,24 @@ const Achievement = {
     if (!cid) return;
     if (caseBtn) CaseFile.toggle(cid);
     else ClueCards.toggleTimeline(cid);
+  });
+  // 线索池分类筛选 + 线索卡片折叠 事件委托（与 ⊕/⏱ 分离，职责单一）
+  document.addEventListener("click", (e) => {
+    const t = e.target;
+    if (!t || !(t instanceof Element)) return;
+    const filterBtn = t.closest(".clue-filter");
+    if (filterBtn) {
+      e.stopPropagation();
+      e.preventDefault();
+      GameFlow._setPoolFilter(filterBtn.dataset.kind);
+      return;
+    }
+    const foldBtn = t.closest(".clue-fold-toggle");
+    if (foldBtn) {
+      e.stopPropagation();
+      e.preventDefault();
+      ClueCards.toggleFold(foldBtn.dataset.cid);
+    }
   });
   // 常驻「新手指引」：随时重看引导，不写已看标记
   document.getElementById("btn-tutorial").addEventListener("click", () => GameFlow.showTutorialCards(false));

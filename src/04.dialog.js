@@ -188,8 +188,9 @@ const DialogSystem = {
       '</span><span class="walk-clue-text">' + esc(c.text) + "</span></div>";
   },
   /** 启动口供逐字揭幕：每个字 50ms 出现，句末标点处停顿 500ms；
-   *  点"跳过"则一次性补齐并露出追问区；元素缺失时降级为一次性渲染 */
-  _startStatementReveal(box, sentences, followups, asked, resident) {
+   *  点"跳过"则一次性补齐并露出追问区；元素缺失时降级为一次性渲染。
+   *  @param {boolean} [instant] true=直接全量展现（非首次走访复看用），不逐字吐字 */
+  _startStatementReveal(box, sentences, followups, asked, resident, instant) {
     const esc = ClueCards.escapeHtml;
     const stmt = box.querySelector("#dl-statement");
     const after = box.querySelector("#dl-after-statement");
@@ -227,6 +228,13 @@ const DialogSystem = {
     if (!fullText) {
       stmt.innerHTML = '<span class="dl-line">（TA 沉默着，没接话。）</span>';
       updateProgress(0);
+      this._finishReveal(box, followups, asked, resident);
+      return;
+    }
+    // 非首次走访：口供一次性全量展现，跳过逐字揭幕与「跳过揭幕」按钮
+    if (instant) {
+      stmt.innerHTML = '<span class="dl-line">' + esc(fullText) + "</span>";
+      updateProgress(total);
       this._finishReveal(box, followups, asked, resident);
       return;
     }
@@ -349,7 +357,7 @@ const DialogSystem = {
     // 一打开居民就解锁 bindClue（无论有无追问分支）—— bindClue 是"打开就拿"的，
     // 之前只对替罪羊（旧逻辑"!followups"）调用，导致正常居民 bindClue 永远进不了 pool
     this._unlockBoundClue(resident);
-    this._startStatementReveal(box, sentences, followups, asked, resident);
+    this._startStatementReveal(box, sentences, followups, asked, resident, !isFirstVisit);
   },
   /** 回答某条追问：解锁对应线索 + 记录已追问 + 局部刷新 after-statement */
   _askFollowup(resident, followups, idx) {
