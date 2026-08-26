@@ -5,8 +5,10 @@
    说明：复用 B1 的 DragManager / ValidateUtil / StorageUtil / ClueCards / Modal
    ============================================================ */
 const GameFlow = {
-  /** 线索池当前分类筛选（UI 状态，不落盘）：all/evidence/witness/statement/plain/fake */
+  /** 线索池当前来源筛选（UI 状态，不落盘）：all / verbal（口供）/ evidence（物证）/ fake（干扰） */
   _poolFilter: "all",
+  /** 口供形态子筛选（仅当 _poolFilter === "verbal" 时生效）：all / witness / statement / plain */
+  _poolSubFilter: "all",
 
   /**
    * 关卡配置：从 LevelData 读取并规范化。
@@ -30,8 +32,15 @@ const GameFlow = {
     return cfg;
   },
 
+  /** 关卡切换 / 重载前清理瞬时状态：取消进行中的拖拽、清理待处理 rAF 与逐句揭幕定时器。 */
+  _cleanupTransient() {
+    if (typeof DragManager !== "undefined" && DragManager.reset) DragManager.reset();
+    if (typeof DialogSystem !== "undefined" && DialogSystem._clearRevealTimer) DialogSystem._clearRevealTimer();
+  },
+
   /** 加载当前关卡：读取配置 → 恢复存档布局与提示次数 → 渲染全页面 */
   loadLevelPlaceholder() {
+    this._cleanupTransient();
     const cfg = this.getLevelConfig();
     this.renderLevel(cfg);
     const titleEl = document.getElementById("case-title");
@@ -288,7 +297,8 @@ const GameFlow = {
       }
       const totalClues = clueSet.size;
       const gotClues = Array.from(clueSet).filter((cid) => collectedIds.has(cid)).length;
-      // 提示行：根据「是否替罪羊 / 是否已走访 / 已获取比例」生成不同文案
+      const unaskedCore = DialogSystem._unaskedCoreFollowups(r).length;
+      // 提示行：根据「是否替罪羊 / 是否已走访 / 是否还有关键追问未问 / 已获取比例」生成不同文案
       let hintHtml = "";
       if (isScapegoat) {
         // 替罪羊：可能带 1 条自辩线索（如 L4 老李），与走访弹窗"只留下一条自辩线索"口径一致
@@ -299,6 +309,9 @@ const GameFlow = {
       } else if (!spoke) {
         // 未走访：显眼地告诉玩家"点我获取线索"
         hintHtml = '<div class="resident-hint hint-unvisited">💬 点击交谈获取线索</div>';
+      } else if (unaskedCore > 0) {
+        // 还有未问过的「核心」追问：醒目提醒，防止漏掉藏在后续对话里的关键证词
+        hintHtml = '<div class="resident-hint hint-core">❗ 还有 <b>' + unaskedCore + '</b> 处关键话没问</div>';
       } else if (totalClues > 0) {
         // 已走访：显示进度
         const ratio = gotClues / totalClues;
@@ -364,40 +377,63 @@ const GameFlow = {
     this._applyPoolFilter();
   },
 
-  /** 渲染线索池顶部的分类筛选条（全部 / 物证 / 目击 / 自白 / 口供 / 干扰） */
+  /** 渲染线索池顶部来源筛选项（全部 / 口供 / 物证 / 干扰）；选「口供」时追加形态子筛（目击 / 自白 / 陈述）。 */
   _renderPoolFilter() {
     const bar = document.getElementById("clue-filter-bar");
     if (!bar) return;
-    const kinds = [
+    const families = [
       { kind: "all", label: "全部" },
+      { kind: "verbal", label: "💬 口供" },
       { kind: "evidence", label: "🔑 物证" },
-      { kind: "witness", label: "👁 目击" },
-      { kind: "statement", label: "🗣 自白" },
-      { kind: "plain", label: "📁 口供" },
       { kind: "fake", label: "⚠ 干扰" },
     ];
-    bar.innerHTML = kinds.map((k) =>
+    let html = families.map((k) =>
       '<button type="button" class="clue-filter pk-filter' +
       (this._poolFilter === k.kind ? " active" : "") +
       '" data-kind="' + k.kind + '">' + k.label + "</button>"
     ).join("");
+    if (this._poolFilter === "verbal") {
+      const forms = [
+        { form: "all", label: "全形态" },
+        { form: "witness", label: "👁 目击" },
+        { form: "statement", label: "🗣 自白" },
+        { form: "plain", label: "📁 陈述" },
+      ];
+      html += '<span class="clue-filter-sep" aria-hidden="true"></span>' + forms.map((f) =>
+        '<button type="button" class="clue-filter pk-filter clue-subfilter' +
+        (this._poolSubFilter === f.form ? " active" : "") +
+        '" data-subform="' + f.form + '">' + f.label + "</button>"
+      ).join("");
+    }
+    bar.innerHTML = html;
   },
 
-  /** 按当前分类筛选显隐线索池卡片（不重渲染，直接切换 display） */
+  /** 按当前来源 + 口供形态子筛显隐线索池卡片（不重渲染，直接切换 display） */
   _applyPoolFilter() {
-    const kind = this._poolFilter || "all";
+    const family = this._poolFilter || "all";
+    const sub = this._poolSubFilter || "all";
     document.querySelectorAll("#clues-pool .clue-list .clue-card").forEach((card) => {
       const k = card.dataset.clueKind || "";
-      card.style.display = (kind === "all" || k === kind) ? "" : "none";
+      const f = card.dataset.clueForm || "";
+      let show = (family === "all" || k === family);
+      if (show && family === "verbal" && sub !== "all" && f !== sub) show = false;
+      card.style.display = show ? "" : "none";
     });
   },
 
-  /** 切换线索池分类筛选并即时刷新显隐 */
+  /** 切换来源筛选并即时刷新；切到口供之外时重置形态子筛。 */
   _setPoolFilter(kind) {
     this._poolFilter = kind || "all";
-    document.querySelectorAll("#clue-filter-bar .clue-filter").forEach((b) => {
-      b.classList.toggle("active", b.dataset.kind === this._poolFilter);
-    });
+    if (this._poolFilter !== "verbal") this._poolSubFilter = "all";
+    this._renderPoolFilter();
+    this._applyPoolFilter();
+  },
+
+  /** 切换口供形态子筛（仅口供来源下有效） */
+  _setPoolSubFilter(form) {
+    if (this._poolFilter !== "verbal") return;
+    this._poolSubFilter = form || "all";
+    this._renderPoolFilter();
     this._applyPoolFilter();
   },
 
@@ -475,6 +511,22 @@ const GameFlow = {
   accuseCulprit() {
     const cfg = this.getLevelConfig();
     if (!cfg) return;
+    // 回头盘问引导：还有未问完的「核心」追问时先提醒，避免玩家漏掉关键证词直接卡死
+    const unasked = this._residentsWithUnaskedCore(cfg);
+    if (unasked.length) {
+      const names = unasked.map((r) => r.name).join("、");
+      Modal.show("还有关键证词没问",
+        "决定真相的证词，常常藏在反复盘问的后续对话里。\n\n「" + names + "」还有没问完的关键追问——建议先回头盘问，再开始指认。",
+        [
+          { label: "先去盘问", primary: true, onClick: () => Modal.close() },
+          { label: "直接指认", primary: false, onClick: () => { Modal.close(); this._accuseGates(cfg); } },
+        ]);
+      return;
+    }
+    this._accuseGates(cfg);
+  },
+  /** 指认的正式门槛（回头盘问引导之后的证据链校验 + 混合模式逐层校验） */
+  _accuseGates(cfg) {
     // D1：证据链 ≥3 真实门槛（与 index.html「至少 3 条才能指认」文案对齐）
     if (CaseFile.get().length < 3) {
       Modal.alert("证据链不足", "当前证据链 " + CaseFile.get().length +
@@ -482,6 +534,10 @@ const GameFlow = {
       return;
     }
     this._checkMix(cfg, { onPass: () => this._showCulpritPicker(cfg) });
+  },
+  /** 还有未问完「核心」追问的居民列表 */
+  _residentsWithUnaskedCore(cfg) {
+    return (cfg.residents || []).filter((r) => DialogSystem._unaskedCoreFollowups(r).length > 0);
   },
 
   /** 弹出「指认凶手」二次确认弹窗：第一步选凶手，第二步选决定性证据。
@@ -514,7 +570,7 @@ const GameFlow = {
     });
     grid += "</div>";
     // 区块二：决定性证据按钮（凶手关键线索 + 干扰项，最多 4 条）
-    grid += '<div class="pick-sec-title">' + (isRetry ? "重选决定性证据 · 请一次找对" : "第二步 · 哪条证据最能证明 TA？") +
+    grid += '<div class="pick-sec-title">' + (isRetry ? "重选决定性证据 · 选对即结案" : "第二步 · 哪条证据最能证明 TA？") +
       '</div>';
     // 困难关(L9-11)：加分类筛选条，让玩家快速定位物证/自白/目击
     if (isHard) {
@@ -547,9 +603,9 @@ const GameFlow = {
     });
     grid += "</div>";
     const lockedName = ((cfg.residents || []).find((r) => r.id === lockedRid) || {}).name || "此人";
-    title.textContent = isRetry ? "🔍 最后机会 · 重选证据" : "🔍 指认凶手";
+    title.textContent = isRetry ? "🔍 重选决定性证据" : "🔍 指认凶手";
     text.textContent = isRetry
-      ? "「" + esc(lockedName) + "」确实是凶手。请重新选择能定罪的决定性证据——若再选错，本章将判定失败。"
+      ? "「" + esc(lockedName) + "」确实是凶手。请重新挑一条更能定罪的关键线索，选对就结案。"
       : "请选出「凶手 + 决定性证据」组合。\n凶手选错将判定失败；选对凶手但证据（或证据链）不对，可以重选，不另算失败。";
     extra.style.display = "block";
     extra.innerHTML = grid;
@@ -601,32 +657,24 @@ const GameFlow = {
     });
     okBtn.addEventListener("click", () => {
       Modal.close();
-      this._handleAccusation(cfg, selRid, selEv, { retry: isRetry });
+      this._handleAccusation(cfg, selRid, selEv);
     });
     const cancel = document.getElementById("picker-cancel");
     if (cancel) cancel.addEventListener("click", () => Modal.close());
   },
 
   /**
-   * 决定性证据正确项集合：仅取凶手的"物证 isEvidence=true" + pointsTo 凶手的物证。
-   * 之前误用"凶手所有 solution 线索 + 所有目击"，导致 7+ 条全是正确选项，玩家瞎选都对 80%+
-   * 现在限定为"物证"维度（每个案件通常 1-4 条物证）—— 弹窗构成合理（1-4 正确 + 3-4 干扰）
-   * 玩家必须真的"识别铁证"才能通关 */
+   * 决定性证据正确项集合：放宽为凶手在 solution 里的全部「核心」线索
+   * （即 evaluateCase 的 core：自白撒谎 / 目击指认 / 物证 均算「抓住关键」）。
+   * 玩家逻辑上已锁定凶手时，不再强求精确选到某一条物证，避免"我懂了但系统不给过"。
+   */
   _killerKeyIds(cfg) {
-    const key = new Set();
-    (cfg.solution && cfg.solution[cfg.culpritId] || []).forEach((cid) => {
-      const c = (cfg.clues || []).find((x) => x.id === cid);
-      if (c && c.isEvidence === true) key.add(cid);
-    });
-    (cfg.clues || []).forEach((c) => {
-      if (c.pointsTo === cfg.culpritId && c.isEvidence === true) key.add(c.id);
-    });
-    return key;
+    return new Set(((cfg.solution && cfg.solution[cfg.culpritId]) || []));
   },
 
   /** 指认弹窗「决定性证据」候选（picker 第二步选项来源）。
-   *  正确项 = 凶手铁证（_killerKeyIds，isEvidence）；干扰项 = 凶手自白（实为撒谎，非定罪铁证）、
-   *  指向他人的物证、ext.decoyEvidence 文本。无对应 clue 的干扰项用虚拟 id。 */
+   *  正确项 = 凶手核心线索（_killerKeyIds，即 solution[culpritId]）；干扰项 = 指向他人的物证、
+   *  ext.decoyEvidence 文本、凶手自白（若已归入核心则自动去重）。无对应 clue 的干扰项用虚拟 id。 */
   _evidenceOptions(cfg) {
     const options = [];
     const seen = new Set();
@@ -658,14 +706,13 @@ const GameFlow = {
     return options;
   },
 
-  /** 指认结果判定（v2 证据链版）：
-   *  - 凶手错 → 整局失败（重置）
-   *  - 凶手对 + verdict = perfect/standard → 通关（弹标准结局 + verdict 徽标）
-   *  - 凶手对 + verdict = flawed/insufficient → _promptCaseFileRetry（让玩家调整证据链，不算失败）
-   *  - 证据重选模式（retry）下，verdict 必须 perfect/standard 才通关；否则整局失败
-   *  @param {Object} [opts] { retry }：true 表示处于证据重选二次机会 */
-  _handleAccusation(cfg, selectedId, evId, opts) {
-    const opt = opts || {};
+  /** 指认结果判定（v3 容错版）：
+   *  - 凶手错 → 整局失败（重置），保底解谜挑战
+   *  - 凶手对 + 决定性证据不在凶手核心线索 → _promptEvidenceRetry（提示真实作用 + 不限次重选，不算失败）
+   *  - 凶手对 + 决定性证据命中 + verdict perfect/standard → 通关
+   *  - 凶手对 + verdict flawed/insufficient → _promptCaseFileRetry（可返回调整 / 重选 / 直接结案，不因证据不完美失败）
+   *  因果对即容错：只要凶手选对，证据层面的瑕疵一律不判失败。 */
+  _handleAccusation(cfg, selectedId, evId) {
     if (selectedId !== cfg.culpritId) {
       this._onAccuseFail(cfg, selectedId);
       return;
@@ -673,8 +720,7 @@ const GameFlow = {
     // 凶手人选正确 → 先校验「决定性证据」是否真能定罪（P0-2 修复：evId 参与判定）
     const key = this._killerKeyIds(cfg);
     if (!evId || !key.has(evId)) {
-      if (opt.retry) { this._onAccuseFail(cfg, selectedId); return; }
-      this._promptEvidenceRetry(cfg, selectedId);
+      this._promptEvidenceRetry(cfg, selectedId, evId);
       return;
     }
     // 决定性证据同时也必须在证据链内（picker 与 ⊕ 同源，规则一致）
@@ -693,21 +739,37 @@ const GameFlow = {
       this._onLevelClear(cfg, result);
       return;
     }
-    if (opt.retry) {
-      this._onAccuseFail(cfg, selectedId);
-      return;
-    }
+    // 因果已对（凶手选对）：证据链有瑕疵/缺铁证时，允许"返回调整/重选证据/直接结案"，不因证据不完美而判失败
     this._promptCaseFileRetry(cfg, selectedId, result);
   },
 
-  /** 决定性证据选错的轻提示：凶手已对，但所选证据不是「决定性铁证」→ 给一次重选机会（不算失败） */
-  _promptEvidenceRetry(cfg, rid) {
+  /** 决定性证据选错的轻提示：凶手已对，但所选证据定不了罪——给真实作用提示 + 不限次重选（永不因证据错而失败） */
+  _promptEvidenceRetry(cfg, rid, evId) {
     const resident = (cfg.residents || []).find((r) => r.id === rid);
     const name = resident ? resident.name : "此人";
-    Modal.confirm("决定性证据不对",
-      "「" + name + "」确实是凶手，但你刚才选的那条线索不能直接给 TA 定罪。\n\n再给你一次重选证据的机会；若再选错，本章将判定失败。",
+    const roleHint = this._clueRoleHint(cfg, evId);
+    Modal.confirm("关键证据再挑一次",
+      "「" + name + "」确实是凶手，但你刚选的这条线索定不了 TA 的罪。\n\n" +
+      (roleHint ? roleHint + "\n\n" : "") +
+      "别急，可以再挑一条更能定罪的关键线索，选对为止，不会算你失败。",
       () => this._showCulpritPicker(cfg, { lockedRid: rid }),
-      () => this._onAccuseFail(cfg, rid));
+      null);
+  },
+
+  /** 描述某条线索的真实作用，供「决定性证据选错」时给出引导提示 */
+  _clueRoleHint(cfg, cid) {
+    if (!cid) return "";
+    const c = (cfg.clues || []).find((x) => x.id === cid);
+    if (!c) return "你选的是一条拼凑出来的「干扰」信息，构不成实证。";
+    if (c.type === "fake") return "你选的「" + c.text + "」是误导性的干扰线索。";
+    if (c.pointsTo && c.pointsTo !== cfg.culpritId) {
+      const t = (cfg.residents || []).find((r) => r.id === c.pointsTo);
+      return "你选的这条线索指向的是「" + (t ? t.name : "别人") + "」，不是凶手。";
+    }
+    if (c.isEvidence) return "你选的是一件物证，但还不足以单独锁定凶手，需要与自白/目击互相印证。";
+    if (c.isSuspectStatement) return "你选的是一条自白；自白本身可能是谎，需要物证旁证来佐证。";
+    if (c.isWitness) return "你选的是一条目击，能佐证时间线，却不是定罪的决定性证据。";
+    return "你选的这条线索只是旁证，不能单独定罪。";
   },
 
   /** 证据链未达标的轻量提示：凶手已选对，但证据链有瑕疵或缺铁证。
@@ -973,8 +1035,123 @@ const GameFlow = {
     return (h < 10 ? "0" + h : h) + ":" + (mm < 10 ? "0" + mm : mm);
   },
 
-  /** 通关处理：真相弹窗 + 更新解锁进度 + 解锁本关居民档案
-   *  v2：可选 result 参数（来自 evaluateCase），用于在通关弹窗里显示 verdict 徽标。 */
+  /** 打开推理复盘面板：集中展示走访 / 证据链 / 矛盾 / 在场 / 关键物证 / 印证，随手随时回看。 */
+  openReview() {
+    if (!App.levelData) return;
+    this._renderReviewPanel();
+    const mask = document.getElementById("review-mask");
+    if (mask) mask.classList.add("show");
+  },
+
+  /** 关闭推理复盘面板 */
+  closeReview() {
+    const mask = document.getElementById("review-mask");
+    if (mask) mask.classList.remove("show");
+  },
+
+  /** 渲染推理复盘面板内容（纯展示，不含阻断；用于替代一次性提示的随时回看）。 */
+  _renderReviewPanel() {
+    const box = document.getElementById("review-box");
+    if (!box) return;
+    const cfg = App.levelData;
+    const esc = ClueCards.escapeHtml;
+    const sec = (title, inner) =>
+      '<div class="review-section"><div class="review-sec-title">' + title + "</div>" + inner + "</div>";
+    const line = (html) => '<div class="review-line">' + html + "</div>";
+
+    // 1) 走访进度
+    const talked = StorageUtil.readDialogRecord(App.currentLevel);
+    const total = (cfg.residents || []).length;
+    const unvisited = (cfg.residents || [])
+      .filter((r) => talked.indexOf(r.id) === -1).map((r) => r.name);
+    const visitHtml = line(
+      "已走访 <b>" + talked.length + " / " + total + "</b> 位居民" +
+      (unvisited.length ? ' · 未走访：<span class="review-muted">' + esc(unvisited.join("、")) + "</span>" : "")
+    );
+
+    // 2) 证据链
+    const caseN = (typeof CaseFile !== "undefined") ? CaseFile.get().length : 0;
+    const caseHtml = line(
+      "已收集 <b>" + caseN + "</b> 条证据" +
+      (caseN < 3 ? " · 还需 <b>" + (3 - caseN) + "</b> 条可提交指认" : " · 已满足指认条件")
+    );
+
+    // 3) 证词矛盾（只统计主动撒谎 lie，剔除误会，与指认门槛口径一致）
+    const conflictIds = ValidateUtil.detectTimelineConflict();
+    const lieIds = conflictIds.filter((id) => {
+      const c = App.clueMap[id];
+      return c && c.conflictType !== "misunderstand";
+    });
+    const lieNames = ValidateUtil.conflictResidents(lieIds);
+    const conflictHtml = lieIds.length
+      ? line('<span class="review-warn">⚖ 发现 <b>' + lieIds.length + "</b> 处证词矛盾</span>" +
+          (lieNames.length ? "（涉及：" + esc(lieNames.join("、")) + "）" : ""))
+      : line("⚖ 暂无证词矛盾");
+
+    // 4) 在场排查（原为一次性弹窗，此处可随时回看最新结果）
+    const ov = ValidateUtil.detectTimeOverlap(cfg);
+    const overlapHtml = ov
+      ? line("【" + this._fmtMin(ov.lo) + " ~ " + this._fmtMin(ov.hi) + "】时段内，以下人都有在场证明：<br>" +
+          "<b>" + esc(ov.names.join("、")) + "</b><br>" +
+          '<span class="review-muted">都具备作案时间——不能仅凭「谁有空」锁凶，需结合证词矛盾与物证过滤。</span>')
+      : line('<span class="review-muted">暂未形成多人同时在场的时间重叠。</span>');
+
+    // 5) 关键物证闭环
+    const rule = this.getLevelRule(cfg);
+    const evKeys = rule.evidenceKeys || [];
+    const evIds = [];
+    (cfg.clues || []).forEach((c) => {
+      if (c.type === "fake") return;
+      if (c.isEvidence || evKeys.indexOf(c.id) !== -1) evIds.push(c.id);
+    });
+    let evHtml;
+    if (!evIds.length) {
+      evHtml = line('<span class="review-muted">本关无关键物证门槛。</span>');
+    } else {
+      const seenIds = new Set([].concat(App.layout.timeline || [], App.layout.pool || []));
+      const evHave = evIds.filter((id) => seenIds.has(id)).length;
+      const missing = this._getMissingEvidence(cfg, evKeys);
+      evHtml = line("已收集 <b>" + evHave + " / " + evIds.length + "</b> 条关键物证" +
+        (missing.length
+          ? " · 还缺：" + esc(missing.map((m) => (m.tag ? "「" + m.tag + "」" : "关键物证线索")).join("、"))
+          : " · 闭环完成"));
+    }
+
+    // 6) 线索印证关系（去重后按 kind 用说人话的 reason 展示）
+    const byClue = (App.insights && App.insights.byClue) || {};
+    const seenPair = new Set();
+    const iconOf = { point: "🎯", owner: "🏷", involve: "👁" };
+    const links = [];
+    Object.keys(byClue).forEach((cid) => {
+      (byClue[cid] || []).forEach((e) => {
+        const a = cid < e.withCid ? cid : e.withCid;
+        const b = cid < e.withCid ? e.withCid : cid;
+        const key = a + "|" + b + "|" + e.kind;
+        if (seenPair.has(key)) return;
+        seenPair.add(key);
+        links.push((iconOf[e.kind] || "🔗") + " " + esc(e.reason || ""));
+      });
+    });
+    const linkHtml = links.length
+      ? line(links.join("</div><div class=\"review-line\">"))
+      : line('<span class="review-muted">暂无可互相印证的线索组合。</span>');
+
+    box.innerHTML =
+      '<div class="review-head">' +
+        '<span class="review-title">📋 推理复盘</span>' +
+        '<button type="button" class="review-close" data-close title="关闭" aria-label="关闭">×</button>' +
+      "</div>" +
+      sec("🚶 走访", visitHtml) +
+      sec("📂 证据链", caseHtml) +
+      sec("⚖ 证词矛盾", conflictHtml) +
+      sec("👁 在场排查", overlapHtml) +
+      sec("🔑 关键物证", evHtml) +
+      sec("🔗 线索印证", linkHtml);
+    const closeBtn = box.querySelector("[data-close]");
+    if (closeBtn) closeBtn.onclick = () => this.closeReview();
+  },
+
+  /** 通关处理：更新解锁进度 + 解锁本关居民档案，然后进入结局展示（真相 + 可选分支）。 */
   _onLevelClear(cfg, result) {
     // E4：通关后清空本局布局与失败计数（重进已通关关卡是干净开局；走访/档案记录保留）
     StorageUtil.writeLevelState(App.currentLevel, {
@@ -989,9 +1166,30 @@ const GameFlow = {
     }
     // 增量：全收集检测（延迟至轻提示之后，避免与通关弹窗叠加）
     setTimeout(() => Achievement.check(), 3000);
+    this._showEnding(cfg, result);
+  },
+
+  /** 展示破案结局；支持 ext.branches 分支结局（真相唯一，结局走向可分支）。 */
+  _showEnding(cfg, result) {
     const isLast = App.currentLevel >= App.totalLevels;
-    // 番外：每关 ext.endingStory 温情小故事，最后一关展示小镇终章总结
-    const story = cfg.ext && cfg.ext.endingStory;
+    const branches = (cfg.ext && cfg.ext.branches) ? cfg.ext.branches : null;
+    const options = branches ? (Array.isArray(branches.options) ? branches.options : []) : [];
+    // 分支结局未选择 → 先让玩家在真相之后做出抉择
+    if (branches && options.length && !StorageUtil.readBranchChoice(App.currentLevel)) {
+      this._promptBranchChoice(cfg, branches, options, result);
+      return;
+    }
+    const choiceId = branches ? StorageUtil.readBranchChoice(App.currentLevel) : null;
+    const chosen = branches ? (options.find((o) => o.id === choiceId) || null) : null;
+
+    // 番外：默认 ext.endingStory；分支一经选择则用所选选项的番外
+    let story = (cfg.ext && cfg.ext.endingStory) || "";
+    let storyTitle = isLast ? "小镇终章" : "小镇小番外";
+    if (chosen) {
+      if (chosen.endingStory) story = chosen.endingStory;
+      if (chosen.badge) storyTitle = "小镇小番外 · " + chosen.badge;
+    }
+
     let extraHtml = "";
     if (result && result.verdict) {
       const v = result.verdict;
@@ -1008,8 +1206,12 @@ const GameFlow = {
         (c.amb ? ' · ⚪ 中立 ' + c.amb + ' 条' : '') + '</p>';
       extraHtml += badge + breakdown;
     }
+    if (chosen) {
+      extraHtml += '<p style="font-size:12px;color:var(--text-sub);margin:0 0 6px;">你最终选择：' +
+        ClueCards.escapeHtml(chosen.label || "") + '</p>';
+    }
     if (story) {
-      extraHtml = '<span class="modal-extra-title">· ' + (isLast ? "小镇终章" : "小镇小番外") + "</span>" +
+      extraHtml = '<span class="modal-extra-title">· ' + storyTitle + "</span>" +
         "<p>" + ClueCards.escapeHtml(story) + "</p>";
     }
     // 关键证据 + decoy 清单：玩家通关后回看本关推理路径
@@ -1028,6 +1230,28 @@ const GameFlow = {
         }
       }
     );
+  },
+
+  /** 真相后的抉择弹窗：列出分支选项，选定后落档并展示对应结局番外。 */
+  _promptBranchChoice(cfg, branches, options, result) {
+    const prompt = branches.prompt || "真相已经水落石出。这一刻，你的选择，将决定故事的走向。";
+    const btns = options.map((o, i) => ({
+      label: o.label,
+      primary: i === 0,
+      onClick: () => this._applyBranchChoice(cfg, o, result),
+    }));
+    Modal.show("真相之后 · 你的选择", prompt, btns, () => {
+      // 关闭但未做选择（ESC/遮罩）→ 回退默认结局，避免跳过结局屏幕
+      if (!StorageUtil.readBranchChoice(App.currentLevel)) this._showEnding(cfg, result);
+    });
+  },
+
+  /** 应用分支选择：落档（含被拯救居民标记）后进入结局展示。 */
+  _applyBranchChoice(cfg, option, result) {
+    StorageUtil.writeBranchChoice(App.currentLevel, option.id);
+    if (option.saved) StorageUtil.markSavedResident(App.currentLevel, option.saved);
+    Modal.close();
+    this._showEnding(cfg, result);
   },
 
   /**
@@ -1228,6 +1452,7 @@ const Achievement = {
   document.getElementById("btn-accuse").addEventListener("click", () => GameFlow.accuseCulprit());
   document.getElementById("btn-hint").addEventListener("click", () => GameFlow.getHint());
   document.getElementById("btn-reset").addEventListener("click", () => GameFlow.resetLevel());
+  document.getElementById("btn-review").addEventListener("click", () => GameFlow.openReview());
   // 证据链 UI：清空按钮 + 卡片 ⊕ 按钮事件委托
   const clearBtn = document.getElementById("cfb-clear");
   if (clearBtn) clearBtn.addEventListener("click", () => {
@@ -1257,7 +1482,8 @@ const Achievement = {
     if (filterBtn) {
       e.stopPropagation();
       e.preventDefault();
-      GameFlow._setPoolFilter(filterBtn.dataset.kind);
+      if (filterBtn.dataset.subform !== undefined) GameFlow._setPoolSubFilter(filterBtn.dataset.subform);
+      else GameFlow._setPoolFilter(filterBtn.dataset.kind);
       return;
     }
     const foldBtn = t.closest(".clue-fold-toggle");
@@ -1266,6 +1492,16 @@ const Achievement = {
       e.preventDefault();
       ClueCards.toggleFold(foldBtn.dataset.cid);
     }
+  });
+  // 点击线索卡片（非操作按钮区域）→ 打开二级详情弹窗
+  document.addEventListener("click", (e) => {
+    if (!(e.target instanceof Element)) return;
+    if (e.target.closest(".clue-case-toggle") || e.target.closest(".clue-tl-toggle") || e.target.closest(".clue-fold-toggle")) return;
+    const card = e.target.closest(".clue-card");
+    if (!card || !card.dataset.clueId) return;
+    // 拖拽松手紧接着触发的 click 不打开详情，避免误弹
+    if (DragManager && DragManager.dragEndAt && (Date.now() - DragManager.dragEndAt) < 300) return;
+    ClueDetail.open(card.dataset.clueId);
   });
   // 常驻「新手指引」：随时重看引导，不写已看标记
   document.getElementById("btn-tutorial").addEventListener("click", () => GameFlow.showTutorialCards(false));
@@ -1276,6 +1512,14 @@ const Achievement = {
   // 人物档案弹窗：点击遮罩空白处关闭
   document.getElementById("bio-mask").addEventListener("click", (e) => {
     if (e.target === e.currentTarget) BioArchive.close();
+  });
+  // 线索详情弹窗：点击遮罩空白处关闭
+  document.getElementById("clue-detail-mask").addEventListener("click", (e) => {
+    if (e.target === e.currentTarget) ClueDetail.close();
+  });
+  // 推理复盘面板：点击遮罩空白处关闭
+  document.getElementById("review-mask").addEventListener("click", (e) => {
+    if (e.target === e.currentTarget) GameFlow.closeReview();
   });
   // 居民头像 / 姓名区点击 → 打开人物档案（事件委托）
   document.addEventListener("click", (e) => {
@@ -1334,7 +1578,7 @@ const Achievement = {
         }
       });
     });
-    ["modal-mask", "bio-mask", "lore-mask", "chronicle-mask", "town-map-mask", "achievement-mask"]
+    ["modal-mask", "bio-mask", "lore-mask", "chronicle-mask", "town-map-mask", "achievement-mask", "clue-detail-mask", "review-mask"]
       .forEach((id) => {
         const el = document.getElementById(id);
         if (el) maskOrderWatcher.observe(el, { attributes: true, attributeFilter: ["class"] });
@@ -1350,6 +1594,8 @@ const Achievement = {
       { id: "lore-mask", close: () => LorePanel.close() },
       { id: "chronicle-mask", close: () => ChroniclePanel.close() },
       { id: "town-map-mask", close: () => TownMap.close() },
+      { id: "clue-detail-mask", close: () => ClueDetail.close() },
+      { id: "review-mask", close: () => GameFlow.closeReview() },
     ];
     const visible = maskClosers
       .map((m) => {

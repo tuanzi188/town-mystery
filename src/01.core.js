@@ -243,6 +243,39 @@ const StorageUtil = {
   writeAskedFollowups(levelIndex, keys) {
     this.write(this.askedKey(levelIndex), (Array.isArray(keys) ? keys : []).filter((x) => typeof x === "string"));
   },
+  /* ---- 分支结局存储（真相后的抉择） ---- */
+  /** 读取某关「真相后抉择」选中的选项 id；未选返回 null */
+  readBranchChoice(levelIndex) {
+    const map = this.read("branchChoices", {});
+    if (!map || typeof map !== "object" || Array.isArray(map)) return null;
+    const v = map["L" + levelIndex];
+    return typeof v === "string" ? v : null;
+  },
+  /** 写入某关「真相后抉择」选中的选项 id */
+  writeBranchChoice(levelIndex, optionId) {
+    const map = this.read("branchChoices", {});
+    const clean = (map && typeof map === "object" && !Array.isArray(map)) ? map : {};
+    clean["L" + levelIndex] = optionId;
+    this.write("branchChoices", clean);
+  },
+  /** 被拯救/和解居民的存储键（跨关唯一） */
+  _savedResidentKey(levelIndex, rid) { return "L" + levelIndex + "_" + rid; },
+  /** 读取全部「被拯救/和解」居民键列表 */
+  readSavedResidents() {
+    const list = this.read("savedResidents", []);
+    if (!Array.isArray(list)) return [];
+    return list.filter((x) => typeof x === "string");
+  },
+  /** 标记某关某居民为「被拯救/和解」 */
+  markSavedResident(levelIndex, rid) {
+    const list = this.readSavedResidents();
+    const key = this._savedResidentKey(levelIndex, rid);
+    if (list.indexOf(key) === -1) { list.push(key); this.write("savedResidents", list); }
+  },
+  /** 某关某居民是否已被拯救/和解 */
+  isSavedResident(levelIndex, rid) {
+    return this.readSavedResidents().indexOf(this._savedResidentKey(levelIndex, rid)) !== -1;
+  },
 };
 
 /* ============================================================

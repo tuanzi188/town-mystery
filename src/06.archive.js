@@ -62,6 +62,10 @@ const BioArchive = {
         '<button type="button" class="bio-close" id="bio-close" aria-label="关闭">×</button>' +
       "</div>";
     if (this.isUnlocked(lv, resident.id)) {
+      const savedMark = StorageUtil.isSavedResident(lv, resident.id)
+        ? '<div class="bio-secret-box"><p class="bio-sec-title">· 结局印记</p>' +
+          '<p class="bio-text bio-secret">你在真相之后选择了挽留 TA——这份善意，被小镇悄悄记住了。</p></div>'
+        : "";
       box.innerHTML = headHtml +
         '<div class="bio-body">' +
           '<p class="bio-sec-title">· 人物生平</p>' +
@@ -70,6 +74,7 @@ const BioArchive = {
             '<p class="bio-sec-title">· 隐藏心事</p>' +
             '<p class="bio-text bio-secret">' + this._textOf(resident.secret, "这段往事被尘封，尚未有人知晓。") + "</p>" +
           "</div>" +
+          savedMark +
         "</div>";
     } else {
       box.innerHTML = headHtml +
@@ -222,6 +227,7 @@ const Archive = {
       if (filter !== "all" && Number(filter) !== lv) return;
       (l.residents || []).forEach((r) => {
         const unlocked = BioArchive.isUnlocked(lv, r.id);
+        const saved = unlocked && StorageUtil.isSavedResident(lv, r.id);
         const card = document.createElement("button");
         card.className = "archive-card" + (unlocked ? "" : " locked");
         card.innerHTML =
@@ -229,6 +235,7 @@ const Archive = {
             ? AvatarFactory.buildWithPortrait(r, { size: 52 }, lv)
             : "🔒") + "</span>" +
           '<span class="arc-name">' + ClueCards.escapeHtml(r.name || "？？？") + "</span>" +
+          (saved ? '<span class="arc-saved" title="你在结局里选择挽留了 TA">♥</span>' : "") +
           (unlocked && r.tagShort
             ? '<span class="arc-tag">' + ClueCards.escapeHtml(r.tagShort) + "</span>"
             : '<span class="arc-tag">档案未解锁</span>') +

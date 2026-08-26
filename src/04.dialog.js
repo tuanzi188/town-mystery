@@ -28,6 +28,20 @@ const DialogSystem = {
   _readAsked() {
     return StorageUtil.readAskedFollowups(App.currentLevel);
   },
+  /** 未追问过的「核心」追问（type === "core"）列表；用于引导玩家回头盘问关键证词 */
+  _unaskedCoreFollowups(resident) {
+    const followups = this._followupsOf(resident);
+    if (!followups || !followups.length) return [];
+    const asked = new Set(this._readAsked());
+    const out = [];
+    for (let i = 0; i < followups.length; i++) {
+      const fu = followups[i];
+      if (!fu || fu.type !== "core") continue;
+      if (asked.has(this._askKey(resident.id, i))) continue;
+      out.push({ idx: i, fu: fu });
+    }
+    return out;
+  },
   /** 走访次数独立存储键（去重走访档案无法表达次数，必须单独计数；不受 _restartLevel 清布局影响） */
   _visitKey() { return "visits_L" + App.currentLevel; },
   /** 读取走访计数器映射 {居民id: 次数}（脏值兜底为 {}） */
@@ -127,8 +141,9 @@ const DialogSystem = {
     const listHtml = pendingIdx.map((idx) => {
       const fu = followups[idx];
       const topic = this._topicOf(fu.q) || "继续追问";
-      return '<button type="button" class="dl-next-fu" data-fu="' + idx + '">' +
-        '<span class="fu-tag">追问</span>' + esc(topic) + "</button>";
+      const isCore = !!fu && fu.type === "core";
+      return '<button type="button" class="dl-next-fu' + (isCore ? " core" : "") + '" data-fu="' + idx + '">' +
+        '<span class="fu-tag">' + (isCore ? "关键" : "追问") + "</span>" + esc(topic) + "</button>";
     }).join("");
     return '<div class="dl-fu-block">' +
       '<div class="dl-fu-head">继续询问 ' + progressPill + "</div>" +
@@ -175,7 +190,7 @@ const DialogSystem = {
     return '<div class="bio-secret-box"><p class="bio-sec-title">· 隐藏心事</p>' +
       '<p class="bio-text bio-secret">' + esc(resident.secret) + '</p></div>';
   },
-  /** 线索条目标签：按类型标注（干扰/物证/目击/自白/口供）——仅无追问分支时使用 */
+  /** 线索条目标签：口供形态（目击/自白/陈述）+ 物证；干扰单独标注——仅无追问分支时使用 */
   _walkClueItemHtml(c) {
     const esc = ClueCards.escapeHtml;
     let tag, extraCls = "";
@@ -183,7 +198,7 @@ const DialogSystem = {
     else if (c.isEvidence) tag = "物证";
     else if (c.isWitness) tag = "目击";
     else if (c.isSuspectStatement) tag = "自白";
-    else tag = "口供";
+    else tag = "陈述";
     return '<div class="walk-clue-item"><span class="walk-clue-tag' + extraCls + '">' + tag +
       '</span><span class="walk-clue-text">' + esc(c.text) + "</span></div>";
   },

@@ -9,20 +9,43 @@ const ClueCards = {
       .replace(/"/g, "&quot;")
       .replace(/'/g, "&#39;");
   },
-  /** 线索类型分层：根据元数据判定是「物证 / 自白 / 目击 / 普通口供」，
-   *  返回 { typeCls, badge, badgeIcon, badgeText }，供 buildCard 与 clue-toast 共用 */
+  /** 线索两级分类：第一级是「来源」（口供=人物证词 / 物证=实物 / 干扰=真假标记），
+   *  第二级是口供的「形态」（目击 / 自白 / 陈述），供 buildCard 与 clue-toast 共用。
+   *  返回 { family, typeCls, badge, subBadge, badgeIcon, badgeText }。 */
   classify(clue) {
-    if (!clue) return { typeCls: "", badge: "", badgeIcon: "", badgeText: "" };
-    if (clue.isEvidence) {
-      return { typeCls: "evidence", badge: '<span class="clue-badge">🔑 物证</span>', badgeIcon: "🔑", badgeText: "物证" };
+    if (!clue) return { family: "", typeCls: "", badge: "", subBadge: "", badgeIcon: "", badgeText: "" };
+    if (clue.type === "fake") {
+      return { family: "fake", typeCls: "", badge: "", subBadge: "", badgeIcon: "⚠", badgeText: "干扰" };
     }
-    if (clue.isSuspectStatement) {
-      return { typeCls: "statement", badge: '<span class="clue-badge">🗣 自白</span>', badgeIcon: "🗣", badgeText: "自白" };
+    if (clue.isEvidence) {
+      return { family: "evidence", typeCls: "evidence", badge: '<span class="clue-badge family-evidence">🔑 物证</span>', subBadge: "", badgeIcon: "🔑", badgeText: "物证" };
     }
     if (clue.isWitness) {
-      return { typeCls: "witness", badge: '<span class="clue-badge">👁 目击</span>', badgeIcon: "👁", badgeText: "目击" };
+      return { family: "verbal", typeCls: "", badge: '<span class="clue-badge family-verbal">💬 口供</span>', subBadge: '<span class="clue-sub-badge form-witness">👁 目击</span>', badgeIcon: "👁", badgeText: "口供·目击" };
     }
-    return { typeCls: "", badge: "", badgeIcon: "📁", badgeText: "口供" };
+    if (clue.isSuspectStatement) {
+      return { family: "verbal", typeCls: "", badge: '<span class="clue-badge family-verbal">💬 口供</span>', subBadge: '<span class="clue-sub-badge form-statement">🗣 自白</span>', badgeIcon: "🗣", badgeText: "口供·自白" };
+    }
+    return { family: "verbal", typeCls: "", badge: '<span class="clue-badge family-verbal">💬 口供</span>', subBadge: '<span class="clue-sub-badge form-plain">📁 陈述</span>', badgeIcon: "📁", badgeText: "口供·陈述" };
+  },
+  /** 顶部徽标：来源大类（口供 / 物证）+ 口供形态（目击 / 自白 / 陈述）+ 说话人 / 物证身份角标。 */
+  topBadgesHtml(clue) {
+    if (!clue) return "";
+    const cls = this.classify(clue);
+    const isFake = clue.type === "fake";
+    const owner = App.clueOwner ? App.clueOwner[clue.id] : null;
+    if (isFake) {
+      // 干扰线索：不显示来源徽标，但保留说话人角标作为干扰方
+      return owner ? '<span class="clue-speak">' + this.escapeHtml(owner) + "</span>" : "";
+    }
+    if (clue.isEvidence) {
+      const ownerTag = clue.evidenceOwnerTag ? this.escapeHtml(clue.evidenceOwnerTag) : "";
+      const dirCls = clue.evidenceDirection === "clear" ? " ev-owner--clear" : "";
+      return cls.badge +
+        (ownerTag ? '<span class="clue-speak ev-owner' + dirCls + '" data-ev-owner="' + ownerTag + '">对应：' + ownerTag + "</span>" : "");
+    }
+    return cls.badge + cls.subBadge +
+      (owner ? '<span class="clue-speak">' + this.escapeHtml(owner) + "</span>" : "");
   },
   /** 按线索类型构建卡片元素：type === "fake" 为浅灰色干扰线索，其余按 isEvidence/isSuspectStatement/isWitness 分层。
    *  卡片右上角加 ⊕ 按钮：把线索加入/移出 CaseFile 证据链（独立于卡槽/时间轴）。 */
@@ -43,30 +66,13 @@ const ClueCards = {
       (inCase ? " in-case" : "");
     el.dataset.clueId = clue.id;
     el.dataset.type = clue.type;
-    el.dataset.clueKind = isFake ? "fake" : (cls.typeCls || "plain");
+    el.dataset.clueKind = cls.family || "verbal"; // 来源大类：evidence / verbal / fake（筛选用）
+    el.dataset.clueForm = (cls.family === "verbal")
+      ? (clue.isWitness ? "witness" : (clue.isSuspectStatement ? "statement" : "plain"))
+      : ""; // 口供形态：witness / statement / plain（口供子筛用）
     el.dataset.locked = locked ? "1" : "0";
     el.draggable = false; // 本游戏用手势拖拽，禁用 HTML5 原生拖拽
-    let speak = "";
-    if (!isFake) {
-      if (clue.isEvidence) {
-        const ownerTag = clue.evidenceOwnerTag ? this.escapeHtml(clue.evidenceOwnerTag) : "";
-        const dirCls = clue.evidenceDirection === "clear" ? " ev-owner--clear" : "";
-        speak = cls.badge +
-          (ownerTag ? '<span class="clue-speak ev-owner' + dirCls + '" data-ev-owner="' + ownerTag + '">对应：' + ownerTag + "</span>" : "");
-      } else if (cls.badge) {
-        // 自白 / 目击：用统一 clue-badge 作为类型徽标
-        const owner = App.clueOwner ? App.clueOwner[clue.id] : null;
-        speak = cls.badge + (owner ? '<span class="clue-speak">' + this.escapeHtml(owner) + "</span>" : "");
-      } else {
-        // 普通口供：保留原"说话人"角标
-        const owner = App.clueOwner ? App.clueOwner[clue.id] : null;
-        if (owner) speak = '<span class="clue-speak">' + this.escapeHtml(owner) + "</span>";
-      }
-    } else {
-      // 干扰线索：不显示类型徽标，但保留说话人角标作为干扰方
-      const owner = App.clueOwner ? App.clueOwner[clue.id] : null;
-      if (owner) speak = '<span class="clue-speak">' + this.escapeHtml(owner) + "</span>";
-    }
+    const speak = this.topBadgesHtml(clue);
     // ⊕ 按钮：把线索加入/移出 CaseFile 证据链。点击事件由 GameFlow 统一代理（事件委托）。
     const caseBtn = '<button type="button" class="clue-case-toggle' + (inCase ? " in-case" : "") +
       '" data-cid="' + this.escapeHtml(clue.id) + '" title="' + (inCase ? "从证据链移除" : "加入证据链") +
@@ -80,13 +86,18 @@ const ClueCards = {
       '" aria-label="' + (inTimeline ? "从时间轴移回线索池" : "加入时间轴") + '">' + (inTimeline ? "◀" : "⏱") + "</button>";
     const linksHtml = this.linkChipsHtml(clue.id);
     el.innerHTML =
-      caseBtn +
+      '<div class="clue-card-controls">' +
       (locked ? "" : tlBtn) +
+      '<span class="clue-card-controls-gap"></span>' +
+      caseBtn +
+      "</div>" +
       speak +
       keyBadge +
       '<p class="clue-text">' + this.escapeHtml(clue.text) + "</p>" +
-      '<span class="clue-type">' + (isFake ? "干扰线索" : "有效线索") +
-        (locked ? '<span class="clue-lock-mark">🔒 已锁定</span>' : "") + "</span>" +
+      (isFake || locked
+        ? '<span class="clue-type">' + (isFake ? "干扰线索" : "") +
+            (locked ? '<span class="clue-lock-mark">🔒 已锁定</span>' : "") + "</span>"
+        : "") +
       (linksHtml ? '<div class="clue-links">' + linksHtml + "</div>" : "") +
       '<button type="button" class="clue-fold-toggle" data-cid="' + this.escapeHtml(clue.id) +
         '" title="展开全文" aria-label="展开全文">▾ 展开</button>';
@@ -164,6 +175,75 @@ const ClueCards = {
       btn.title = expanded ? "收起全文" : "展开全文";
       btn.setAttribute("aria-label", btn.title);
     }
+  },
+};
+
+/* ============================================================
+   模块三·增：线索详情二级弹窗 (ClueDetail)
+   点击线索卡片弹出，展示完整证词 + 印证链 + 收集/入轴操作，
+   缓解移动端卡片信息过载；操作态与主卡/底部计数条实时同步。
+   ============================================================ */
+const ClueDetail = {
+  /** 打开某条线索的详情弹窗 */
+  open(cid) {
+    if (!cid || !App.clueMap || !App.clueMap[cid]) return;
+    this.render(cid);
+    const mask = document.getElementById("clue-detail-mask");
+    if (mask) mask.classList.add("show");
+  },
+  /** 关闭详情弹窗 */
+  close() {
+    const mask = document.getElementById("clue-detail-mask");
+    if (mask) mask.classList.remove("show");
+  },
+  /** 渲染详情弹窗内容并绑定内部按钮 */
+  render(cid) {
+    const box = document.getElementById("clue-detail-box");
+    if (!box) return;
+    const c = App.clueMap[cid];
+    if (!c) { box.innerHTML = ""; return; }
+    const esc = ClueCards.escapeHtml;
+    const isFake = c.type === "fake";
+    const locked = App.layout.locked && App.layout.locked.indexOf(cid) !== -1;
+    const inCase = (typeof CaseFile !== "undefined") && CaseFile.has(cid);
+    const inTimeline = !locked && App.layout.timeline && App.layout.timeline.indexOf(cid) !== -1;
+    const hasTime = typeof c.timeMin === "number";
+    const evKeys = (App.levelData && App.levelData.ext && App.levelData.ext.evidenceKeys) || [];
+    const isKey = !isFake && evKeys.indexOf(cid) !== -1;
+    const keyBadge = isKey ? '<span class="clue-badge key-badge">🔍 关键</span>' : "";
+    const links = ClueCards.linkChipsHtml(cid);
+    box.innerHTML =
+      '<div class="clue-detail-head">' +
+        '<div class="clue-detail-badges">' + ClueCards.topBadgesHtml(c) + keyBadge + "</div>" +
+        '<button type="button" class="clue-detail-close" data-close title="关闭" aria-label="关闭">×</button>' +
+      "</div>" +
+      '<p class="clue-detail-text">' + esc(c.text) + "</p>" +
+      '<div class="clue-detail-meta">' +
+        (isFake ? '<span class="clue-detail-tag">⚠ 干扰线索</span>' : "") +
+        (locked ? '<span class="clue-detail-tag">🔒 已锁定</span>' : "") +
+        (hasTime ? '<span class="clue-detail-tag">🕐 ' + esc(c.timeText || "有时间信息") + "</span>" : "") +
+      "</div>" +
+      (links ? '<div class="clue-links">' + links + "</div>" : "") +
+      '<div class="clue-detail-actions">' +
+        '<button type="button" class="clue-detail-btn" data-case>' +
+          (inCase ? "✓ 已加入证据链" : "⊕ 加入证据链") + "</button>" +
+        (locked ? "" :
+          '<button type="button" class="clue-detail-btn" data-tl>' +
+            (inTimeline ? "◀ 移出时间轴" : "⏱ 加入时间轴") + "</button>") +
+      "</div>";
+    const closeBtn = box.querySelector("[data-close]");
+    if (closeBtn) closeBtn.onclick = () => this.close();
+    const caseBtn = box.querySelector("[data-case]");
+    if (caseBtn) caseBtn.onclick = () => { this.close(); CaseFile.toggle(cid); };
+    const tlBtn = box.querySelector("[data-tl]");
+    if (tlBtn) tlBtn.onclick = () => {
+      if (!hasTime) {
+        if (typeof DragManager._showInvalidTimelineTip === "function") DragManager._showInvalidTimelineTip();
+        return;
+      }
+      this.close();
+      ClueCards.toggleTimeline(cid);
+    };
   },
 };
 

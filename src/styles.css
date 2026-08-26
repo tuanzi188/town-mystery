@@ -403,7 +403,7 @@ input{font-family:inherit;}
 .clue-list{display:flex;flex-wrap:wrap;gap:8px;}
 /* 线索卡片通用样式（浅米色有效 / 浅灰色干扰） */
 .clue-card{
-  position:relative; /* 供 case-toggle 绝对定位；不影响拖拽 */
+  position:relative; /* 供时间轴锚点 ::before 定位；不影响拖拽 */
   width:150px;min-height:64px;padding:8px 10px;border-radius:10px;
   border:1px solid var(--card-line);box-shadow:var(--shadow);
   font-size:12px;line-height:1.5;cursor:grab;user-select:none;
@@ -467,34 +467,24 @@ input{font-family:inherit;}
 /* 丢到空白区域的抖动反馈 */
 .clue-card.drop-fail{animation:shake .4s;}
 
-/* —— 线索分层 4 种外观（口供 / 目击 / 自白 / 物证） + 入卷仪式 —— */
-/* 物证：金边 + 🔑 角标 + 轻微金辉 */
+/* —— 线索两级分层：来源大类（口供 / 物证 / 干扰）+ 口供形态（目击 / 自白 / 陈述） —— */
+/* 物证卡：金边 + 金辉（来源之一） */
 .clue-card.evidence{
   background:linear-gradient(135deg,#fff5d8 0%,#f5ecd8 100%);
   border:1.5px solid #c89a3a;
   box-shadow:0 0 0 2px rgba(200,154,58,.08),0 2px 8px rgba(200,154,58,.12);
 }
-.clue-card.evidence .clue-badge{
-  background:#c89a3a;color:#fff;font-weight:600;
-  box-shadow:0 1px 4px rgba(200,154,58,.35);
+/* 来源徽标：口供（中性暖）/ 物证（金）。自携样式，卡片与详情弹窗表现一致。 */
+.clue-badge.family-verbal{background:#e2dccb;color:#6b6048;}
+.clue-badge.family-evidence{background:#c89a3a;color:#fff;font-weight:600;box-shadow:0 1px 4px rgba(200,154,58,.35);}
+/* 口供形态徽标：目击（蓝）/ 自白（橙）/ 陈述（中性灰） */
+.clue-sub-badge{
+  display:inline-block;font-size:10px;line-height:1;padding:2px 7px;margin-bottom:4px;
+  border-radius:6px;letter-spacing:.5px;
 }
-/* 自白：橙边 + 🗣 角标 */
-.clue-card.statement{
-  background:linear-gradient(135deg,#fdeede 0%,#f8e4c2 100%);
-  border:1.5px solid #c4804a;
-}
-.clue-card.statement .clue-badge{background:#c4804a;color:#fff;}
-/* 目击：蓝边 + 👁 角标 */
-.clue-card.witness{
-  background:linear-gradient(135deg,#e6efff 0%,#d8e4f7 100%);
-  border:1.5px solid #5a7ba8;
-}
-.clue-card.witness .clue-badge{background:#5a7ba8;color:#fff;}
-/* 普通口供：保持原有米色（.valid），无需额外样式 */
-/* 干扰线索：保持原有灰色（.fake），统一降级视觉 */
-.clue-card.fake.evidence,
-.clue-card.fake.statement,
-.clue-card.fake.witness{opacity:.85;}
+.clue-sub-badge.form-witness{background:#d8e4f7;color:#40587e;}
+.clue-sub-badge.form-statement{background:#f8e4c2;color:#8a5a2a;}
+.clue-sub-badge.form-plain{background:#efece4;color:#8a7d63;}
 /* 类型角标：统一徽标样式 */
 .clue-badge{
   display:inline-block;font-size:10px;line-height:1;padding:2px 7px;margin-bottom:4px;
@@ -662,6 +652,60 @@ input{font-family:inherit;}
   transform:scale(.92);transition:transform .25s;
 }
 .modal-mask.show .modal-box{transform:scale(1);}
+/* 线索二级详情弹窗：左对齐、可滚动，完整展示证词与操作 */
+#clue-detail-mask .clue-detail-box{
+  width:100%;max-width:420px;background:var(--card);border-radius:18px;
+  box-shadow:0 12px 30px rgba(60,55,45,.2);padding:18px;text-align:left;
+  max-height:calc(100vh - 48px);overflow-y:auto;overflow-x:hidden;
+  transform:scale(.92);transition:transform .25s;
+}
+#clue-detail-mask.show .clue-detail-box{transform:scale(1);}
+.clue-detail-head{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px;}
+.clue-detail-badges{display:flex;flex-wrap:wrap;gap:4px;align-items:center;min-width:0;}
+.clue-detail-close{
+  flex:none;width:30px;height:30px;border-radius:50%;border:1px solid var(--card-line);
+  background:var(--bg);color:var(--text-sub);font-size:18px;line-height:1;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;padding:0;
+  transition:color .15s,border-color .15s;
+}
+.clue-detail-close:hover{color:var(--danger);border-color:var(--danger);}
+.clue-detail-text{font-size:15px;line-height:1.8;color:var(--text);margin:0 0 10px;white-space:pre-wrap;word-break:break-word;}
+.clue-detail-meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:8px;}
+.clue-detail-tag{
+  font-size:11px;line-height:1;padding:3px 8px;border-radius:20px;
+  background:var(--bg);color:var(--text-sub);border:1px solid var(--card-line);
+}
+.clue-detail-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;}
+.clue-detail-btn{
+  flex:1;padding:11px 12px;border-radius:12px;font-size:14px;letter-spacing:1px;min-width:120px;
+  background:var(--soft);color:var(--accent-deep);border:1px solid var(--card-line);cursor:pointer;
+  transition:background .15s,transform .15s;
+}
+.clue-detail-btn:hover{background:#e2ecdf;}
+.clue-detail-btn:active{transform:scale(.97);}
+/* 推理复盘面板：左对齐、区块化，集中看推理现状 */
+#review-mask .review-box{
+  width:100%;max-width:440px;background:var(--card);border-radius:18px;
+  box-shadow:0 12px 30px rgba(60,55,45,.2);padding:18px;text-align:left;
+  max-height:calc(100vh - 48px);overflow-y:auto;overflow-x:hidden;
+  transform:scale(.92);transition:transform .25s;
+}
+#review-mask.show .review-box{transform:scale(1);}
+.review-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px;}
+.review-title{font-size:16px;font-weight:600;color:var(--accent-deep);}
+.review-close{
+  flex:none;width:30px;height:30px;border-radius:50%;border:1px solid var(--card-line);
+  background:var(--bg);color:var(--text-sub);font-size:18px;line-height:1;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;padding:0;
+  transition:color .15s,border-color .15s;
+}
+.review-close:hover{color:var(--danger);border-color:var(--danger);}
+.review-section{padding:10px 0;border-top:1px dashed var(--card-line);}
+.review-sec-title{font-size:12px;color:var(--accent);letter-spacing:1px;margin-bottom:5px;}
+.review-line{font-size:13px;line-height:1.7;color:var(--text);}
+.review-line + .review-line{margin-top:4px;}
+.review-muted{color:var(--text-sub);}
+.review-warn{color:var(--danger);}
 .modal-title{font-size:17px;color:var(--accent-deep);margin-bottom:10px;}
 .modal-text{font-size:14px;line-height:1.7;color:var(--text);white-space:pre-line;}
 /* 通关弹窗的「小镇番外」分段：柔和绿色次要文字，与真相文字视觉区分 */
@@ -689,15 +733,20 @@ input{font-family:inherit;}
 .clue-review-list.amb-list li{background:#f4f1ea;border:1px solid #e8e2d4;}
 
 /* —— 证据链 (case file) UI —— */
+/* 卡片顶部操作行：时间轴快捷（左）与证据链 ⊕（右）不再绝对定位压住正文，避免遮挡线索内容 */
+.clue-card-controls{
+  display:flex;align-items:center;gap:4px;
+  min-height:22px;margin-bottom:4px;
+}
+.clue-card-controls-gap{flex:1;}
 /* 卡片右上角 ⊕ 按钮：把线索加入 / 移出证据链 */
 .clue-case-toggle{
-  position:absolute;top:5px;right:5px;
   width:22px;height:22px;border-radius:50%;
   background:var(--card);border:1px solid var(--card-line);
   color:var(--text-sub);font-size:13px;line-height:1;cursor:pointer;
   display:flex;align-items:center;justify-content:center;
   transition:background .15s,color .15s,transform .12s;
-  z-index:2;padding:0;
+  padding:0;
 }
 .clue-case-toggle:hover{background:var(--soft);color:var(--accent-deep);transform:scale(1.08);}
 .clue-case-toggle.in-case{background:var(--accent);color:#fff;border-color:transparent;}
@@ -707,13 +756,12 @@ input{font-family:inherit;}
 .clue-card.in-case{border-color:var(--accent);box-shadow:0 0 0 2px var(--soft);}
 /* 移动端时间轴快捷按钮：一键入轴/出轴，免去长距离拖拽。桌面端隐藏（拖拽是主玩法）。 */
 .clue-tl-toggle{
-  position:absolute;left:5px;top:5px;
   width:22px;height:22px;border-radius:50%;
   background:var(--card);border:1px solid var(--card-line);
   color:var(--text-sub);font-size:11px;line-height:1;cursor:pointer;
   display:none;align-items:center;justify-content:center;
   transition:background .15s,color .15s,transform .12s;
-  z-index:2;padding:0;
+  padding:0;
 }
 .clue-tl-toggle:hover{background:var(--soft);color:var(--accent-deep);transform:scale(1.08);}
 .clue-tl-toggle.in-tl{background:var(--accent);color:#fff;border-color:transparent;}
@@ -797,6 +845,10 @@ input{font-family:inherit;}
 }
 .pk-filter:hover{background:#e2ecdf;color:var(--accent-deep);}
 .pk-filter.active{background:var(--accent);color:#fff;border-color:transparent;}
+/* 线索池来源/形态筛选条：来源（全部/口供/物证/干扰）+ 口供形态子筛（目击/自白/陈述） */
+.clue-filter-bar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:0 0 8px;}
+.clue-filter-sep{width:1px;height:16px;background:var(--card-line);margin:0 2px;flex:none;}
+.clue-filter.clue-subfilter{font-size:11px;padding:3px 9px;}
 #picker-ok:disabled{opacity:.5;cursor:not-allowed;}
 /* 失败时关键证据线索卡高亮（脉动提示） */
 @keyframes keyPulse{
@@ -1044,6 +1096,8 @@ input{font-family:inherit;}
 }
 .dl-next-fu:hover{background:#e2ecdf;transform:translateY(-1px);}
 .dl-next-fu .fu-tag{margin-right:6px;}
+.dl-next-fu.core{border-color:#e6b3ad;}
+.dl-next-fu.core .fu-tag{background:#c0392b;}
 /* 已完成所有追问的结束行 */
 .dl-done{
   font-size:12px;color:var(--text-sub);text-align:center;
@@ -1277,8 +1331,8 @@ input{font-family:inherit;}
   /* 人物关系/大事记 窄屏：单列布局，避免卡片挤换行 */
   .lore-grid{grid-template-columns:1fr;}
 
-  /* 2. 拖拽幽灵卡片放大 1.2 倍 + 上移避开手指，降低遮挡看不清 */
-  .drag-ghost{transform:rotate(2deg) scale(1.2) translateY(-72px);}
+  /* 2. 拖拽幽灵卡片轻微放大 + 适度上移避开手指；落点以视觉中心判定，无需过大偏移 */
+  .drag-ghost{transform:rotate(2deg) scale(1.15) translateY(-40px);}
 
   /* 3. 人物档案弹窗：压缩上下边距，轻微放大文字行高 */
   #bio-mask .bio-box{padding:16px;}

@@ -149,7 +149,8 @@
         <!-- 居民列表由 JS 渲染 -->
       </section>
       <section class="clues-pool" id="clues-pool">
-        <p class="pool-hint">轻点居民头像可交谈解锁口供；点线索卡右上角 ⊕ 收集证据链（至少 3 条才能指认）。把带时间的目击 / 自白线索拖入下方时间轴排序（手机上可点线索卡左上角 ⏱ 直接入轴）可触发矛盾检测——不排也不影响推理，只是看不到矛盾提示。浅米色为有效线索，浅灰色为干扰线索（请勿拖入时间轴）。</p>
+        <p class="pool-hint">轻点居民头像可交谈解锁口供；口供又分「目击 / 自白 / 陈述」三种形态，短语标签即其细分。点线索卡右上角 ⊕ 收集证据链（至少 3 条才能指认）；带时间的证词拖入下方时间轴排序（手机上可点线索卡左上角 ⏱ 直接入轴）。浅米色为有效线索，浅灰为干扰线索（请勿拖入时间轴）。</p>
+        <div class="clue-filter-bar" id="clue-filter-bar"><!-- 筛选项由 GameFlow 渲染 --></div>
         <div class="clue-group">
           <h4>有效线索</h4>
           <div class="clue-list" id="valid-clue-list"><!-- 有效线索卡片由 JS 渲染 --></div>
@@ -165,7 +166,7 @@
     <section class="timeline-panel">
       <div class="timeline-head">
         <h3 class="panel-title">时间轴</h3>
-        <span class="timeline-tip" title="带时间描述的线索拖到时间轴上方后，长按 1 秒确认落点">💡 拖到时间轴后长按 1 秒确认落点</span>
+        <span class="timeline-tip" title="带时间描述的线索拖到时间轴上方后，长按 0.3 秒确认落点">💡 拖到时间轴后长按 0.3 秒确认落点</span>
       </div>
       <p class="pool-hint">把带时间的目击 / 自白线索拖到这里排序。重叠时段的在场者会被列出——「谁有空」不能锁凶，说谎者的时间线会在这里露出破绽。</p>
       <div class="timeline-track" id="timeline-drop"></div>
@@ -183,6 +184,7 @@
       </div>
       <div class="bb-row">
         <button class="action-btn primary" id="btn-accuse">指认凶手</button>
+        <button class="action-btn" id="btn-review">📋 复盘</button>
         <button class="action-btn" id="btn-hint">获取提示</button>
         <button class="action-btn" id="btn-reset">重置本局</button>
       </div>
@@ -200,6 +202,16 @@
     <div class="modal-extra" id="modal-extra"><!-- 通关番外分段，由 Modal 填充 --></div>
     <div class="modal-btns" id="modal-btns"><!-- 按钮由 JS 动态生成 --></div>
   </div>
+</div>
+
+<!-- D·补：线索二级详情弹窗（点线索卡片打开，内容由 ClueDetail 渲染） -->
+<div class="modal-mask" id="clue-detail-mask">
+  <div class="clue-detail-box" id="clue-detail-box"></div>
+</div>
+
+<!-- D·补2：推理复盘面板（集中展示走访/矛盾/在场/物证闭环/印证，可随时回看） -->
+<div class="modal-mask" id="review-mask">
+  <div class="review-box" id="review-box"></div>
 </div>
 
 <!-- ============================================================
@@ -260,6 +272,7 @@
 <script src="src/04.dialog.js"></script>
 <script src="src/05.drag.js"></script>
 <script src="src/06.archive.js"></script>
+<script src="src/08.insight.js"></script>
 <script src="src/07.gameflow.js"></script>
 </body>
 </html>

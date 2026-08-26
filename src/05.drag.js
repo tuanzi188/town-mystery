@@ -15,23 +15,50 @@ const DragManager = {
   ghost: null,       // 跟随指针的幽灵卡片
   _onMove: null,     // document 级 pointermove 处理器引用
   _onUp: null,       // document 级 pointerup / pointercancel 处理器引用
+  _onPointerDown: null, // 全局 pointerdown 处理器引用（init 幂等 / destroy 用）
+  _onDragStart: null,   // 全局 dragstart 处理器引用（init 幂等 / destroy 用）
+  _moveFrame: null,     // move 坐标节流的 rAF 句柄
+  _pendingMove: null,   // 最近一次 move 事件的待处理坐标 { x, y }
   /** 触屏设备标记：true 时启用移动端「长按锁定再拖」（0.3s _armDragLock 锁定后滑动进入拖拽）。 */
   _isTouch: false,
   /** 移动端「长按锁定再拖」状态：_armTimer 为 0.3s 锁定定时器；_armed 为已锁定（其后滑动进入拖拽） */
   _armTimer: null,
   _armed: false,
   _activePointerId: null, // 当前拖拽的指针 id（多指触控时只认起始那根手指）
+  dragEndAt: 0,          // 最近一次拖拽松手时间戳：供 click 委托抑制「拖后误触弹窗」
 
-  /** 绑定全局事件（事件委托，不依赖具体关卡数据） */
+  /** 绑定全局事件（事件委托，不依赖具体关卡数据）。幂等：重复调用不重复绑定。 */
   init() {
+    if (this._onPointerDown) return;
     // 触屏设备检测：有 touch 事件 + 视口 ≤ 1024 视为移动端
     this._isTouch = (("ontouchstart" in window) || (navigator.maxTouchPoints > 0))
       && window.matchMedia("(max-width: 1024px)").matches;
-    document.addEventListener("pointerdown", (e) => this._handlePointerDown(e));
+    this._onPointerDown = (e) => this._handlePointerDown(e);
     // 防止个别环境（图片区等）触发 HTML5 原生拖拽
-    document.addEventListener("dragstart", (e) => {
+    this._onDragStart = (e) => {
       if (e.target && e.target.closest && e.target.closest(".clue-card")) e.preventDefault();
-    });
+    };
+    document.addEventListener("pointerdown", this._onPointerDown);
+    document.addEventListener("dragstart", this._onDragStart);
+  },
+
+  /** 卸载全局事件监听 + 清理进行中的拖拽态/幽灵/定时器/rAF。模块停用或页面销毁时调用。 */
+  destroy() {
+    if (this._onPointerDown) {
+      document.removeEventListener("pointerdown", this._onPointerDown);
+      this._onPointerDown = null;
+    }
+    if (this._onDragStart) {
+      document.removeEventListener("dragstart", this._onDragStart);
+      this._onDragStart = null;
+    }
+    this.reset();
+  },
+
+  /** 取消进行中的拖拽并清理幽灵/定时器/待处理 rAF（保留全局监听）。关卡切换前调用此清理钩子。 */
+  reset() {
+    this._abortGesture();
+    this._cancelMoveFrame();
   },
 
   /** 按压起点：记录候选卡片，等待越过移动阈值后再进入拖拽 */
@@ -82,16 +109,40 @@ const DragManager = {
       this._enterDrag();
     }
     if (e.cancelable) e.preventDefault(); // 已进入拖拽：拦截滚动，保证幽灵跟随稳定
+    // 记录最新坐标，交给 rAF 合并渲染，减少高频 pointermove 带来的重复样式写入
+    this._pendingMove = { x: e.clientX, y: e.clientY };
+    if (this._moveFrame == null) {
+      this._moveFrame = requestAnimationFrame(() => this._flushMove());
+    }
+  },
+
+  /** 在 rAF 内执行坐标→幽灵样式更新 + 落点检测，合并同一帧内的多次 pointermove。 */
+  _flushMove() {
+    this._moveFrame = null;
+    const pt = this._pendingMove;
+    this._pendingMove = null;
+    if (!pt || !this.card || !this.ghost) return;
     const rect = this.card.getBoundingClientRect();
-    this._moveGhost(e.clientX - this.offsetX, e.clientY - this.offsetY, rect.width, rect.height);
-    const target = this._getDropTarget(e);
+    this._moveGhost(pt.x - this.offsetX, pt.y - this.offsetY, rect.width, rect.height);
+    // 用幽灵卡片的「视觉中心」判定落点：移动端幽灵被放大/上移，若仍用手指坐标会错位
+    const c = this._ghostCenter();
+    const target = c ? this._getDropTargetAt(c.x, c.y) : null;
     this._highlightSlot(target);
     this._updateGhostValidity(target);
-    // 时间轴落点 → 长按 0.3 秒确认
+    // 时间轴落点 → 桌面端才需「长按 0.3 秒」确认；移动端松手即时落点
     const overTl = !!(target && target.type === "timeline");
-    if (overTl) this._startConfirm();
+    if (overTl && !this._isTouch) this._startConfirm();
     else this._cancelConfirm();
     this._lastOverTimeline = overTl;
+  },
+
+  /** 取消待处理的 move rAF（松手 / 放弃手势 / 销毁时调用），避免松手后再执行一次多余的坐标更新。 */
+  _cancelMoveFrame() {
+    if (this._moveFrame != null) {
+      cancelAnimationFrame(this._moveFrame);
+      this._moveFrame = null;
+    }
+    this._pendingMove = null;
   },
 
   /** 正式进入拖拽：原件半透明，创建幽灵卡片 */
@@ -134,6 +185,7 @@ const DragManager = {
   /** 放弃本次手势（长按锁定前的手指滑动 = 滚动意图）：清理状态，归还页面滚动 */
   _abortGesture() {
     this._activePointerId = null;
+    this._cancelMoveFrame();
     this._resetArm();
     this._removeListeners();
     this.card = null;
@@ -151,6 +203,13 @@ const DragManager = {
     this.ghost.style.height = height + "px";
   },
 
+  /** 幽灵卡片的视觉中心（含 CSS transform 后的真实渲染矩形中心）。 */
+  _ghostCenter() {
+    if (!this.ghost) return null;
+    const r = this.ghost.getBoundingClientRect();
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+  },
+
   /** 拖拽经过的目标区域：仅时间轴（磁吸高亮）。居民卡槽机制已移除。 */
   _highlightSlot(target) {
     this._clearSlotHighlight();
@@ -166,13 +225,13 @@ const DragManager = {
   },
 
   /**
-   * 判断拖放目标：
+   * 判断拖放目标（以坐标 x/y 命中）：
    * - 命中时间轴区域 → { type:"timeline", el }
    * - 命中线索池区域 → { type:"pool" }
    * - 其余空白 → null（无效区域；居民卡槽已不再作为落点）
    */
-  _getDropTarget(e) {
-    const el = document.elementFromPoint(e.clientX, e.clientY);
+  _getDropTargetAt(x, y) {
+    const el = document.elementFromPoint(x, y);
     if (!el || !(el instanceof Element)) return null;
     const tl = el.closest("#timeline-drop");
     if (tl) return { type: "timeline", el: tl };
@@ -185,12 +244,19 @@ const DragManager = {
     if (e.pointerId !== this._activePointerId) return; // 非起始指针的 up/cancel 不结束本手势
     if (!this.card) return;
     this._activePointerId = null;
+    // 若最后一次 pointermove 尚未被 rAF 处理，先同步幽灵到最新坐标再取落点，避免用上一帧的旧位置判定
+    if (this._pendingMove && this.card && this.ghost) {
+      const r = this.card.getBoundingClientRect();
+      this._moveGhost(this._pendingMove.x - this.offsetX, this._pendingMove.y - this.offsetY, r.width, r.height);
+    }
+    this._cancelMoveFrame();
     this._removeListeners();
     this._resetArm();
     const wasMoving = this.moving;
     const card = this.card;
     const ghost = this.ghost;
     const cardId = card.dataset.clueId;
+    const dropPt = this._ghostCenter(); // 移除幽灵前先取视觉中心，保证落点与所见一致
     card.classList.remove("dragging");
     if (ghost) ghost.remove();
     this.card = null;
@@ -199,7 +265,8 @@ const DragManager = {
     this.dragging = false;
     this._clearSlotHighlight();
     if (!wasMoving) { this._resetConfirm(); return; } // 未滑动，按点击处理
-    const target = this._getDropTarget(e);
+    this.dragEndAt = Date.now(); // 记录拖拽松手时间戳，供 click 委托抑制误触弹窗
+    const target = dropPt ? this._getDropTargetAt(dropPt.x, dropPt.y) : null;
     // 触屏设备：时间轴落点直接放（省略 0.3s 长按确认，避免体感卡顿）
     // 桌面端：时间轴落点需「长按 0.3 秒」确认，否则抖动反馈并复位
     if (target && target.type === "timeline" && !this._isTouch && !this._confirmed) {
@@ -353,6 +420,7 @@ const DragManager = {
   _clearSlotHighlight() {
     document.querySelectorAll(".slots.slot-target").forEach((s) => s.classList.remove("slot-target"));
     document.querySelectorAll(".map-loc.loc-target").forEach((s) => s.classList.remove("loc-target"));
+    document.querySelectorAll("#timeline-drop.tl-target").forEach((s) => s.classList.remove("tl-target"));
   },
 
   /** 解绑 document 级监听 */
