@@ -1,4 +1,4 @@
-﻿"use strict";
+"use strict";
 const DialogSystem = {
   /** 逐句揭幕定时器：close 或 _finishReveal 时清理，避免内存泄漏 */
   _revealTimer: null,
@@ -28,11 +28,43 @@ const DialogSystem = {
   _readAsked() {
     return StorageUtil.readAskedFollowups(App.currentLevel);
   },
-  /** 走访次数（即将写入后的 1-based 计数，用于决定开场白与标签） */
+  /** 未追问过的「核心」追问（type === "core"）列表；用于引导玩家回头盘问关键证词 */
+  _unaskedCoreFollowups(resident) {
+    const followups = this._followupsOf(resident);
+    if (!followups || !followups.length) return [];
+    // Item 8: 信任度门控 — trustThreshold > 0 时，信任不足则核心追问不出现
+    var threshold = (resident && resident.trustThreshold) || 0;
+    if (threshold > 0) {
+      var trust = StorageUtil.getTrust(App.currentLevel, resident.id);
+      if (trust < threshold) return [];
+    }
+    const asked = new Set(this._readAsked());
+    const out = [];
+    for (let i = 0; i < followups.length; i++) {
+      const fu = followups[i];
+      if (!fu || fu.type !== "core") continue;
+      if (asked.has(this._askKey(resident.id, i))) continue;
+      out.push({ idx: i, fu: fu });
+    }
+    return out;
+  },
+  /** 走访次数独立存储键（去重走访档案无法表达次数，必须单独计数；不受 _restartLevel 清布局影响） */
+  _visitKey() { return "visits_L" + App.currentLevel; },
+  /** 读取走访计数器映射 {居民id: 次数}（脏值兜底为 {}） */
+  _readVisits() {
+    const raw = StorageUtil.read(this._visitKey(), null);
+    if (raw && typeof raw === "object" && !Array.isArray(raw)) return raw;
+    return {};
+  },
+  /** 每次打开走访弹窗前，给该居民次数 +1 */
+  _bumpVisit(resident) {
+    const map = this._readVisits();
+    map[resident.id] = (map[resident.id] || 0) + 1;
+    StorageUtil.write(this._visitKey(), map);
+  },
+  /** 走访次数（本次打开后的真实 1-based 计数，用于决定开场白与标签） */
   _getVisitCount(resident) {
-    const talked = StorageUtil.readDialogRecord(App.currentLevel) || [];
-    const idx = talked.indexOf(resident.id);
-    return idx === -1 ? 1 : idx + 2;
+    return this._readVisits()[resident.id] || 1;
   },
   /** 走访次数小标签文字 */
   _visitTagText(count) {
@@ -52,7 +84,12 @@ const DialogSystem = {
   /** 切分句子：按句末标点 。！？!?…；; 拆分，保留原标点，过滤空白 */
   _splitSentences(text) {
     if (!text) return [];
-    return String(text).split(/(?<=[。！？!?…]|[；;])/g).map(function (s) { return s.trim(); }).filter(Boolean);
+    // 不依赖 ES2018 行后断言（?<=），兼容微信内置浏览器等旧版 WebView
+    return String(text)
+      .replace(/([。！？!?…；;])/g, "$1\u0001")
+      .split("\u0001")
+      .map(function (s) { return s.trim(); })
+      .filter(Boolean);
   },
   /** 渲染内嵌线索 chip：贴在对白末尾，hover 显示完整线索文本 */
   _renderEmbeddedClueChips(cids) {
@@ -110,8 +147,9 @@ const DialogSystem = {
     const listHtml = pendingIdx.map((idx) => {
       const fu = followups[idx];
       const topic = this._topicOf(fu.q) || "继续追问";
-      return '<button type="button" class="dl-next-fu" data-fu="' + idx + '">' +
-        '<span class="fu-tag">追问</span>' + esc(topic) + "</button>";
+      const isCore = !!fu && fu.type === "core";
+      return '<button type="button" class="dl-next-fu' + (isCore ? " core" : "") + '" data-fu="' + idx + '">' +
+        '<span class="fu-tag">' + (isCore ? "关键" : "追问") + "</span>" + esc(topic) + "</button>";
     }).join("");
     return '<div class="dl-fu-block">' +
       '<div class="dl-fu-head">继续询问 ' + progressPill + "</div>" +
@@ -158,7 +196,7 @@ const DialogSystem = {
     return '<div class="bio-secret-box"><p class="bio-sec-title">· 隐藏心事</p>' +
       '<p class="bio-text bio-secret">' + esc(resident.secret) + '</p></div>';
   },
-  /** 线索条目标签：按类型标注（干扰/物证/目击/自白/口供）——仅无追问分支时使用 */
+  /** 线索条目标签：口供形态（目击/自白/陈述）+ 物证；干扰单独标注——仅无追问分支时使用 */
   _walkClueItemHtml(c) {
     const esc = ClueCards.escapeHtml;
     let tag, extraCls = "";
@@ -166,13 +204,14 @@ const DialogSystem = {
     else if (c.isEvidence) tag = "物证";
     else if (c.isWitness) tag = "目击";
     else if (c.isSuspectStatement) tag = "自白";
-    else tag = "口供";
+    else tag = "陈述";
     return '<div class="walk-clue-item"><span class="walk-clue-tag' + extraCls + '">' + tag +
       '</span><span class="walk-clue-text">' + esc(c.text) + "</span></div>";
   },
   /** 启动口供逐字揭幕：每个字 50ms 出现，句末标点处停顿 500ms；
-   *  点"跳过"则一次性补齐并露出追问区；元素缺失时降级为一次性渲染 */
-  _startStatementReveal(box, sentences, followups, asked, resident) {
+   *  点"跳过"则一次性补齐并露出追问区；元素缺失时降级为一次性渲染。
+   *  @param {boolean} [instant] true=直接全量展现（非首次走访复看用），不逐字吐字 */
+  _startStatementReveal(box, sentences, followups, asked, resident, instant) {
     const esc = ClueCards.escapeHtml;
     const stmt = box.querySelector("#dl-statement");
     const after = box.querySelector("#dl-after-statement");
@@ -210,6 +249,13 @@ const DialogSystem = {
     if (!fullText) {
       stmt.innerHTML = '<span class="dl-line">（TA 沉默着，没接话。）</span>';
       updateProgress(0);
+      this._finishReveal(box, followups, asked, resident);
+      return;
+    }
+    // 非首次走访：口供一次性全量展现，跳过逐字揭幕与「跳过揭幕」按钮
+    if (instant) {
+      stmt.innerHTML = '<span class="dl-line">' + esc(fullText) + "</span>";
+      updateProgress(total);
       this._finishReveal(box, followups, asked, resident);
       return;
     }
@@ -280,14 +326,21 @@ const DialogSystem = {
     if (this._revealTimer) { clearTimeout(this._revealTimer); this._revealTimer = null; }
   },
   /** 打开走访弹窗：开场白 + 口供逐句 + 引导 + 继续询问 */
-  open(resident) {
+  open(resident, levelIndex) {
     if (!resident) return;
+    if (typeof StoryDirector !== "undefined" && StoryDirector.worldActive) {
+      if (!StoryDirector.canInvestigate() || (levelIndex != null && levelIndex !== App.currentLevel) ||
+          !(App.residents || []).some(r => r === resident)) return;
+      this._openWorld(resident);
+      return;
+    }
     const esc = ClueCards.escapeHtml;
     const box = document.getElementById("bio-box");
     const mask = document.getElementById("bio-mask");
     if (!box || !mask) return;
     const followups = this._followupsOf(resident);
     const asked = new Set(this._readAsked());
+    this._bumpVisit(resident);
     const visitCount = this._getVisitCount(resident);
     const visitTag = this._visitTagText(visitCount);
     const talkText = resident.talk || resident.bio || (resident.name || "TA") + " 不愿多说，像是在隐瞒什么。";
@@ -301,7 +354,7 @@ const DialogSystem = {
       : "";
     box.innerHTML =
       '<div class="bio-head">' +
-        '<span class="bio-avatar">' + AvatarFactory.build(resident, { size: 52 }) + "</span>" +
+        '<span class="bio-avatar">' + AvatarFactory.buildWithPortrait(resident, { size: 80 }) + "</span>" +
         '<div class="bio-id">' +
           '<h3 class="bio-name">' + esc(resident.name || "无名居民") +
             '<span class="bio-visit-tag">' + visitTag + '</span></h3>' +
@@ -331,18 +384,31 @@ const DialogSystem = {
     // 一打开居民就解锁 bindClue（无论有无追问分支）—— bindClue 是"打开就拿"的，
     // 之前只对替罪羊（旧逻辑"!followups"）调用，导致正常居民 bindClue 永远进不了 pool
     this._unlockBoundClue(resident);
-    this._startStatementReveal(box, sentences, followups, asked, resident);
+    this._startStatementReveal(box, sentences, followups, asked, resident, !isFirstVisit);
   },
   /** 回答某条追问：解锁对应线索 + 记录已追问 + 局部刷新 after-statement */
   _askFollowup(resident, followups, idx) {
+    if (typeof StoryDirector !== "undefined" && StoryDirector.worldActive && !StoryDirector.canInvestigate()) return;
     const fu = followups[idx];
     if (!fu || !Array.isArray(fu.cids)) return;
+    if (this._worldDialog && fu.type === "core" &&
+        StorageUtil.getTrust(App.currentLevel, resident.id) < (resident.trustThreshold || 0)) return;
+    const alreadyAsked = this._readAsked().indexOf(this._askKey(resident.id, idx)) !== -1;
     this._unlockBoundClue(resident, fu.cids);
+    // Item 8: 性格侧写/闲话追问增加信任度
+    if (!alreadyAsked && (fu.type === "profile" || fu.type === "chatter")) {
+      StorageUtil.bumpTrust(App.currentLevel, resident.id);
+    }
     const asked = this._readAsked();
     const key = this._askKey(resident.id, idx);
     if (asked.indexOf(key) === -1) {
       asked.push(key);
       StorageUtil.writeAskedFollowups(App.currentLevel, asked);
+    }
+    if (this._worldDialog) {
+      this._worldDialog.topic = this._topicOf(fu.q);
+      this._startWorldLines(fu.a || "对方没有补充。", () => this._showWorldChoices());
+      return;
     }
     const box = document.getElementById("bio-box");
     if (box) {
@@ -384,6 +450,7 @@ const DialogSystem = {
    *  - 本次新解锁的每条线索都会在右上角弹「📁 入卷」气泡（物证/自白/目击/普通/干扰 各有视觉）
    *  - 线索池中对应的卡片会触发 fly-in 入卷动画（由 renderLevel 的 newCids 触发） */
   _unlockBoundClue(resident, cids) {
+    if (typeof StoryDirector !== "undefined" && StoryDirector.worldActive && !StoryDirector.canInvestigate()) return;
     const list = Array.isArray(cids) ? cids
       : (Array.isArray(resident.bindClue) ? resident.bindClue : (resident.bindClue ? [resident.bindClue] : []));
     if (!list.length) return;
@@ -461,12 +528,126 @@ const DialogSystem = {
       toast.classList.remove("show");
     }, 2400);
   },
-  /** 关闭走访弹窗：清理揭幕定时器，避免内存泄漏与状态错乱 */
+  _worldDialog: null,
+  _openWorld(resident) {
+    this._clearRevealTimer();
+    const box = document.getElementById("bio-box");
+    const mask = document.getElementById("bio-mask");
+    if (!box || !mask) return;
+    this._bumpVisit(resident);
+    this._worldDialog = { resident, followups: this._followupsOf(resident), level: App.currentLevel, topic: "口供" };
+    const esc = ClueCards.escapeHtml;
+    box.innerHTML =
+      '<div class="world-portrait">' + AvatarFactory.buildWithPortrait(resident, { size: 360 }, App.currentLevel) + '</div>' +
+      '<div class="world-dialog-band">' +
+        '<div class="bio-head"><div class="bio-id"><h3 class="bio-name">' + esc(resident.name || "居民") + '</h3>' +
+        '<span class="bio-tag">' + esc(resident.tagShort || "小镇居民") + '</span></div>' +
+        '<button type="button" class="bio-close" id="bio-close" aria-label="结束交谈">×</button></div>' +
+        '<p id="world-dialog-topic" class="world-dialog-topic">口供</p>' +
+        '<button type="button" class="world-dialog-advance" id="world-dialog-advance" aria-label="补全或继续对话">' +
+          '<span id="world-dialog-line"></span><span id="world-dialog-next" class="world-dialog-next">点击补全</span></button>' +
+        '<div id="dl-after-statement" class="world-dialog-choices" hidden></div>' +
+      '</div>';
+    mask.classList.add("world-dialog", "show");
+    box.querySelector("#bio-close").addEventListener("click", () => this.close());
+    box.querySelector("#world-dialog-advance").addEventListener("click", () => this.advance());
+    StoryDirector.syncInput();
+    this._markSpoken(resident);
+    this._unlockBoundClue(resident);
+    const bio = resident.bio || "";
+    const talk = resident.talk || "";
+    const text = bio && talk && bio !== talk ? bio + "\n" + talk : bio || talk || "对方沉默着，没有接话。";
+    this._startWorldLines(text, () => this._showWorldChoices());
+    box.querySelector("#world-dialog-advance").focus({ preventScroll: true });
+  },
+  _startWorldLines(text, onDone) {
+    const d = this._worldDialog;
+    if (!d) return;
+    d.lines = this._splitSentences(text);
+    if (!d.lines.length) d.lines = ["对方沉默着，没有接话。"];
+    d.index = 0;
+    d.onDone = onDone;
+    d.choosing = false;
+    document.getElementById("dl-after-statement").hidden = true;
+    document.getElementById("world-dialog-advance").hidden = false;
+    this._renderWorldLine();
+  },
+  _renderWorldLine() {
+    this._clearRevealTimer();
+    const d = this._worldDialog;
+    if (!d) return;
+    const line = document.getElementById("world-dialog-line");
+    const next = document.getElementById("world-dialog-next");
+    const topic = document.getElementById("world-dialog-topic");
+    if (!line || !next) return;
+    const text = d.lines[d.index];
+    d.full = text;
+    d.revealing = true;
+    let count = 0;
+    line.textContent = "";
+    next.textContent = "点击补全 · " + (d.index + 1) + "/" + d.lines.length;
+    if (topic) topic.textContent = d.topic;
+    const tick = () => {
+      if (this._worldDialog !== d || !d.revealing) return;
+      count++;
+      line.textContent = text.slice(0, count);
+      if (count < text.length) this._revealTimer = setTimeout(tick, 28);
+      else {
+        this._revealTimer = null;
+        d.revealing = false;
+        next.textContent = "点击继续 · " + (d.index + 1) + "/" + d.lines.length;
+      }
+    };
+    this._revealTimer = setTimeout(tick, 28);
+  },
+  advance() {
+    const d = this._worldDialog;
+    if (!d || d.choosing) return;
+    if (d.revealing) {
+      this._clearRevealTimer();
+      d.revealing = false;
+      document.getElementById("world-dialog-line").textContent = d.full;
+      document.getElementById("world-dialog-next").textContent = "点击继续 · " + (d.index + 1) + "/" + d.lines.length;
+      return;
+    }
+    if (++d.index < d.lines.length) this._renderWorldLine();
+    else if (d.onDone) d.onDone();
+  },
+  _showWorldChoices() {
+    const d = this._worldDialog;
+    if (!d) return;
+    d.choosing = true;
+    const after = document.getElementById("dl-after-statement");
+    const asked = new Set(this._readAsked());
+    const esc = ClueCards.escapeHtml;
+    const trust = StorageUtil.getTrust(d.level, d.resident.id);
+    const followups = d.followups || [];
+    const options = followups.map((fu, idx) => {
+      if (!fu || asked.has(this._askKey(d.resident.id, idx))) return "";
+      const locked = fu.type === "core" && trust < (d.resident.trustThreshold || 0);
+      return '<button type="button" class="dl-next-fu" data-fu="' + idx + '"' + (locked ? ' disabled' : '') + '>' +
+        esc(locked ? "再聊聊近况后追问" : this._topicOf(fu.q) || "继续追问") + '</button>';
+    }).join("");
+    document.getElementById("world-dialog-next").textContent = "口供已听完";
+    document.getElementById("world-dialog-advance").hidden = true;
+    document.getElementById("world-dialog-topic").textContent = "继续交谈";
+    after.hidden = false;
+    after.innerHTML = options + '<button type="button" class="world-dialog-finish" id="world-dialog-finish">结束交谈</button>';
+    this._bindAfterEvents(after, d.resident, d.followups);
+    document.getElementById("world-dialog-finish").addEventListener("click", () => this.close());
+    const first = after.querySelector("button:not(:disabled)");
+    if (first) first.focus({ preventScroll: true });
+  },
+  /** 档案、场景口供与列表口供共用关闭路径。 */
   close() {
     this._clearRevealTimer();
     this._skipRequested = false;
+    this._worldDialog = null;
     const mask = document.getElementById("bio-mask");
-    if (mask) mask.classList.remove("show");
+    if (mask) mask.classList.remove("show", "world-dialog");
+    // 2.5D 舞台：恢复渲染循环 + 刷新 NPC 状态点（未挂载时为空操作）
+    if (typeof TownStage !== "undefined" && TownStage.onDialogClosed) TownStage.onDialogClosed();
+    if (typeof StoryDirector !== "undefined") StoryDirector.syncInput();
   },
 };
 

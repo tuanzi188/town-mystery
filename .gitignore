@@ -8,3 +8,24 @@ Thumbs.db
 
 # 本机测试产物（每次跑 verify/simulate_solve/runtime_sanity 都会重写）
 result.txt
+
+# Local analysis screenshots and OCR scratch files
+_analyze_img*.py
+_check_ocr.py
+_enhanced*.png
+_c_*.png
+_img_report*.txt
+_ocr*.ps1
+_t.txt
+
+# Experimental 3D/Godot prototype is kept locally, not part of the card release
+godot/
+src/09.town.js
+src/10.story.js
+src/vendor/
+tools/build-town.js
+tools/character-row.png
+assets/world/
+package.json
+package-lock.json
+.zcode/

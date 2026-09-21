@@ -1,4 +1,4 @@
-﻿"use strict";
+"use strict";
 const Modal = {
   mask: null,
   titleEl: null,
@@ -50,6 +50,7 @@ const Modal = {
     this._init();
     this.titleEl.textContent = title;
     this.textEl.textContent = text;
+    this.textEl.style.textAlign = ""; // 每次渲染重置为居中；引导卡等会自行改为左对齐
     if (this.extraEl) {
       if (extraHtml) {
         this.extraEl.innerHTML = extraHtml;
@@ -582,6 +583,74 @@ const AvatarFactory = {
       "</svg>";
   },
 
+  /* -------- 外部立绘（webp）映射：仅前三关角色配图，其余回退 SVG -------- */
+
+  /** key = "L{关卡}_{居民id}"，value = 拼音；文件名 assets/portraits/{key}_{拼音}_normal.webp */
+  PORTRAITS: {
+    "L1_r1": "wangshen", "L1_r2": "xiaoli", "L1_r3": "laozhang", "L1_r4": "zhaodaye",
+    "L2_r1": "zhaonainai", "L2_r2": "xiaopang", "L2_r3": "aming", "L2_r4": "xiaole",
+    "L3_r1": "liujie", "L3_r2": "awei", "L3_r3": "xiaorui", "L3_r4": "chenbo",
+  },
+
+  /** 立绘资源根目录 */
+  PORTRAIT_DIR: "assets/portraits/",
+
+  /** webp 支持检测结果缓存（null=未检测；true/false=已检测），避免每次渲染头像都重复探测 */
+  _webpSupported: null,
+
+  /** 检测浏览器是否支持 webp：canvas toDataURL 探测；file:// 双击打开等不支持场景直接回退 SVG，避免立绘翻车 */
+  _supportsWebp() {
+    if (this._webpSupported !== null) return this._webpSupported;
+    let ok = false;
+    try {
+      const c = (typeof document !== "undefined" && document.createElement) ? document.createElement("canvas") : null;
+      if (c && typeof c.toDataURL === "function") {
+        c.width = 1; c.height = 1;
+        ok = c.toDataURL("image/webp").indexOf("data:image/webp") === 0;
+      }
+    } catch (e) { ok = false; }
+    this._webpSupported = ok;
+    return ok;
+  },
+
+  /** 取居民立绘 URL：有映射返回 webp 路径，否则 null（无图走 SVG 回退）。
+   *  小头像（size < 64，如卡槽/缩略）优先用 thumbs/ 缩略图，大图场景走原图。
+   *  @param {object} resident 居民对象（须含 id）
+   *  @param {number} [levelIndex] 关卡序号（缺省 App.currentLevel）
+   *  @param {number} [size] 期望显示像素尺寸，<64 视为小头像走缩略图 */
+  portraitUrl(resident, levelIndex, size) {
+    const r = resident || {};
+    const lv = levelIndex || (typeof App !== "undefined" ? App.currentLevel : 0);
+    if (!lv || !r.id) return null;
+    const py = this.PORTRAITS["L" + lv + "_" + r.id];
+    if (!py) return null;
+    const file = "L" + lv + "_" + r.id + "_" + py + "_normal.webp";
+    const small = !!(size && size < 64);
+    return this.PORTRAIT_DIR + (small ? "thumbs/" : "") + file;
+  },
+
+  /** 大图场景头像：有立绘用 webp（加载失败自动回退 SVG），无映射直接返回 SVG。
+   *  小头像（size<64）自动走 thumbs/ 缩略图，减轻微信等弱环境加载压力。
+   *  用于对话弹窗 / 档案详情；小头像与缩略网格请继续用 build() 保 SVG 省资源。
+   *  @param {object} resident 居民对象
+   *  @param {object} [opts] { size: 像素尺寸 }
+   *  @param {number} [levelIndex] 关卡序号（缺省 App.currentLevel） */
+  buildWithPortrait(resident, opts, levelIndex) {
+    const svg = this.build(resident, opts);
+    const size = (opts && opts.size) || 0;
+    const url = this.portraitUrl(resident, levelIndex, size);
+    if (!url || !this._supportsWebp()) return svg;
+    const esc = (typeof ClueCards !== "undefined" && ClueCards.escapeHtml)
+      ? ClueCards.escapeHtml
+      : function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); };
+    const alt = esc((resident && resident.name) || "");
+    // fallback 先于 img；img 加载失败时隐藏自身并显示前一兄弟节点（fallback）
+    const fallback = svg.replace('class="avatar-svg"', 'class="avatar-svg fallback"');
+    return fallback +
+      '<img class="avatar-portrait" src="' + url + '" alt="' + alt + '" decoding="async" ' +
+      'onerror="this.style.display=\'none\';this.previousElementSibling.style.display=\'block\';" />';
+  },
+
   /* 保留：_profileOf 旧实现（build 内使用，不删除避免破坏依赖） */
   PROFILES: [
     { keys: ["摊主"],                 cloth: "#6e8e58", cloth2: "#f3e7c1", bg: "#e8efd6" },
@@ -637,7 +706,7 @@ const Bgm = {
   gameplay: null,  // 其余页面曲目（关卡选择 / 游戏全程）
   current: null,   // 当前播放中的 Audio 对象
 
-  /** 初始化：创建两路音频对象，并注册首次点击解锁 */
+  /** 初始化：创建两路音频对象，并注册首次交互解锁 */
   init() {
     if (typeof Audio !== "function") return; // 非浏览器环境（测试 / 受限容器）跳过音乐
     this.menu = new Audio("audio/menu.mp3");
@@ -656,17 +725,37 @@ const Bgm = {
     const warnOnErr = (label) => (e) => console.warn(`[Bgm] ${label} 音频加载失败：`, e && e.message || e);
     this.menu.addEventListener("error", warnOnErr("menu.mp3"));
     this.gameplay.addEventListener("error", warnOnErr("gameplay.mp3"));
-    // 任何位置的首次点击都作为启动信号（只触发一次）
-    document.addEventListener("click", () => Bgm.unlock(), { once: true });
+    // 首次交互解锁：
+    // - pointerdown：预试播（不落下 started），启动快，桌面/多数移动端即可起播
+    // - click/touchend：真正可靠 user-activation 事件，此时落下 started 并正式播放，
+    //   解决部分移动端 WebView（如微信 iOS）只认 click 时「首屏菜单无声、切页才响」的问题
+    const tryPlay = function () { Bgm._tryStart(false); };
+    const commit = function () { Bgm._tryStart(true); };
+    ["pointerdown"].forEach(function (ev) { document.addEventListener(ev, tryPlay, true); });
+    ["touchend", "click"].forEach(function (ev) { document.addEventListener(ev, commit, true); });
   },
 
-  /** 首次点击解锁：启动当前应播曲目（失败静默，例如文件缺失） */
-  unlock() {
-    if (this.started) return;
-    this.started = true;
+  /** 安全播放：play() 被浏览器拦截或音频未就绪时，等 canplay 后补播一次（只补一次，防无限重试） */
+  _safePlay(audio) {
+    if (!audio) return;
+    audio.play().catch(function () {
+      const retry = function () {
+        audio.removeEventListener("canplay", retry);
+        audio.play().catch(function () { /* 仍失败则静默（资源缺失等场景） */ });
+      };
+      audio.addEventListener("canplay", retry);
+    });
+  },
+
+  /** 交互启动：final=true 时落下 started（防多事件重复解锁），false 仅预试播；
+   *  统一播放当前曲目，资源缺失等失败场景由 _safePlay 兜底静默 */
+  _tryStart(final) {
     if (this.muted) return; // 静音状态不启动
-    const target = this.current || this.menu;
-    target.play().catch((e) => console.warn("[Bgm] 解锁播放失败（用户尚未交互或被浏览器拦截）：", e && e.message || e));
+    if (final) {
+      if (this.started) return;
+      this.started = true;
+    }
+    this._safePlay(this.current || this.menu);
   },
 
   /** 按页面切换曲目：menu/archive 播 menu.mp3，其余播 gameplay.mp3 */
@@ -676,7 +765,7 @@ const Bgm = {
     if (this.current === target) return; // 同一曲目内跳转保持连贯，不重播
     if (this.current) this.current.pause();
     this.current = target;
-    if (this.started && !this.muted) target.play().catch((e) => console.warn("[Bgm] 切换曲目播放失败：", e && e.message || e));
+    if (this.started && !this.muted) this._safePlay(target);
   },
   /** 切换静音状态：暂停/恢复当前曲目 + 持久化 + 触发 UI 刷新 */
   toggleMute() {
@@ -691,7 +780,7 @@ const Bgm = {
     if (this.gameplay) this.gameplay.muted = this.muted;
     if (this.muted && this.current && !this.current.paused) this.current.pause();
     if (!this.muted && this.started && this.current && this.current.paused) {
-      this.current.play().catch((e) => { /* 静默 */ });
+      this._safePlay(this.current);
     }
   },
   /** 刷新顶栏静音按钮的图标 */
@@ -777,25 +866,8 @@ const Menu = {
     if (fb) fb.textContent = "收集 " + bio + " 位居民";
     if (ah) ah.textContent = "已解锁 " + bio + " 位";
   },
-  /** 刷新欢迎语（按时段）+ 今日提示（按存档指纹稳定随机） + 印章进度环 */
-  refreshWelcomeAndTip() {
-    const greet = document.getElementById("menu-greet");
-    if (greet) {
-      const h = new Date().getHours();
-      const clearedAny = (function(){
-        try {
-          const p = StorageUtil.readProgress();
-          return p.unlocked > 1 || StorageUtil.readBioRecord().length > 0;
-        } catch (e) { return false; }
-      })();
-      const prefix = clearedAny ? "欢迎回来，侦探" : "你好，侦探";
-      const suffix = h < 5  ? "夜深了，注意休息" :
-                     h < 11 ? "早上好" :
-                     h < 14 ? "中午好" :
-                     h < 18 ? "下午好" :
-                     h < 22 ? "晚上好" : "夜深了，注意休息";
-      greet.textContent = prefix + " · " + suffix;
-    }
+  /** 刷新每日提示（按存档指纹稳定随机） + 印章进度环 */
+  refreshMenuTipAndRing() {
     // 进度环：pathLength=100，offset 从 100（空）到 0（满）
     const ring = document.getElementById("menu-mark-ring");
     if (ring) {

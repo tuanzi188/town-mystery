@@ -84,32 +84,25 @@ console.log("=== detectTimeRangePairing 单元测试 ===\n");
   log(allHaveTag, `L4 全部物证 evidenceOwnerTag 保留（${ev.length} 条）`);
 }
 
-// 场景 6: GameFlow._shuffle Fisher-Yates 行为校验
+// 场景 6: _reconcileMixPool 池重建防泄漏（卡槽下线后，池只能保留已走访居民的 bindClue/追问线索）
 {
-  const arr = [1, 2, 3, 4, 5, 6, 7, 8];
-  const out = GameFlow._shuffle(arr);
-  // 不修改原数组
-  log(JSON.stringify(arr) === "[1,2,3,4,5,6,7,8]", "_shuffle 不修改原数组");
-  // 元素全保留
-  const sorted = out.slice().sort((a, b) => a - b);
-  log(JSON.stringify(sorted) === "[1,2,3,4,5,6,7,8]", "_shuffle 元素全保留");
-  // 同种子 → 同结果
-  const a1 = GameFlow._shuffle(arr, 12345);
-  const a2 = GameFlow._shuffle(arr, 12345);
-  log(JSON.stringify(a1) === JSON.stringify(a2), "_shuffle 同种子复现");
-  // 不同种子 → 通常不同结果（统计 100 次都相同的概率约 0，可视为不同）
-  const b1 = GameFlow._shuffle(arr, 1);
-  const b2 = GameFlow._shuffle(arr, 2);
-  log(JSON.stringify(b1) !== JSON.stringify(b2), "_shuffle 不同种子通常不同");
-  // 均匀性：n=8 共 40320 排列，1000 次采样每个位置被某元素占据的次数应在 ~125 附近（容差 ±40）
-  const counts = Array.from({ length: 8 }, () => Array.from({ length: 8 }, () => 0));
-  for (let k = 0; k < 1000; k++) {
-    const s = GameFlow._shuffle(arr, k);
-    s.forEach((v, i) => { counts[i][v - 1]++; });
-  }
-  let maxDev = 0;
-  counts.forEach((row) => row.forEach((c) => { maxDev = Math.max(maxDev, Math.abs(c - 125)); }));
-  log(maxDev <= 40, `_shuffle 均匀性 1000 次采样最大偏差 ${maxDev}（应 ≤ 40）`);
+  const lv = LevelData[0];
+  ctx.App.levelData = lv;
+  ctx.App.residents = (lv.residents || []).slice();
+  const cm = {};
+  lv.clues.forEach((c) => { cm[c.id] = c; });
+  ctx.App.clueMap = cm;
+  ctx.App.currentLevel = 1;
+  // 只走访了 r1：池中只允许出现 r1 的 bindClue（及其追问）线索
+  ctx.StorageUtil.writeDialogRecord(1, ["r1"]);
+  const r1 = lv.residents.find((r) => r.id === "r1");
+  const legal = new Set(Array.isArray(r1.bindClue) ? r1.bindClue : (r1.bindClue ? [r1.bindClue] : []));
+  const keep = legal.values().next().value;                       // r1 名下合法线索
+  const leak = (lv.clues || []).find((c) => !legal.has(c.id));    // 一条不属于 r1 的线索
+  ctx.App.layout = { pool: [keep, leak && leak.id].filter(Boolean), timeline: [], mapPlace: {}, locked: [], caseFile: [] };
+  ctx.GameFlow._reconcileMixPool(lv);
+  log(ctx.App.layout.pool.indexOf(keep) !== -1, "_reconcileMixPool 保留已走访居民合法线索 " + keep);
+  log(!leak || ctx.App.layout.pool.indexOf(leak.id) === -1, "_reconcileMixPool 剔除未走访来源的泄漏线索 " + (leak ? leak.id : "(无)"));
 }
 
 // 场景 7: 本局失败计数（layout.accuseFails）独立于跨局统计

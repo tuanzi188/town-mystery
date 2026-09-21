@@ -20,6 +20,26 @@
  *   - makeEl              节点工厂（供高级用例复用）
  */
 
+/** no-op 2D 渲染上下文：覆盖 09.town.js 用到的全部 Canvas API（属性可读写、方法全空） */
+function makeCtx() {
+  const ctx = {};
+  ["save", "restore", "translate", "scale", "rotate", "transform", "setTransform",
+   "clearRect", "fillRect", "strokeRect", "beginPath", "closePath", "moveTo", "lineTo",
+   "arc", "ellipse", "rect", "clip", "fill", "stroke", "drawImage", "fillText",
+   "strokeText", "measureText", "setLineDash", "createLinearGradient",
+   "createRadialGradient", "createPattern", "quadraticCurveTo", "bezierCurveTo"]
+    .forEach((m) => {
+      ctx[m] = function () {
+        if (m === "measureText") return { width: 0 };
+        if (m === "createLinearGradient" || m === "createRadialGradient") {
+          return { addColorStop() {} };
+        }
+        if (m === "createPattern") return {};
+      };
+    });
+  return ctx;
+}
+
 function makeEl() {
   const el = {
     innerHTML: "",
@@ -28,6 +48,8 @@ function makeEl() {
     dataset: {},
     style: {},
     _listeners: {},
+    width: 0,
+    height: 0,
     addEventListener(type, fn) {
       (this._listeners[type] = this._listeners[type] || []).push(fn);
     },
@@ -36,11 +58,18 @@ function makeEl() {
     removeChild() {},
     insertBefore() {},
     replaceChild() {},
-    cloneNode() {
-      return makeEl();
+    getContext() {
+      // no-op 2D 上下文：09.town.js 的 canvas 渲染在沙箱里只走逻辑不画图
+      return makeCtx();
+    },
+    toDataURL() {
+      return "data:,";
     },
     closest() {
       return null;
+    },
+    cloneNode() {
+      return makeEl();
     },
     classList: {
       add() {},
@@ -145,6 +174,7 @@ function createMocks(opts) {
 
 module.exports = {
   makeEl,
+  makeCtx,
   createLocalStorageMock,
   createDocumentMock,
   createWindowMock,

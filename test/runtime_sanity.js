@@ -17,8 +17,8 @@ let ctx;
 let localStorageMock;
 try {
   const r = loadRuntime({
-    expose: ["App", "LevelData", "ValidateUtil", "GameFlow", "StorageUtil"],
-    includeTownData: false,
+    expose: ["App", "LevelData", "ValidateUtil", "GameFlow", "StorageUtil", "TOWN_FOLLOWUPS"],
+    includeTownData: true,
     userAgent: "node-runtime-sanity",
   });
   ctx = r.ctx;
@@ -53,18 +53,24 @@ function setLevel(num) {
   return cfg;
 }
 
-function buildCorrectLayout(cfg) {
+function buildCorrectLayout(cfg, num) {
   // 卡槽机制已下线：solution 不再写入 slots（保留为兼容字段，恒为空）
   const slots = {};
   Object.keys(cfg.solution || {}).forEach((rid) => { slots[rid] = []; });
   (cfg.residents || []).forEach((r) => { if (!slots[r.id]) slots[r.id] = []; });
-  // 时间轴：放正解玩家会采纳的真实证词（isWitness 排除凶手 lie 口供，misunderstand 仍可入轴）
+  // 时间轴：放正解玩家会采纳的真实证词（isWitness 且非凶手 lie，misunderstand 仍可入轴）
   const timeline = (cfg.clues || [])
     .filter((c) => c.type !== "fake" && c.isWitness === true && c.conflictType !== "lie")
     .map((c) => c.id);
-  // 关键物证放入线索池（模拟"正解玩家已把关键物证纳入推理视野"）
-  const evKeys = ((cfg.ext || {}).evidenceKeys) || [];
-  const pool = evKeys.slice();
+  // 线索池：走访全部居民后的真实可达集合 = 各居民 bindClue ∪ 追问 cids
+  const poolSet = new Set();
+  (cfg.residents || []).forEach((r) => {
+    (Array.isArray(r.bindClue) ? r.bindClue : (r.bindClue ? [r.bindClue] : [])).forEach((cid) => poolSet.add(cid));
+    ((ctx.TOWN_FOLLOWUPS || {})["L" + num + "_" + r.id] || []).forEach((fu) => {
+      (fu.cids || []).forEach((cid) => poolSet.add(cid));
+    });
+  });
+  const pool = Array.from(poolSet);
   AppObj.layout = { slots, pool, timeline };
   return { slots, timeline, pool };
 }
@@ -81,8 +87,9 @@ function getLevelRule(cfg, num) {
 }
 
 function getMissingEvidenceReal(cfg, evKeys) {
-  // 与新版 GameFlow._getMissingEvidence 对齐：卡槽机制下线后统一返回 []
-  return [];
+  // 与 GameFlow._getMissingEvidence 同口径：关键物证必须出现在时间轴或线索池
+  const seen = new Set([].concat(AppObj.layout.timeline || [], AppObj.layout.pool || []));
+  return (evKeys || []).filter((eid) => !seen.has(eid));
 }
 
 console.log("=== 小镇疑云 11 关运行时正解 + 错解冒烟（真实 ValidateUtil） ===\n");
@@ -94,7 +101,7 @@ LevelData.forEach((cfg, idx) => {
   const culprit = cfg.culpritId;
 
   // ===== 场景 1：正解 =====
-  buildCorrectLayout(cfg);
+  buildCorrectLayout(cfg, num);
   // 卡槽机制已下线：原「卡槽无冲突」改为核对「时间轴同步无 lie 冲突」（误会不算失败）
   const allConflictsRaw = ValidateUtil.syncConflictMarks();
   const allConflicts = allConflictsRaw.filter((id) => {
@@ -124,7 +131,7 @@ LevelData.forEach((cfg, idx) => {
 
   // ===== 场景 2：错放凶手 = 把凶手某条 lie 口供挪到无辜者位（卡槽已下线，改为挪到时间轴） =====
   if (cfg.solution[culprit] && cfg.solution[culprit].length) {
-    buildCorrectLayout(cfg);
+    buildCorrectLayout(cfg, num);
     const innocent = AppObj.residents.find((r) => r.id !== culprit);
     if (innocent) {
       // 找一条凶手段位里 conflictGroup 不为空的线索
@@ -176,7 +183,7 @@ LevelData.forEach((cfg, idx) => {
 
   // ===== 场景 4：错排时间 = 把同 conflictGroup 的两条 lie 线索同时上时间轴（必触发时序 lie 冲突） =====
   if (rule.checkTimeline) {
-    buildCorrectLayout(cfg);
+    buildCorrectLayout(cfg, num);
     // 优先找 lie 组的 pair
     const groupToIds = {};
     (cfg.clues || []).forEach((c) => {

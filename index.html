@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -30,27 +30,20 @@
     <div class="menu-mark" aria-hidden="true">
       <svg viewBox="0 0 120 120" class="menu-mark-svg">
         <defs>
-          <path id="menu-seal-arc" d="M60,60 m-44,0 a44,44 0 1,1 88,0 a44,44 0 1,1 -88,0"/>
           <linearGradient id="menu-mark-grad" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stop-color="#7fae8b"/>
             <stop offset="100%" stop-color="#3f6b51"/>
           </linearGradient>
         </defs>
-        <!-- 进度环（背层，stroke-dasharray 控制圆周 2π·52≈326.7） -->
+        <!-- 进度环（背层） -->
         <circle class="menu-mark-ring-track" cx="60" cy="60" r="52" fill="none" stroke="currentColor" stroke-width="3" opacity=".10"/>
         <circle class="menu-mark-ring" id="menu-mark-ring" cx="60" cy="60" r="52" fill="none" stroke="url(#menu-mark-grad)" stroke-width="3" stroke-linecap="round" pathLength="100" stroke-dasharray="100" stroke-dashoffset="100" transform="rotate(-90 60 60)"/>
         <!-- 装饰同心圆 -->
         <circle cx="60" cy="60" r="44" fill="none" stroke="currentColor" stroke-width=".6" opacity=".28"/>
-        <!-- 印文（弧形排列） -->
-        <text class="menu-mark-text" font-size="10" letter-spacing="2">
-          <textPath href="#menu-seal-arc" startOffset="0%">小 镇 疑 云 · 推 理 小 游 戏 · </textPath>
-        </text>
-        <!-- 中心字符：问号 + 微光（脉冲） -->
+        <!-- 中心问号 -->
         <text x="60" y="70" text-anchor="middle" class="menu-mark-glyph" font-size="44">?</text>
-        <circle class="menu-mark-pulse" cx="60" cy="55" r="2.5" fill="#7fae8b"/>
       </svg>
     </div>
-    <p class="menu-greet" id="menu-greet">欢迎回来，侦探</p>
     <h1 class="menu-title">小镇疑云</h1>
     <p class="menu-sub">嘘——小镇的秘密，等你来揭开</p>
     <p class="menu-tip" id="menu-tip"><span class="menu-tip-icon" aria-hidden="true">✦</span><span id="menu-tip-text">先走访所有居民，再回头比对证词。</span></p>
@@ -135,6 +128,27 @@
      C. 页面三：游戏主界面（固定四分区）
      ============================================================ -->
 <div class="page" id="page-game">
+  <div id="world-hud" class="world-hud">
+    <div class="world-task" role="status">
+      <span class="world-eyebrow">小镇疑云</span>
+      <strong id="world-task-title">小镇来信</strong>
+      <span id="world-task-goal">前往金色标记</span>
+    </div>
+    <nav class="world-actions" aria-label="世界操作">
+      <button type="button" id="btn-world-dossier" aria-controls="world-dossier" aria-expanded="false">卷宗</button>
+      <button type="button" id="btn-world-exit">离开</button>
+    </nav>
+    <div id="world-minimap-slot" aria-label="小镇方位"></div>
+  </div>
+  <div id="world-dossier-shade" hidden></div>
+  <aside id="world-dossier" aria-label="案件卷宗" aria-hidden="true" hidden>
+    <div class="world-dossier-head">
+      <h2>案件卷宗</h2>
+      <button type="button" id="btn-world-dossier-close">关闭</button>
+    </div>
+    <p id="world-dossier-empty">当前没有待调查的案件。</p>
+    <div id="world-dossier-content"></div>
+  </aside>
   <div class="page-inner">
 
     <!-- 分区一：顶部案件背景区 -->
@@ -149,14 +163,15 @@
       <p class="case-goal" id="case-goal">推理目标将在加载关卡后显示……</p>
     </header>
 
-    <!-- 分区二 + 三：左侧居民列表 / 右侧线索卡片池 -->
+    <!-- 分区二 + 三：左侧 2.5D 小镇舞台（canvas 不可用时 JS 回退渲染居民列表）/ 右侧线索卡片池 -->
     <main class="game-main">
       <section class="residents-panel" id="residents-panel">
         <h3 class="panel-title">小镇居民</h3>
-        <!-- 居民列表由 JS 渲染 -->
+        <!-- 2.5D 舞台或居民列表由 JS 渲染 -->
       </section>
       <section class="clues-pool" id="clues-pool">
-        <p class="pool-hint">轻点居民头像可交谈解锁口供；把带时间的目击 / 自白线索拖入下方时间轴排序（手机上可点线索卡左上角 ⏱ 直接入轴）。浅米色为有效线索，浅灰色为干扰线索（请勿拖入时间轴）。</p>
+        <p class="pool-hint">轻点居民头像可交谈解锁口供；口供又分「目击 / 自白 / 陈述」三种形态，短语标签即其细分。点线索卡右上角 ⊕ 收集证据链（至少 3 条才能指认）；带时间的证词拖入下方时间轴排序（手机上可点线索卡左上角 ⏱ 直接入轴）。浅米色为有效线索，浅灰为干扰线索（请勿拖入时间轴）。</p>
+        <div class="clue-filter-bar" id="clue-filter-bar"><!-- 筛选项由 GameFlow 渲染 --></div>
         <div class="clue-group">
           <h4>有效线索</h4>
           <div class="clue-list" id="valid-clue-list"><!-- 有效线索卡片由 JS 渲染 --></div>
@@ -172,14 +187,14 @@
     <section class="timeline-panel">
       <div class="timeline-head">
         <h3 class="panel-title">时间轴</h3>
-        <span class="timeline-tip" title="带时间描述的线索拖到时间轴上方后，长按 1 秒确认落点">💡 拖到时间轴后长按 1 秒确认落点</span>
+        <span class="timeline-tip" title="带时间描述的线索拖到时间轴上方后，长按 0.3 秒确认落点">💡 拖到时间轴后长按 0.3 秒确认落点</span>
       </div>
       <p class="pool-hint">把带时间的目击 / 自白线索拖到这里排序。重叠时段的在场者会被列出——「谁有空」不能锁凶，说谎者的时间线会在这里露出破绽。</p>
       <div class="timeline-track" id="timeline-drop"></div>
     </section>
 
     <!-- 分区四：底部功能按钮栏（第一行：调查进度；第二行：操作按钮） -->
-    <footer class="bottom-bar">
+    <footer class="bottom-bar" id="bottom-bar">
       <div class="case-progress" id="case-progress"><!-- 调查进度由 GameFlow.renderProgress 渲染 --></div>
       <div class="case-file-bar" id="case-file-bar">
         <div class="cfb-left">
@@ -190,6 +205,7 @@
       </div>
       <div class="bb-row">
         <button class="action-btn primary" id="btn-accuse">指认凶手</button>
+        <button class="action-btn" id="btn-review">📋 复盘</button>
         <button class="action-btn" id="btn-hint">获取提示</button>
         <button class="action-btn" id="btn-reset">重置本局</button>
       </div>
@@ -207,6 +223,21 @@
     <div class="modal-extra" id="modal-extra"><!-- 通关番外分段，由 Modal 填充 --></div>
     <div class="modal-btns" id="modal-btns"><!-- 按钮由 JS 动态生成 --></div>
   </div>
+</div>
+
+<!-- D·补：线索二级详情弹窗（点线索卡片打开，内容由 ClueDetail 渲染） -->
+<div class="modal-mask" id="clue-detail-mask">
+  <div class="clue-detail-box" id="clue-detail-box"></div>
+</div>
+
+<!-- D·补2：推理复盘面板（集中展示走访/矛盾/在场/物证闭环/印证，可随时回看） -->
+<div class="modal-mask" id="review-mask">
+  <div class="review-box" id="review-box"></div>
+</div>
+
+<!-- D·补3：线索关联图谱（SVG 节点图，由 ClueGraph 渲染） -->
+<div class="modal-mask" id="clue-graph-mask">
+  <div class="clue-graph-box" id="clue-graph-box"></div>
 </div>
 
 <!-- ============================================================
@@ -259,7 +290,7 @@
 <button type="button" class="mute-fab" id="btn-mute" title="点击静音" aria-pressed="false">🔊</button>
 
 <!-- 走访追问 / 跨关暗线 数据模块：必须位于主脚本之前（主脚本以 typeof 防御引用） -->
-<script src="town_data.js"></script>
+<script src="src/town_data.js"></script>
 <script src="src/00.levels.js"></script>
 <script src="src/01.core.js"></script>
 <script src="src/02.ui.js"></script>
@@ -267,6 +298,7 @@
 <script src="src/04.dialog.js"></script>
 <script src="src/05.drag.js"></script>
 <script src="src/06.archive.js"></script>
+<script src="src/08.insight.js"></script>
 <script src="src/07.gameflow.js"></script>
 </body>
 </html>

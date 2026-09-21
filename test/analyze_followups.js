@@ -58,3 +58,29 @@ console.log("  合计                                                           
 console.log("  推进率                                                                : " + Math.round((counts.advance / counts.total) * 100) + "%");
 console.log("  旁证率                                                                : " + Math.round((counts.sideinfo / counts.total) * 100) + "%");
 console.log("\n设计目标：旁证率约 40%（40% 的追问让玩家白问，靠自己分析判断）");
+
+// ===== 新增：三层分类（type 字段）分布 + 数量上限（试点：第 1 关已迁移） =====
+console.log("\n=== 三层分类 type 分布（core 推理核心 / profile 性格侧写 / chatter 干扰闲话）===\n");
+const caps = { 1: 3, 2: 3, 3: 3, 4: 4, 5: 4, 6: 4, 7: 4, 8: 4, 9: 5, 10: 5, 11: 5 };
+const dist = { core: 0, profile: 0, chatter: 0, untagged: 0 };
+LevelData.forEach((lv, idx) => {
+  const num = idx + 1;
+  (lv.residents || []).forEach((r) => {
+    const fups = TOWN_FOLLOWUPS["L" + num + "_" + r.id];
+    if (!fups || !fups.length) return;
+    const tag = { core: 0, profile: 0, chatter: 0 };
+    fups.forEach((fu) => {
+      const t = fu.type;
+      if (t === "core" || t === "profile" || t === "chatter") { dist[t]++; tag[t]++; }
+      else dist.untagged++;
+    });
+    const over = fups.length > caps[num] ? " ⚠超上限" : "";
+    console.log(`  L${num} ${r.name}: ${fups.length}/${caps[num]} 条 [core=${tag.core} profile=${tag.profile} chatter=${tag.chatter}]${over}`);
+  });
+});
+const taggedTotal = dist.core + dist.profile + dist.chatter;
+console.log(`\n  已标注合计：core=${dist.core} profile=${dist.profile} chatter=${dist.chatter}（未标注 ${dist.untagged} 条）`);
+if (taggedTotal > 0) {
+  console.log(`  已标注比例：core=${Math.round(dist.core / taggedTotal * 100)}% profile=${Math.round(dist.profile / taggedTotal * 100)}% chatter=${Math.round(dist.chatter / taggedTotal * 100)}%`);
+}
+console.log("  目标配比约 50% core / 40% profile / 10% chatter；chatter 仅承载 fake 干扰线索，不删机制。");

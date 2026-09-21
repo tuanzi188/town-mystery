@@ -1,4 +1,4 @@
-﻿"use strict";
+"use strict";
 /* ============================================================
    游戏全局状态（仅存 UI 状态，业务数据后续模块填充）
    ============================================================ */
@@ -176,11 +176,18 @@ const StorageUtil = {
         if (ids.length) mapPlace[locId] = ids;
       });
     }
-    // 标准化字段 + 透传额外字段（如 accuseFails / overlapWarned），避免读档丢失运行时数据
-    return Object.assign({
-      pool, hintCount, mapPlace, timeline, locked: strArr(raw.locked),
-      caseFile: strArr(raw.caseFile),
-    }, raw);
+    // E6 白名单合并：raw 在前、标准化字段在后（后者覆盖前者），杜绝脏值覆盖标准字段导致下游 .filter 抛 TypeError。
+    const num = (v) => (typeof v === "number" && isFinite(v) ? v : 0);
+    return Object.assign(
+      raw && typeof raw === "object" ? raw : {},
+      {
+        pool, hintCount, mapPlace, timeline,
+        locked: strArr(raw.locked),
+        caseFile: strArr(raw.caseFile),
+        accuseFails: num(raw.accuseFails),
+        overlapWarned: raw.overlapWarned === true,
+      }
+    );
   },
   /** 写入当前关卡状态 */
   writeLevelState(level, state) {
@@ -236,6 +243,59 @@ const StorageUtil = {
   writeAskedFollowups(levelIndex, keys) {
     this.write(this.askedKey(levelIndex), (Array.isArray(keys) ? keys : []).filter((x) => typeof x === "string"));
   },
+  /* ---- 分支结局存储（真相后的抉择） ---- */
+  /** 读取某关「真相后抉择」选中的选项 id；未选返回 null */
+  readBranchChoice(levelIndex) {
+    const map = this.read("branchChoices", {});
+    if (!map || typeof map !== "object" || Array.isArray(map)) return null;
+    const v = map["L" + levelIndex];
+    return typeof v === "string" ? v : null;
+  },
+  /** 写入某关「真相后抉择」选中的选项 id */
+  writeBranchChoice(levelIndex, optionId) {
+    const map = this.read("branchChoices", {});
+    const clean = (map && typeof map === "object" && !Array.isArray(map)) ? map : {};
+    clean["L" + levelIndex] = optionId;
+    this.write("branchChoices", clean);
+  },
+  /** 被拯救/和解居民的存储键（跨关唯一） */
+  _savedResidentKey(levelIndex, rid) { return "L" + levelIndex + "_" + rid; },
+  /** 读取全部「被拯救/和解」居民键列表 */
+  readSavedResidents() {
+    const list = this.read("savedResidents", []);
+    if (!Array.isArray(list)) return [];
+    return list.filter((x) => typeof x === "string");
+  },
+  /** 标记某关某居民为「被拯救/和解」 */
+  markSavedResident(levelIndex, rid) {
+    const list = this.readSavedResidents();
+    const key = this._savedResidentKey(levelIndex, rid);
+    if (list.indexOf(key) === -1) { list.push(key); this.write("savedResidents", list); }
+  },
+  /** 某关某居民是否已被拯救/和解 */
+  isSavedResident(levelIndex, rid) {
+    return this.readSavedResidents().indexOf(this._savedResidentKey(levelIndex, rid)) !== -1;
+  },
+  /* ---- Item 8: 走访信任度系统 ---- */
+  /** 信任度存储键 */
+  _trustKey(levelIndex) { return "trust_L" + levelIndex; },
+  /** 读取某关信任度映射 {居民id: 信任值} */
+  readTrust(levelIndex) {
+    var raw = this.read(this._trustKey(levelIndex), null);
+    if (raw && typeof raw === "object" && !Array.isArray(raw)) return raw;
+    return {};
+  },
+  /** 读取某关某居民的信任值（默认 0） */
+  getTrust(levelIndex, rid) {
+    return this.readTrust(levelIndex)[rid] || 0;
+  },
+  /** 增加某关某居民的信任值（+1），返回新值 */
+  bumpTrust(levelIndex, rid) {
+    var map = this.readTrust(levelIndex);
+    map[rid] = (map[rid] || 0) + 1;
+    this.write(this._trustKey(levelIndex), map);
+    return map[rid];
+  },
 };
 
 /* ============================================================
@@ -251,8 +311,8 @@ const StorageUtil = {
    ============================================================ */
 const ValidateUtil = {
   /**
-   * 根据当前布局刷新全部卡片的冲突标红（.conflict），并返回全部冲突 id。
-   * 统一改读时间轴上的冲突（detectTimelineConflict）。 */
+   * 检测并返回时间轴上处于冲突状态的线索 id 列表（含 lie 与 misunderstand 两类）。
+   * 注意：本方法只做检测、不直接刷新 DOM 标红——标红由调用方（renderLevel/commitLayout）负责。 */
   syncConflictMarks() {
     return ValidateUtil.detectTimelineConflict();
   },
@@ -406,6 +466,21 @@ const ValidateUtil = {
       }
     }
     return { overlap, mutex };
+  },
+  /** Item 1: 检测时间轴上未拆穿的半真半假线索。
+   *  线索若有 partialTruth 字段，需检查其 revealCid（破绽线索）是否已在线索池/时间轴。
+   *  未拆穿 = revealCid 不在收集范围，返回该线索 id 列表（供 _continueMixCheck 软提示用）。 */
+  detectUnresolvedPartial() {
+    var ids = App.layout.timeline || [];
+    var collected = new Set([].concat(App.layout.pool || [], App.layout.timeline || []));
+    var unresolved = [];
+    ids.forEach(function (id) {
+      var c = App.clueMap[id];
+      if (!c || !c.partialTruth) return;
+      var revealCid = c.partialTruth.revealCid;
+      if (revealCid && !collected.has(revealCid)) unresolved.push(id);
+    });
+    return unresolved;
   },
 };
 

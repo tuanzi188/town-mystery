@@ -1,4 +1,4 @@
-﻿"use strict";
+"use strict";
 const BioArchive = {
   _toastTimer: null,
 
@@ -18,10 +18,11 @@ const BioArchive = {
   },
 
   /** 当前关卡是否已通关：本关全部居民档案均已解锁即视为已通关 */
-  isLevelCleared() {
-    const cfg = GameFlow.getLevelConfig();
+  isLevelCleared(levelIndex) {
+    const n = levelIndex == null ? App.currentLevel : levelIndex;
+    const cfg = LevelData[n - 1];
     if (!cfg || !cfg.residents || !cfg.residents.length) return false;
-    return cfg.residents.every((r) => this.isUnlocked(App.currentLevel, r.id));
+    return cfg.residents.every((r) => this.isUnlocked(n, r.id));
   },
 
   /** 通关后解锁本关全部居民档案，返回本次「新增解锁」的居民列表（已在列表中的不重复写入） */
@@ -49,11 +50,15 @@ const BioArchive = {
     const mask = document.getElementById("bio-mask");
     const box = document.getElementById("bio-box");
     if (!mask || !box || !resident) return;
-    const lv = levelIndex || App.currentLevel;
+    DialogSystem._clearRevealTimer();
+    DialogSystem._worldDialog = null;
+    mask.classList.remove("world-dialog");
+    // 用空值判断而非 ||：0/NaN/空串不应被静默回退到当前关卡
+    const lv = levelIndex != null ? levelIndex : App.currentLevel;
     const esc = ClueCards.escapeHtml;
     const headHtml =
       '<div class="bio-head">' +
-        '<span class="bio-avatar">' + AvatarFactory.build(resident, { size: 52 }) + "</span>" +
+        '<span class="bio-avatar">' + AvatarFactory.buildWithPortrait(resident, { size: 80 }, lv) + "</span>" +
         '<div class="bio-id">' +
           '<h3 class="bio-name">' + esc(resident.name || "无名居民") + "</h3>" +
           '<span class="bio-tag">' + this._textOf(resident.tagShort, "身份未知") + "</span>" +
@@ -61,6 +66,10 @@ const BioArchive = {
         '<button type="button" class="bio-close" id="bio-close" aria-label="关闭">×</button>' +
       "</div>";
     if (this.isUnlocked(lv, resident.id)) {
+      const savedMark = StorageUtil.isSavedResident(lv, resident.id)
+        ? '<div class="bio-secret-box"><p class="bio-sec-title">· 结局印记</p>' +
+          '<p class="bio-text bio-secret">你在真相之后选择了挽留 TA——这份善意，被小镇悄悄记住了。</p></div>'
+        : "";
       box.innerHTML = headHtml +
         '<div class="bio-body">' +
           '<p class="bio-sec-title">· 人物生平</p>' +
@@ -69,6 +78,7 @@ const BioArchive = {
             '<p class="bio-sec-title">· 隐藏心事</p>' +
             '<p class="bio-text bio-secret">' + this._textOf(resident.secret, "这段往事被尘封，尚未有人知晓。") + "</p>" +
           "</div>" +
+          savedMark +
         "</div>";
     } else {
       box.innerHTML = headHtml +
@@ -86,6 +96,8 @@ const BioArchive = {
     // 增量：渲染「相关人物」标签（同关其他居民，已解锁可点击跳转）
     this._renderRelated(box, resident, lv);
     mask.classList.add("show");
+    // 可用性：弹窗出现后聚焦关闭键，便于键盘 / 读屏用户直接 ESC 或 Tab 操作
+    if (closeBtn) closeBtn.focus();
   },
 
   /** 渲染相关人物标签：取同关其他居民（最多3个），已解锁可点击跳转档案 */
@@ -120,8 +132,7 @@ const BioArchive = {
 
   /** 关闭人物档案弹窗 */
   close() {
-    const mask = document.getElementById("bio-mask");
-    if (mask) mask.classList.remove("show");
+    DialogSystem.close();
   },
 
   /** 首次解锁轻提示：淡入显示新增居民姓名，停留后自动淡出 */
@@ -197,7 +208,9 @@ const Archive = {
     bar.innerHTML = "";
     const mk = (val, label) => {
       const b = document.createElement("button");
-      b.className = "archive-filter-btn" + (String(val) === String(active) ? " active" : "");
+      const isActive = String(val) === String(active);
+      b.className = "archive-filter-btn" + (isActive ? " active" : "");
+      b.setAttribute("aria-pressed", isActive ? "true" : "false");
       b.textContent = label;
       b.addEventListener("click", () => {
         this.setFilter(val);
@@ -217,13 +230,15 @@ const Archive = {
       if (filter !== "all" && Number(filter) !== lv) return;
       (l.residents || []).forEach((r) => {
         const unlocked = BioArchive.isUnlocked(lv, r.id);
+        const saved = unlocked && StorageUtil.isSavedResident(lv, r.id);
         const card = document.createElement("button");
         card.className = "archive-card" + (unlocked ? "" : " locked");
         card.innerHTML =
           '<span class="arc-avatar">' + (unlocked
-            ? AvatarFactory.build(r, { size: 52 })
+            ? AvatarFactory.buildWithPortrait(r, { size: 52 }, lv)
             : "🔒") + "</span>" +
           '<span class="arc-name">' + ClueCards.escapeHtml(r.name || "？？？") + "</span>" +
+          (saved ? '<span class="arc-saved" title="你在结局里选择挽留了 TA">♥</span>' : "") +
           (unlocked && r.tagShort
             ? '<span class="arc-tag">' + ClueCards.escapeHtml(r.tagShort) + "</span>"
             : '<span class="arc-tag">档案未解锁</span>') +
@@ -265,17 +280,19 @@ const TownMap = {
   ZONE_W: 160,
   NODE_H: 24,
 
-  /** tagShort 关键词 → 地点 id（未命中默认归「小区住宅楼」） */
+  /** tagShort 关键词 → 地点 id（未命中默认归「小区住宅楼」）
+   *  学生类覆盖「学生/备考生/小学/初中/高中/大学/年级/女生/男生」，
+   *  避免「小学五年级」「高中女生」「在校大学生」等称呼漏归。 */
   _zoneOf(tagShort) {
     if (!tagShort) return "residents";
     const t = tagShort;
     if (t.indexOf("摊主") !== -1) return "market";
     if (["老板", "店员", "驿站", "花店", "花艺", "收银员", "汽修", "快递站"].some(k => t.indexOf(k) !== -1)) return "shops";
     if (["门卫", "保安"].some(k => t.indexOf(k) !== -1)) return "gate";
-    if (["学生", "备考生"].some(k => t.indexOf(k) !== -1)) return "school";
-    if (t.indexOf("护士") !== -1) return "clinic";
+    if (["学生", "备考生", "小学", "初中", "高中", "大学", "年级", "女生", "男生"].some(k => t.indexOf(k) !== -1)) return "school";
+    if (["护士", "医生"].some(k => t.indexOf(k) !== -1)) return "clinic";
     if (["活动室", "志愿者", "维修工"].some(k => t.indexOf(k) !== -1)) return "hall";
-    if (["晨跑", "太极", "货运", "外卖", "水电工", "退休老教师", "退休老木匠", "退休职工", "退休钳工"].some(k => t.indexOf(k) !== -1)) return "square";
+    if (["晨跑", "太极", "货运", "外卖", "水电工", "环卫", "退休老教师", "退休老木匠", "退休职工", "退休钳工"].some(k => t.indexOf(k) !== -1)) return "square";
     return "residents";
   },
 
@@ -355,6 +372,7 @@ const TownMap = {
       });
     });
     document.getElementById("town-map-mask").classList.add("show");
+    if (closeBtn) closeBtn.focus();
   },
 
   _onHover(e, resident, lv, unlocked) {
@@ -379,8 +397,11 @@ const TownMap = {
   _moveTooltip(e) {
     const tip = document.getElementById("tm-tooltip");
     if (!tip) return;
-    tip.style.left = Math.min(e.clientX + 14, window.innerWidth - 240) + "px";
-    tip.style.top = (e.clientY + 14) + "px";
+    // 边界兜底：极窄屏下避免负数定位、超出视口
+    const left = Math.max(0, Math.min(e.clientX + 14, window.innerWidth - 240));
+    const top = Math.max(0, e.clientY + 14);
+    tip.style.left = left + "px";
+    tip.style.top = top + "px";
   },
   _hideTooltip() {
     const tip = document.getElementById("tm-tooltip");
@@ -464,6 +485,7 @@ const LorePanel = {
       });
     });
     mask.classList.add("show");
+    if (closeBtn) closeBtn.focus();
   },
   close() {
     const mask = document.getElementById("lore-mask");
@@ -496,13 +518,15 @@ const ChroniclePanel = {
     const items = TOWN_CHRONICLE.map((c) => {
       const ok = this._cleared(c.lv);
       if (ok) unlockedCount++;
+      const cfg = LevelData[c.lv - 1] || {};
+      const ending = (cfg.ext && cfg.ext.endingStory) || "";
       return ok
         ? '<div class="chron-item">' +
-            '<p class="chron-title">' + c.title + ' <span class="chron-tag">第 ' + c.lv + " 章</span></p>" +
-            '<p class="chron-event">' + esc(c.event) + "</p></div>"
+            '<p class="chron-title">' + esc(c.title) + ' <span class="chron-tag">第 ' + c.lv + " 章</span></p>" +
+            '<p class="chron-event">' + esc(ending) + "</p></div>"
         : '<div class="chron-item locked">' +
-            '<p class="chron-title">' + c.title + ' <span class="chron-tag">第 ' + c.lv + " 章</span></p>" +
-            '<p class="chron-lock">🔒 通关第 ' + c.lv + " 关，解锁这段小镇往事</p></div>";
+            '<p class="chron-title">' + esc(c.title) + ' <span class="chron-tag">第 ' + c.lv + " 章</span></p>" +
+            '<p class="chron-lock">🔒 通关第 ' + c.lv + ' 关，解锁这段小镇往事</p></div>';
     }).join("");
     box.innerHTML =
       '<div class="town-map-head"><h3>小镇大事记</h3>' +
@@ -512,6 +536,7 @@ const ChroniclePanel = {
     const closeBtn = box.querySelector("#chron-close");
     if (closeBtn) closeBtn.addEventListener("click", () => this.close());
     mask.classList.add("show");
+    if (closeBtn) closeBtn.focus();
   },
   close() {
     const mask = document.getElementById("chronicle-mask");

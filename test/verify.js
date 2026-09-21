@@ -186,7 +186,7 @@ LevelData.forEach((lv, idx) => {
 
 // 13) 走访追问数据（town_data.js）一致性校验：不修改上述既有断言，仅追加
 {
-  const townPath = path.join(__dirname, "town_data.js");
+  const townPath = path.join(__dirname, "..", "src", "town_data.js");
   if (!fs.existsSync(townPath)) {
     console.error("  ✗ 缺少 town_data.js（走访追问 / 跨关暗线数据模块）");
     fail++;
@@ -203,9 +203,10 @@ LevelData.forEach((lv, idx) => {
     const TOWN_FOLLOWUPS = townSandbox.TOWN_FOLLOWUPS || {};
     const TOWN_LORE = townSandbox.TOWN_LORE || [];
     const TOWN_CHRONICLE = townSandbox.TOWN_CHRONICLE || [];
+    const TOWN_CLUE_ROLES = townSandbox.TOWN_CLUE_ROLES || {};
     console.log("\n=== town_data.js 走访追问 / 跨关暗线数据校验 ===");
 
-    // 键格式 L{n}_{rid} + 居民/线索引用 + cids 并集 === bindClue
+    // 键格式 L{n}_{rid} + 居民/线索引用 + 非物证 bindClue ⊆ 追问并集
     const keyVisible = /^L(\d+)_(r\d+)$/;
     LevelData.forEach((lv, idx) => {
       const num = idx + 1;
@@ -227,16 +228,97 @@ LevelData.forEach((lv, idx) => {
             union.add(cid);
           });
         });
-        const expected = bind.slice().sort().join(",");
+        // 规则①（重定义）：非物证 bindClue 必须 ⊆ 追问并集；物证由走访 bindClue 自动解锁，不要求在追问中出现。
+        const evIdSet = new Set((lv.clues || []).filter((c) => c.isEvidence === true).map((c) => c.id));
+        const missing = bind.filter((cid) => !union.has(cid) && !evIdSet.has(cid));
         const actual = Array.from(union).sort().join(",");
-        // 规则①：每条 bindClue 必须在"该居民 bindClue 自身"或"追问 cids 并集"中
-        // 注：bindClue 一打开就拿，追问 cids 通过追问拿，两条路径任一即可
-        const allInUnion = bind.every((cid) => union.has(cid) || bind.indexOf(cid) !== -1);
-        // 规则②：追问并集中的额外线索必须是真实存在的线索（已由"线索存在"检查保证）
-        // 允许追问解锁 fake 干扰/旁证线索——这是"无用追问"的设计：玩家问出看似有用但实际是补完的追问
-        log(allInUnion, `L${num}_${r.id} 追问并集 ⊇ bindClue（并=${actual}，期望 ${expected}，额外=${Array.from(union).filter((id) => !bind.includes(id)).join(",") || "无"}）`);
+        const extra = Array.from(union).filter((id) => !bind.includes(id));
+        log(missing.length === 0, `L${num}_${r.id} 追问并集 ⊇ 非物证 bindClue（缺失=${missing.join(",") || "无"}；并=${actual || "无"}；额外=${extra.join(",") || "无"}）`);
       });
     });
+    // 13b) 走访追问三层分类（type）+ 数量上限 + 配比（试点校验：已迁移第 1 关）
+    const diffCapOf = (lv) => {
+      const d = (lv.ext && Number(lv.ext.diffLevel)) || 0;
+      return d <= 1 ? 3 : (d === 2 ? 4 : 5);
+    };
+    const VALID_TYPES = ["core", "profile", "chatter"];
+    const typeDist = { core: 0, profile: 0, chatter: 0, untagged: 0 };
+    LevelData.forEach((lv, idx) => {
+      const num = idx + 1;
+      const cap = diffCapOf(lv);
+      (lv.residents || []).forEach((r) => {
+        const fups = TOWN_FOLLOWUPS["L" + num + "_" + r.id];
+        if (!fups || !fups.length) return;
+        // 数量上限（报告模式：待全量迁移后转硬校验）
+        const cnt = fups.length;
+        if (cnt > cap) console.log(`  ⚠ 追问超上限：L${num}_${r.name} ${cnt} 条（上限 ${cap}）`);
+        fups.forEach((fu, i) => {
+          const t = fu.type;
+          if (t === undefined) { typeDist.untagged++; return; }
+          if (VALID_TYPES.indexOf(t) !== -1) {
+            log(true, `L${num}_${r.id} 追问[${i}] type 合法（${t}）`);
+            typeDist[t]++;
+          } else {
+            log(false, `L${num}_${r.id} 追问[${i}] type 非法（${t}）`);
+          }
+        });
+      });
+    });
+    console.log(`  [配比] type 分布：core=${typeDist.core} profile=${typeDist.profile} chatter=${typeDist.chatter} 未标注=${typeDist.untagged}`);
+
+    // 13c) 单一源一致性：TOWN_CLUE_ROLES 派生校验 + endingStory 存在 + secret 黑名单粗筛
+    const normArr = (arr) => (arr || []).slice().sort().join(",");
+    LevelData.forEach((lv, idx) => {
+      const num = idx + 1;
+      const manual = TOWN_CLUE_ROLES["L" + num];
+      if (!manual) return;
+      // 机器可判定的单一源校验（core/aux 的边界依赖「指向凶手」的人为判断，不做硬派生，留人工）：
+      // ① red 必须精确等于全部 fake 线索；② 四桶并集 === 该关全部线索 id 且互不相交。
+      const allIds = (lv.clues || []).map((c) => c.id);
+      const fakeIds = (lv.clues || []).filter((c) => c.type === "fake").map((c) => c.id);
+      const union = [];
+      ["core", "aux", "red", "amb"].forEach((k) => { (manual[k] || []).forEach((id) => union.push(id)); });
+      log(normArr(union) === normArr(allIds), `L${num} TOWN_CLUE_ROLES 四桶并集 === 全部线索（${allIds.length} 条）`);
+      log(union.length === new Set(union).size, `L${num} TOWN_CLUE_ROLES 四桶互不相交`);
+      log(normArr(manual.red) === normArr(fakeIds), `L${num} TOWN_CLUE_ROLES.red === fake 线索（${fakeIds.join(",") || "无"}）`);
+      const endOk = !!(lv.ext && typeof lv.ext.endingStory === "string" && lv.ext.endingStory.length > 0);
+      log(endOk, `L${num} endingStory 存在（供大事记复用）`);
+    });
+
+    // secret 黑名单粗筛（仅报告，不 fail：只做粗筛，替代不了人工审阅）
+    const SECRET_BLACKLIST = ["凶手", "真凶", "作案", "偷走", "盗走", "拿走", "抱走", "拎走", "骑走", "顺走", "塞进", "甩锅", "嫁祸", "栽赃", "反咬", "谎称", "撒谎", "说谎", "编了", "伪装成", "撞上", "撞碎", "撞倒"];
+    console.log("\n  [secret 黑名单粗筛] 命中以下条目的 secret 疑似复述作案/撒谎流程：");
+    LevelData.forEach((lv, idx) => {
+      const num = idx + 1;
+      (lv.residents || []).forEach((r) => {
+        const s = r.secret || "";
+        const hits = SECRET_BLACKLIST.filter((w) => s.indexOf(w) !== -1);
+        if (hits.length) console.log(`    L${num}_${r.id} ${r.name}：命中 [${hits.join("、")}]`);
+      });
+    });
+
+    // 14) evidenceKeys 可达性：每个 evidenceKey 必须能经「走访 bindClue」或「某追问 cids」进入线索池，
+    //     否则 _getMissingEvidence 会永远卡住指控（历史缺陷 P0-3：L9 c18 / L10 c21 / L11 c20 曾不可达）
+    LevelData.forEach((lv, idx) => {
+      const num = idx + 1;
+      const evKeys = (lv.ext || {}).evidenceKeys || [];
+      if (!evKeys.length) return;
+      const bindUnion = new Set();
+      (lv.residents || []).forEach((r) => {
+        (Array.isArray(r.bindClue) ? r.bindClue : []).forEach((cid) => bindUnion.add(cid));
+      });
+      const fupUnion = new Set();
+      (lv.residents || []).forEach((r) => {
+        (TOWN_FOLLOWUPS["L" + num + "_" + r.id] || []).forEach((fu) => {
+          (fu.cids || []).forEach((cid) => fupUnion.add(cid));
+        });
+      });
+      evKeys.forEach((cid) => {
+        log(bindUnion.has(cid) || fupUnion.has(cid),
+          `L${num} evidenceKey "${cid}" 可达（bindClue=${bindUnion.has(cid)} / 追问=${fupUnion.has(cid)}）`);
+      });
+    });
+
     // 额外：不应出现指向不存在的居民键
     Object.keys(TOWN_FOLLOWUPS).forEach((k) => {
       const m = keyVisible.exec(k);

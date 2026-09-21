@@ -1,4 +1,4 @@
-﻿/* ============================================================
+/* ============================================================
    一、全局基础样式（浅色治愈系）
    ============================================================ */
 :root{
@@ -14,11 +14,13 @@
   --danger:#c96a5f;        /* 冲突红 */
   --radius:14px;           /* 圆角 */
   --shadow:0 4px 14px rgba(90,80,60,.08);
+  --font-body:"PingFang SC","Microsoft YaHei","Noto Sans SC",sans-serif;
+  --font-title:"Songti SC","STSong","SimSun","Noto Serif SC",serif;
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 html,body{height:100%;}
 body{
-  font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",sans-serif;
+  font-family:var(--font-body);
   background:var(--bg);
   color:var(--text);
   font-size:15px;
@@ -71,99 +73,110 @@ input{font-family:inherit;}
   100%{transform:translateY(-105vh) scale(1.1);opacity:0;}
 }
 .menu-box{
-  position:relative;z-index:1;text-align:center;padding:28px 24px 22px;
+  position:relative;z-index:1;text-align:center;padding:30px 24px 24px;
   width:calc(100% - 32px);max-width:380px;
-  background:var(--card);border:1px solid var(--card-line);border-radius:20px;
-  box-shadow:var(--shadow);
-  animation:menuBoxIn .42s ease-out both;
+  background:linear-gradient(180deg,#fff 0%,#fbfaf4 100%);
+  border:1px solid var(--card-line);border-radius:22px;
+  box-shadow:
+    0 1px 0 rgba(255,255,255,.7) inset,
+    0 2px 8px rgba(90,80,60,.06),
+    0 14px 40px rgba(90,80,60,.12);
+  animation:menuBoxIn .5s cubic-bezier(.22,1.3,.5,1) both;
 }
-@keyframes menuBoxIn{from{opacity:0;transform:translateY(8px) scale(.985);}to{opacity:1;transform:none;}}
-@keyframes menuFadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
-/* 印章 Logo：漂浮 + 入场 */
+.menu-box::before{
+  content:"";position:absolute;top:0;left:14px;right:14px;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(127,174,139,.45),transparent);
+  border-radius:1px;
+}
+@keyframes menuBoxIn{from{opacity:0;transform:translateY(10px) scale(.97);}to{opacity:1;transform:none;}}
+@keyframes menuFadeUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:none;}}
+/* 印章徽章：缩小为顶部装饰徽章，进度环保留 */
 .menu-mark{
-  position:relative;width:108px;height:108px;margin:0 auto 4px;color:var(--accent-deep);
-  animation:menuFadeUp .45s ease-out .05s both, menuMarkFloat 8s ease-in-out 1s infinite;
+  position:relative;width:48px;height:48px;margin:0 auto 10px;color:var(--accent-deep);
+  animation:menuStampIn .5s cubic-bezier(.22,1.5,.4,1) .05s both;
 }
 .menu-mark-svg{width:100%;height:100%;display:block;overflow:visible;}
-.menu-mark-glyph{font-family:"PingFang SC","Microsoft YaHei",sans-serif;font-weight:600;fill:var(--accent-deep);}
-@keyframes menuMarkFloat{
-  0%,100%{transform:translateY(0) rotate(0deg);}
-  50%{transform:translateY(-3px) rotate(-1.2deg);}
+.menu-mark-glyph{font-family:var(--font-title);font-weight:700;fill:var(--accent-deep);}
+@keyframes menuStampIn{
+  0%{opacity:0;transform:scale(.6) translateY(-6px);}
+  60%{opacity:1;transform:scale(1.1) translateY(1px);}
+  100%{opacity:1;transform:scale(1) translateY(0);}
 }
 /* 进度环：填充动效由 JS 设置 stroke-dashoffset */
 .menu-mark-ring{transition:stroke-dashoffset 1.2s cubic-bezier(.22,1,.36,1);}
-/* 印章中心微光：脉冲 */
-.menu-mark-pulse{transform-origin:60px 55px;animation:menuMarkPulse 2.6s ease-in-out infinite;}
-@keyframes menuMarkPulse{
-  0%,100%{opacity:.25;transform:scale(.9);}
-  50%{opacity:.9;transform:scale(1.6);}
-}
-/* 欢迎语（位于印章与标题之间） */
-.menu-greet{
-  font-size:12px;letter-spacing:3px;color:var(--text-sub);
-  margin:6px 0 -2px;opacity:0;animation:menuFadeUp .42s ease-out .12s forwards;
-}
-/* 排版：标题加渐变描边 */
+/* 排版：标题衬线 + 渐变描边 */
 .menu-title{
-  position:relative;font-size:38px;font-weight:700;letter-spacing:8px;
-  margin:0;
-  background:linear-gradient(180deg,#5f8f6d 0%,#3f6b51 100%);
+  position:relative;font-family:var(--font-title);font-size:40px;font-weight:900;letter-spacing:10px;
+  margin:0;line-height:1.1;
+  background:linear-gradient(180deg,#6ba07c 0%,#3f6b51 55%,#355c45 100%);
   -webkit-background-clip:text;background-clip:text;
   -webkit-text-fill-color:transparent;
-  filter:drop-shadow(0 1px 0 rgba(255,255,255,.55));
+  filter:drop-shadow(0 1px 0 rgba(255,255,255,.6));
+  opacity:0;animation:menuFadeUp .5s ease-out .08s forwards;
 }
 .menu-title::after{
-  content:"";position:absolute;left:50%;bottom:-4px;width:36px;height:2px;
+  content:"";position:absolute;left:50%;bottom:-6px;width:44px;height:2px;
   transform:translateX(-50%);border-radius:2px;
-  background:linear-gradient(90deg,transparent,var(--accent),transparent);
-  opacity:.7;
+  background:linear-gradient(90deg,transparent,var(--accent-deep) 30%,var(--accent-deep) 70%,transparent);
+  opacity:.65;
 }
-.menu-sub{color:var(--text-sub);font-size:13px;letter-spacing:1.5px;margin:12px 0 16px;}
-/* 今日提示 */
+.menu-title::before{
+  content:"";position:absolute;left:50%;bottom:-6px;width:6px;height:6px;
+  transform:translateX(-50%) rotate(45deg);margin-top:-2px;
+  background:var(--accent-deep);opacity:.45;
+}
+.menu-sub{color:var(--text-sub);font-size:13px;letter-spacing:2px;margin:14px 0 18px;opacity:0;animation:menuFadeUp .45s ease-out .15s forwards;}
+/* 今日提示：便签式左侧色条 */
 .menu-tip{
-  display:flex;align-items:center;justify-content:center;gap:6px;
-  margin:0 0 18px;padding:8px 12px;
-  background:var(--soft);border:1px dashed #d8e3d4;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;gap:7px;
+  margin:0 0 20px;padding:9px 12px 9px 14px;
+  background:linear-gradient(90deg,var(--soft),#f4f8f1);border:1px solid #d8e3d4;border-left:3px solid var(--accent);border-radius:10px;
   color:var(--text);font-size:12px;line-height:1.5;letter-spacing:.5px;
-  opacity:0;animation:menuFadeUp .42s ease-out .18s forwards;
+  opacity:0;animation:menuFadeUp .45s ease-out .18s forwards;
 }
 .menu-tip-icon{color:var(--accent-deep);font-size:11px;flex:none;animation:menuTipSpin 6s linear infinite;}
 @keyframes menuTipSpin{to{transform:rotate(360deg);}}
 /* 按钮：卡片化（icon + 文本 + 副标），主次区分 */
 .menu-btn{
   position:relative;display:grid;grid-template-columns:28px 1fr;column-gap:12px;
-  align-items:center;text-align:left;
-  width:100%;padding:13px 14px;margin-bottom:11px;
+  align-items:center;text-align:left;overflow:hidden;
+  width:100%;padding:14px 15px;margin-bottom:11px;
   background:var(--card);color:var(--text);
   border:1px solid var(--card-line);border-radius:14px;
-  box-shadow:var(--shadow);
-  transition:transform .18s ease,box-shadow .18s ease,background .18s ease,border-color .18s ease;
-  opacity:0;animation:menuFadeUp .42s ease-out forwards;
+  box-shadow:0 1px 0 rgba(255,255,255,.5) inset, var(--shadow);
+  transition:transform .2s cubic-bezier(.22,1,.36,1),box-shadow .2s ease,background .18s ease,border-color .18s ease;
+  opacity:0;animation:menuFadeUp .45s cubic-bezier(.22,1,.36,1) forwards;
 }
 #btn-start{animation-delay:.26s;}
 #btn-tutorial-menu{animation-delay:.34s;}
 #btn-archive{animation-delay:.42s;}
-.menu-btn:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(90,80,60,.12);}
+.menu-btn:hover{transform:translateY(-2px);box-shadow:0 1px 0 rgba(255,255,255,.5) inset, 0 10px 24px rgba(90,80,60,.14);}
 .menu-btn:active{transform:translateY(0) scale(.985);transition-duration:.08s;}
-.menu-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+.menu-btn:focus-visible{outline:3px solid var(--accent-deep);outline-offset:3px;box-shadow:0 0 0 6px rgba(127,174,139,.18);}
 .menu-btn-icon{width:28px;height:28px;display:grid;place-items:center;color:var(--accent-deep);flex:none;}
 .menu-btn-icon svg{width:22px;height:22px;display:block;}
 .menu-btn-body{display:flex;flex-direction:column;min-width:0;}
 .menu-btn-text{display:block;font-size:16px;letter-spacing:3px;color:inherit;line-height:1.2;}
 .menu-btn-hint{display:block;font-size:12px;letter-spacing:.5px;color:var(--text-sub);margin-top:3px;line-height:1.3;}
-/* 主按钮：渐变 + 阴影 */
+/* 主按钮：深渐变 + 内高光 + 衬线文字 */
 .menu-btn.primary{
-  background:linear-gradient(180deg,var(--accent) 0%,var(--accent-deep) 100%);
+  background:linear-gradient(180deg,#6ba07c 0%,var(--accent-deep) 52%,#3f6b51 100%);
   color:#fff;border-color:transparent;
-  box-shadow:0 6px 18px rgba(95,143,109,.32);
+  box-shadow:0 1px 0 rgba(255,255,255,.28) inset, 0 6px 18px rgba(95,143,109,.34);
 }
+.menu-btn.primary::after{
+  content:"";position:absolute;top:0;left:-60%;width:50%;height:100%;
+  background:linear-gradient(105deg,transparent,rgba(255,255,255,.22),transparent);
+  transform:skewX(-18deg);pointer-events:none;
+}
+.menu-btn.primary:hover::after{left:120%;transition:left .6s ease;}
 .menu-btn.primary .menu-btn-icon{color:#fff;}
-.menu-btn.primary .menu-btn-text{font-weight:600;}
-.menu-btn.primary .menu-btn-hint{color:rgba(255,255,255,.78);}
-.menu-btn.primary:hover{box-shadow:0 10px 24px rgba(95,143,109,.40);}
+.menu-btn.primary .menu-btn-text{font-family:var(--font-title);font-weight:800;}
+.menu-btn.primary .menu-btn-hint{color:rgba(255,255,255,.82);}
+.menu-btn.primary:hover{box-shadow:0 1px 0 rgba(255,255,255,.32) inset, 0 12px 28px rgba(95,143,109,.44);}
 /* 次按钮 */
 .menu-btn.ghost{background:var(--card);}
-.menu-btn.ghost:hover{background:var(--soft);border-color:#d8e3d4;}
+.menu-btn.ghost:hover{background:var(--soft);border-color:#cdd9c8;box-shadow:0 1px 0 rgba(255,255,255,.5) inset, 0 6px 16px rgba(90,80,60,.08);}
 /* 脚注：实时进度 */
 .menu-foot{
   display:flex;justify-content:center;align-items:center;gap:8px;flex-wrap:wrap;
@@ -181,18 +194,24 @@ input{font-family:inherit;}
 }
 .mute-fab:hover{transform:scale(1.06);background:var(--soft);}
 .mute-fab[aria-pressed="true"]{background:#efece4;color:var(--text-sub);}
-/* 减少动效：跳过入场动画 + 浮尘 + 律动 + 脉冲 */
+/* 减少动效：跳过入场动画 + 隐藏浮尘粒子 + 去除光斑 */
 @media (prefers-reduced-motion: reduce){
-  .menu-box,.menu-mark,.menu-btn,.menu-foot,.menu-greet,.menu-tip{animation:none !important;opacity:1 !important;transform:none !important;}
-  .menu-particle,.menu-mark-pulse,.menu-tip-icon{animation:none !important;}
+  .menu-box,.menu-mark,.menu-btn,.menu-foot,.menu-tip,.menu-title,.menu-sub{animation:none !important;opacity:1 !important;transform:none !important;}
+  .menu-particles{display:none;}
+  .menu-particle,.menu-tip-icon{animation:none !important;}
+  .menu-btn.primary::after{display:none;}
   .menu-btn{transition:background .15s,border-color .15s;}
   .menu-mark-ring{transition:none;}
 }
-/* 小屏断点 */
+/* 小屏断点：窄屏脚注换行 + 卡片留白收紧 */
+@media (max-width:640px){
+  .menu-box{padding:24px 18px 20px;}
+  .menu-foot{flex-direction:column;gap:4px;}
+  .menu-foot-dot{display:none;}
+}
 @media (max-width:360px){
   .menu-title{font-size:30px;letter-spacing:6px;}
   .menu-btn-text{font-size:15px;letter-spacing:2px;}
-  .menu-mark{width:92px;height:92px;}
 }
 
 /* ============================================================
@@ -256,6 +275,8 @@ input{font-family:inherit;}
   display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:600;
 }
 .arc-avatar .avatar-svg{display:block;width:100%;height:100%;}
+.arc-avatar .avatar-svg.fallback{display:none;}
+.arc-avatar .avatar-portrait{display:block;width:100%;height:100%;object-fit:cover;object-position:center 20%;}
 .archive-card.locked .arc-avatar{background:transparent;color:#c3bcae;font-size:24px;}
 .arc-name{font-size:14px;font-weight:600;color:var(--accent-deep);}
 .archive-card.locked .arc-name{color:#b7b0a3;}
@@ -285,16 +306,65 @@ input{font-family:inherit;}
 .tutorial-btn:hover{background:#e2ecdf;}
 .case-bg{font-size:13px;color:var(--text-sub);line-height:1.6;}
 .case-goal{font-size:13px;color:var(--accent-deep);background:var(--soft);border-radius:8px;padding:6px 10px;}
-/* 2+3. 主区域：左侧居民卡槽 + 右侧线索池 */
+/* 2+3. 主区域：左侧 2.5D 小镇舞台（或降级居民列表）+ 右侧线索池 */
 .game-main{
   flex:1;min-height:0;display:flex;gap:14px;
 }
-/* 左侧居民列表（仅展示身份信息，不再承载卡槽） */
+/* 左侧居民区：2.5D 舞台时加宽为可交互场景；降级列表沿用窄栏 */
 .residents-panel{
   flex:0 0 220px;min-height:0;overflow-y:auto;padding:14px;
   background:var(--card);border:1px solid var(--card-line);border-radius:var(--radius);
   box-shadow:var(--shadow);display:flex;flex-direction:column;gap:12px;
 }
+/* —— 2.5D 开放小镇舞台（09.town.js · 10.story.js） —— */
+.town-stage.town-open{
+  display:flex;flex-direction:column;
+  width:100%;height:100%;min-height:300px;
+}
+.town-open .town-canvas-wrap{
+  position:relative;flex:1;min-height:0;
+  border:1px solid var(--card-line);border-radius:var(--radius);
+  overflow:hidden;background:#e9efe0;
+  touch-action:none;
+}
+.town-canvas{display:block;width:100%;height:100%;cursor:default;}
+.town-tip{
+  position:absolute;left:10px;bottom:10px;
+  font-size:12px;color:#6b6252;background:rgba(255,253,247,0.9);
+  border:1px solid rgba(150,140,120,0.4);border-radius:12px;
+  padding:4px 12px;pointer-events:none;max-width:calc(100% - 130px);
+  z-index:5;transition:opacity .2s;
+}
+.town-zoom-btn{
+  position:absolute;right:10px;bottom:10px;
+  font-size:12px;color:var(--accent-deep);background:rgba(255,253,247,0.92);
+  border:1px solid var(--card-line);border-radius:20px;padding:4px 12px;
+  cursor:pointer;transition:background .15s;white-space:nowrap;z-index:5;
+}
+.town-zoom-btn:hover{background:#e2ecdf;}
+
+/* 虚拟摇杆（触屏） */
+.town-joystick{
+  position:absolute;left:18px;bottom:18px;
+  width:96px;height:96px;z-index:6;
+  display:none; /* 仅触屏由 JS 检测后显示 */
+  touch-action:none;
+}
+.town-joy-base{
+  width:96px;height:96px;border-radius:50%;
+  background:rgba(255,253,247,0.35);
+  border:2px solid rgba(127,174,139,0.6);
+  position:relative;
+}
+.town-joy-knob{
+  width:44px;height:44px;border-radius:50%;
+  background:rgba(127,174,139,0.85);
+  border:2px solid rgba(255,255,255,0.8);
+  position:absolute;left:26px;top:26px; /* (96-44)/2 */
+  transition:transform .05s linear;
+  pointer-events:none;
+}
+body.touch .town-joystick{display:block;}
 .panel-title{font-size:14px;color:var(--text-sub);letter-spacing:2px;}
 .resident-block{display:flex;flex-direction:column;gap:8px;}
 .resident-head{display:flex;align-items:center;gap:8px;}
@@ -304,6 +374,8 @@ input{font-family:inherit;}
   display:flex;align-items:center;justify-content:center;font-size:15px;
 }
 .avatar .avatar-svg{display:block;width:100%;height:100%;}
+.avatar .avatar-svg.fallback{display:none;}
+.avatar .avatar-portrait{display:block;width:100%;height:100%;object-fit:cover;object-position:center 20%;}
 /* 全局头像浅描边：圆形裁切后与暖背景分离，对抬头像也让轮廓更清晰 */
 .avatar-svg{outline:1px solid var(--card-line);outline-offset:-1px;border-radius:50%;}
 .resident-head{position:relative;}
@@ -356,6 +428,10 @@ input{font-family:inherit;}
   background:#e8f0e8;color:#3a6a3a;border-color:#cce0cc;
 }
 .resident-hint .hint-tap{color:var(--accent);font-weight:500;}
+/* Item 8: 信任度提示 */
+.resident-hint.hint-trust{
+  background:#fef3e8;color:#a07030;border-color:#f0d8c0;
+}
 @keyframes hint-pulse{
   0%,100%{opacity:1;}
   50%{opacity:.7;}
@@ -380,7 +456,7 @@ input{font-family:inherit;}
 .clue-list{display:flex;flex-wrap:wrap;gap:8px;}
 /* 线索卡片通用样式（浅米色有效 / 浅灰色干扰） */
 .clue-card{
-  position:relative; /* 供 case-toggle 绝对定位；不影响拖拽 */
+  position:relative; /* 供时间轴锚点 ::before 定位；不影响拖拽 */
   width:150px;min-height:64px;padding:8px 10px;border-radius:10px;
   border:1px solid var(--card-line);box-shadow:var(--shadow);
   font-size:12px;line-height:1.5;cursor:grab;user-select:none;
@@ -408,6 +484,25 @@ input{font-family:inherit;}
 .clue-speak.ev-owner--clear{
   background:#e7eef7;color:#4d6b91;border:1px dashed #b8c8de;
 }
+/* 线索卡折叠：线索池卡片默认两行截断，点击「展开/收起」切换全文 */
+.clue-card.foldable .clue-text{
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+}
+.clue-card.foldable.expanded .clue-text{
+  display:block;-webkit-line-clamp:unset;overflow:visible;
+}
+.clue-fold-toggle{
+  display:inline-block;font-size:10px;color:var(--text-sub);background:none;border:none;
+  padding:0;margin-top:4px;cursor:pointer;
+}
+.clue-fold-toggle:hover{color:var(--accent-deep);}
+/* 线索关联 / 物证身份匹配 轻提示角标（非强制） */
+.clue-links{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;}
+.clue-link{
+  display:inline-block;font-size:10px;line-height:1;padding:2px 6px;border-radius:6px;
+  background:#e7e2f5;color:#6a5a9a;cursor:help;
+}
+.clue-link.owner{background:#e2efe4;color:var(--accent-deep);}
 /* 卡片被拖起时的样式 */
 .clue-card.dragging{opacity:.6;transform:scale(1.04);box-shadow:0 10px 22px rgba(90,80,60,.2);}
 /* 卡片标红（冲突） */
@@ -425,39 +520,34 @@ input{font-family:inherit;}
 /* 丢到空白区域的抖动反馈 */
 .clue-card.drop-fail{animation:shake .4s;}
 
-/* —— 线索分层 4 种外观（口供 / 目击 / 自白 / 物证） + 入卷仪式 —— */
-/* 物证：金边 + 🔑 角标 + 轻微金辉 */
+/* —— 线索两级分层：来源大类（口供 / 物证 / 干扰）+ 口供形态（目击 / 自白 / 陈述） —— */
+/* 物证卡：金边 + 金辉（来源之一） */
 .clue-card.evidence{
   background:linear-gradient(135deg,#fff5d8 0%,#f5ecd8 100%);
   border:1.5px solid #c89a3a;
   box-shadow:0 0 0 2px rgba(200,154,58,.08),0 2px 8px rgba(200,154,58,.12);
 }
-.clue-card.evidence .clue-badge{
-  background:#c89a3a;color:#fff;font-weight:600;
-  box-shadow:0 1px 4px rgba(200,154,58,.35);
+/* 来源徽标：口供（中性暖）/ 物证（金）。自携样式，卡片与详情弹窗表现一致。 */
+.clue-badge.family-verbal{background:#e2dccb;color:#6b6048;}
+.clue-badge.family-evidence{background:#c89a3a;color:#fff;font-weight:600;box-shadow:0 1px 4px rgba(200,154,58,.35);}
+/* 口供形态徽标：目击（蓝）/ 自白（橙）/ 陈述（中性灰） */
+.clue-sub-badge{
+  display:inline-block;font-size:10px;line-height:1;padding:2px 7px;margin-bottom:4px;
+  border-radius:6px;letter-spacing:.5px;
 }
-/* 自白：橙边 + 🗣 角标 */
-.clue-card.statement{
-  background:linear-gradient(135deg,#fdeede 0%,#f8e4c2 100%);
-  border:1.5px solid #c4804a;
-}
-.clue-card.statement .clue-badge{background:#c4804a;color:#fff;}
-/* 目击：蓝边 + 👁 角标 */
-.clue-card.witness{
-  background:linear-gradient(135deg,#e6efff 0%,#d8e4f7 100%);
-  border:1.5px solid #5a7ba8;
-}
-.clue-card.witness .clue-badge{background:#5a7ba8;color:#fff;}
-/* 普通口供：保持原有米色（.valid），无需额外样式 */
-/* 干扰线索：保持原有灰色（.fake），统一降级视觉 */
-.clue-card.fake.evidence,
-.clue-card.fake.statement,
-.clue-card.fake.witness{opacity:.85;}
+.clue-sub-badge.form-witness{background:#d8e4f7;color:#40587e;}
+.clue-sub-badge.form-statement{background:#f8e4c2;color:#8a5a2a;}
+.clue-sub-badge.form-plain{background:#efece4;color:#8a7d63;}
 /* 类型角标：统一徽标样式 */
 .clue-badge{
   display:inline-block;font-size:10px;line-height:1;padding:2px 7px;margin-bottom:4px;
   border-radius:6px;letter-spacing:.5px;
 }
+/* Item 1: 半真半假线索角标 */
+.clue-badge.partial-badge{background:#f0e0d8;color:#a06030;border:1px solid #d8b898;}
+.clue-badge.partial-badge.resolved{background:#e2efe4;color:#5a7a4a;border-color:#c0d8c4;}
+/* Item 3: 物证组合角标 */
+.clue-badge.combo-badge{background:#e0e8f0;color:#40608a;border:1px solid #b8ccdf;}
 /* 入卷动画：新解锁的卡片从右上方"飞入"池子 */
 @keyframes clue-enter{
   0%{opacity:0;transform:translate(40px,-30px) scale(.85) rotate(4deg);}
@@ -516,6 +606,17 @@ input{font-family:inherit;}
 .timeline-track::before{content:"";position:absolute;left:13px;top:8px;bottom:8px;width:2px;background:repeating-linear-gradient(180deg,#cbbfa6 0 5px,rgba(203,191,166,0) 5px 10px);}
 .timeline-track .clue-card::before{content:"";position:absolute;left:-18px;top:20px;width:12px;height:12px;border-radius:50%;background:#fff;border:3px solid var(--accent);box-shadow:0 0 0 1px var(--accent);}
 .timeline-track .tl-flag{display:inline-block;width:0;height:0;margin-right:5px;border-left:7px solid var(--accent);border-top:4px solid transparent;border-bottom:4px solid transparent;vertical-align:middle;}
+/* Item 9: 时间轴可视化刻度尺 */
+.timeline-scale{flex:0 0 100%;width:100%;margin-bottom:6px;padding:0 10px 0 26px;position:relative;height:24px;}
+.tl-scale-line{position:absolute;left:26px;right:10px;top:11px;height:2px;background:linear-gradient(90deg,transparent,#cbbfa6 8%,#cbbfa6 92%,transparent);border-radius:1px;}
+.tl-ticks{position:relative;height:24px;}
+.tl-tick{position:absolute;top:0;width:1px;height:8px;background:#cbbfa6;transform:translateX(-50%);}
+.tl-tick-label{position:absolute;top:9px;left:50%;transform:translateX(-50%);font-size:10px;color:var(--text-sub);white-space:nowrap;}
+/* Item 2: 跨日时间轴日期分隔线 */
+.timeline-day-sep{flex:0 0 100%;width:100%;display:flex;align-items:center;gap:8px;margin:6px 0 2px;padding-left:26px;}
+.timeline-day-sep::before{content:"";flex:0 0 10px;width:10px;height:10px;border-radius:50%;background:var(--warn);opacity:.55;}
+.timeline-day-sep span{font-size:11px;color:var(--warn);font-weight:600;letter-spacing:.5px;}
+.timeline-day-sep::after{content:"";flex:1;height:1px;background:repeating-linear-gradient(90deg,#d8ccb8 0 6px,transparent 6px 12px);}
 /* 拖拽幽灵卡片：跟随指针的视觉副本 */
 .drag-ghost{
   position:fixed;z-index:200;pointer-events:none;
@@ -534,7 +635,7 @@ input{font-family:inherit;}
   25%{transform:rotate(2deg) translateX(-2px);}
   75%{transform:rotate(2deg) translateX(2px);}
 }
-/* 拖到时间轴时的「长按 1 秒」确认视觉（环形进度 + 提示文字） */
+/* 拖到时间轴时的「长按 0.3 秒」确认视觉（环形进度 + 提示文字） */
 .drag-ghost .confirm-ring{
   position:absolute;right:-12px;bottom:-12px;
   width:34px;height:34px;border-radius:50%;
@@ -620,6 +721,83 @@ input{font-family:inherit;}
   transform:scale(.92);transition:transform .25s;
 }
 .modal-mask.show .modal-box{transform:scale(1);}
+/* 线索二级详情弹窗：左对齐、可滚动，完整展示证词与操作 */
+#clue-detail-mask .clue-detail-box{
+  width:100%;max-width:420px;background:var(--card);border-radius:18px;
+  box-shadow:0 12px 30px rgba(60,55,45,.2);padding:18px;text-align:left;
+  max-height:calc(100vh - 48px);overflow-y:auto;overflow-x:hidden;
+  transform:scale(.92);transition:transform .25s;
+}
+#clue-detail-mask.show .clue-detail-box{transform:scale(1);}
+.clue-detail-head{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px;}
+.clue-detail-badges{display:flex;flex-wrap:wrap;gap:4px;align-items:center;min-width:0;}
+.clue-detail-close{
+  flex:none;width:30px;height:30px;border-radius:50%;border:1px solid var(--card-line);
+  background:var(--bg);color:var(--text-sub);font-size:18px;line-height:1;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;padding:0;
+  transition:color .15s,border-color .15s;
+}
+.clue-detail-close:hover{color:var(--danger);border-color:var(--danger);}
+.clue-detail-text{font-size:15px;line-height:1.8;color:var(--text);margin:0 0 10px;white-space:pre-wrap;word-break:break-word;}
+.clue-detail-meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:8px;}
+.clue-detail-tag{
+  font-size:11px;line-height:1;padding:3px 8px;border-radius:20px;
+  background:var(--bg);color:var(--text-sub);border:1px solid var(--card-line);
+}
+.clue-detail-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;}
+.clue-detail-btn{
+  flex:1;padding:11px 12px;border-radius:12px;font-size:14px;letter-spacing:1px;min-width:120px;
+  background:var(--soft);color:var(--accent-deep);border:1px solid var(--card-line);cursor:pointer;
+  transition:background .15s,transform .15s;
+}
+.clue-detail-btn:hover{background:#e2ecdf;}
+.clue-detail-btn:active{transform:scale(.97);}
+/* Item 10: 线索关联图谱 */
+#clue-graph-mask .clue-graph-box{
+  width:100%;max-width:460px;background:var(--card);border-radius:18px;
+  box-shadow:0 12px 30px rgba(60,55,45,.2);padding:18px;text-align:center;
+  max-height:calc(100vh - 48px);overflow-y:auto;overflow-x:hidden;
+  transform:scale(.92);transition:transform .25s;
+}
+#clue-graph-mask.show .clue-graph-box{transform:scale(1);}
+.clue-graph-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;}
+.clue-graph-head h3{font-size:16px;font-weight:600;color:var(--accent-deep);margin:0;}
+.clue-graph-head .review-close{
+  flex:none;width:30px;height:30px;border-radius:50%;border:1px solid var(--card-line);
+  background:var(--card);color:var(--text-sub);font-size:18px;line-height:1;cursor:pointer;
+}
+.clue-graph-head .review-close:hover{color:var(--danger);border-color:var(--danger);}
+.clue-graph-legend{display:flex;flex-wrap:wrap;gap:8px 12px;margin-bottom:8px;justify-content:center;}
+.cg-legend-item{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text-sub);}
+.cg-dot{display:inline-block;width:10px;height:10px;border-radius:50%;}
+.cg-line{display:inline-block;width:18px;height:2.5px;border-radius:2px;}
+.clue-graph-svg{width:100%;max-width:420px;height:auto;margin:0 auto;display:block;}
+.cg-node-label{font-size:8px;fill:#fff;pointer-events:none;font-weight:600;}
+.cg-node:hover circle{opacity:1;stroke-width:3;}
+.clue-graph-empty{color:var(--text-sub);font-size:13px;line-height:1.8;margin:16px 0;}
+/* 推理复盘面板：左对齐、区块化，集中看推理现状 */
+#review-mask .review-box{
+  width:100%;max-width:440px;background:var(--card);border-radius:18px;
+  box-shadow:0 12px 30px rgba(60,55,45,.2);padding:18px;text-align:left;
+  max-height:calc(100vh - 48px);overflow-y:auto;overflow-x:hidden;
+  transform:scale(.92);transition:transform .25s;
+}
+#review-mask.show .review-box{transform:scale(1);}
+.review-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px;}
+.review-title{font-size:16px;font-weight:600;color:var(--accent-deep);}
+.review-close{
+  flex:none;width:30px;height:30px;border-radius:50%;border:1px solid var(--card-line);
+  background:var(--bg);color:var(--text-sub);font-size:18px;line-height:1;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;padding:0;
+  transition:color .15s,border-color .15s;
+}
+.review-close:hover{color:var(--danger);border-color:var(--danger);}
+.review-section{padding:10px 0;border-top:1px dashed var(--card-line);}
+.review-sec-title{font-size:12px;color:var(--accent);letter-spacing:1px;margin-bottom:5px;}
+.review-line{font-size:13px;line-height:1.7;color:var(--text);}
+.review-line + .review-line{margin-top:4px;}
+.review-muted{color:var(--text-sub);}
+.review-warn{color:var(--danger);}
 .modal-title{font-size:17px;color:var(--accent-deep);margin-bottom:10px;}
 .modal-text{font-size:14px;line-height:1.7;color:var(--text);white-space:pre-line;}
 /* 通关弹窗的「小镇番外」分段：柔和绿色次要文字，与真相文字视觉区分 */
@@ -647,34 +825,44 @@ input{font-family:inherit;}
 .clue-review-list.amb-list li{background:#f4f1ea;border:1px solid #e8e2d4;}
 
 /* —— 证据链 (case file) UI —— */
+/* 卡片顶部操作行：时间轴快捷（左）与证据链 ⊕（右）不再绝对定位压住正文，避免遮挡线索内容 */
+.clue-card-controls{
+  display:flex;align-items:center;gap:4px;
+  min-height:22px;margin-bottom:4px;
+}
+.clue-card-controls-gap{flex:1;}
 /* 卡片右上角 ⊕ 按钮：把线索加入 / 移出证据链 */
 .clue-case-toggle{
-  position:absolute;top:5px;right:5px;
   width:22px;height:22px;border-radius:50%;
   background:var(--card);border:1px solid var(--card-line);
   color:var(--text-sub);font-size:13px;line-height:1;cursor:pointer;
   display:flex;align-items:center;justify-content:center;
   transition:background .15s,color .15s,transform .12s;
-  z-index:2;padding:0;
+  padding:0;
 }
 .clue-case-toggle:hover{background:var(--soft);color:var(--accent-deep);transform:scale(1.08);}
 .clue-case-toggle.in-case{background:var(--accent);color:#fff;border-color:transparent;}
 .clue-case-toggle.in-case:hover{background:var(--accent-deep);}
+/* 证据链不足时 ⊕ 高亮：提醒还有可收集证据（减少反复点指认才发现不足） */
+.clue-case-toggle.prompt{background:#fff5d8;color:var(--danger);border-color:var(--danger);animation:badge-pulse 1.1s ease infinite;}
 .clue-card.in-case{border-color:var(--accent);box-shadow:0 0 0 2px var(--soft);}
 /* 移动端时间轴快捷按钮：一键入轴/出轴，免去长距离拖拽。桌面端隐藏（拖拽是主玩法）。 */
 .clue-tl-toggle{
-  position:absolute;left:5px;top:5px;
   width:22px;height:22px;border-radius:50%;
   background:var(--card);border:1px solid var(--card-line);
   color:var(--text-sub);font-size:11px;line-height:1;cursor:pointer;
   display:none;align-items:center;justify-content:center;
   transition:background .15s,color .15s,transform .12s;
-  z-index:2;padding:0;
+  padding:0;
 }
 .clue-tl-toggle:hover{background:var(--soft);color:var(--accent-deep);transform:scale(1.08);}
 .clue-tl-toggle.in-tl{background:var(--accent);color:#fff;border-color:transparent;}
 .clue-tl-toggle.in-tl:hover{background:var(--accent-deep);}
-@media (max-width:768px){ .clue-tl-toggle{display:flex;} }
+@media (max-width:768px){
+  .clue-tl-toggle{display:flex;}
+  /* E5：触屏可点区 ≥44px（Apple HIG / WCAG 2.5.5 要求） */
+  .clue-case-toggle,.clue-tl-toggle{width:44px;height:44px;font-size:18px;}
+}
 /* 底部「证据链」计数条 */
 .case-file-bar{
   display:flex;align-items:center;justify-content:space-between;gap:10px;
@@ -749,6 +937,10 @@ input{font-family:inherit;}
 }
 .pk-filter:hover{background:#e2ecdf;color:var(--accent-deep);}
 .pk-filter.active{background:var(--accent);color:#fff;border-color:transparent;}
+/* 线索池来源/形态筛选条：来源（全部/口供/物证/干扰）+ 口供形态子筛（目击/自白/陈述） */
+.clue-filter-bar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:0 0 8px;}
+.clue-filter-sep{width:1px;height:16px;background:var(--card-line);margin:0 2px;flex:none;}
+.clue-filter.clue-subfilter{font-size:11px;padding:3px 9px;}
 #picker-ok:disabled{opacity:.5;cursor:not-allowed;}
 /* 失败时关键证据线索卡高亮（脉动提示） */
 @keyframes keyPulse{
@@ -773,11 +965,13 @@ input{font-family:inherit;}
 #bio-mask.show .bio-box{transform:scale(1);}
 .bio-head{display:flex;align-items:center;gap:12px;flex:none;}
 .bio-avatar{
-  width:52px;height:52px;border-radius:50%;flex:none;overflow:hidden;
+  width:80px;height:80px;border-radius:50%;flex:none;overflow:hidden;
   background:var(--soft);color:var(--accent-deep);
   display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:600;
 }
 .bio-avatar .avatar-svg{display:block;width:100%;height:100%;}
+.bio-avatar .avatar-svg.fallback{display:none;}
+.bio-avatar .avatar-portrait{display:block;width:100%;height:100%;object-fit:cover;object-position:center 20%;}
 .bio-id{flex:1;min-width:0;}
 .bio-name{font-size:17px;color:var(--accent-deep);margin-bottom:4px;}
 .bio-tag{
@@ -994,6 +1188,8 @@ input{font-family:inherit;}
 }
 .dl-next-fu:hover{background:#e2ecdf;transform:translateY(-1px);}
 .dl-next-fu .fu-tag{margin-right:6px;}
+.dl-next-fu.core{border-color:#e6b3ad;}
+.dl-next-fu.core .fu-tag{background:#c0392b;}
 /* 已完成所有追问的结束行 */
 .dl-done{
   font-size:12px;color:var(--text-sub);text-align:center;
@@ -1048,7 +1244,22 @@ input{font-family:inherit;}
 .bio-body .fu-list{display:none;}
 
 /* —— 跨关人物关系（LorePanel） —— */
+/* 弹窗框统一样式：复用 town-map-box 基线，确保 lore/chronicle 与 town-map 视觉一致 */
+#lore-mask .town-map-box,
+#chronicle-mask .town-map-box,
+#town-map-mask .town-map-box{
+  width:min(560px,calc(100vw - 40px));max-height:88vh;overflow:auto;
+  background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);
+  padding:18px 16px 22px;transform:scale(.92);
+  transition:transform .25s ease;
+}
+#lore-mask.show .town-map-box,
+#chronicle-mask.show .town-map-box,
+#town-map-mask.show .town-map-box{transform:scale(1);}
+/* town-map 弹窗特殊：宽屏可到 760px 容纳 8 个地点 */
+#town-map-mask .town-map-box{width:min(760px,calc(100vw - 40px));}
 #lore-mask .town-map-box{max-width:560px;}
+#chronicle-mask .town-map-box{max-width:480px;}
 .lore-progress{font-size:12px;color:var(--text-sub);text-align:center;margin-bottom:10px;}
 .lore-progress b{color:var(--accent-deep);}
 .lore-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
@@ -1078,20 +1289,14 @@ input{font-family:inherit;}
   content:"";position:absolute;left:-17px;top:5px;width:9px;height:9px;border-radius:50%;
   background:var(--accent);border:2px solid var(--card);
 }
-.chron-item.locked::before{background:var(--card-line);}
+.chron-item.locked::before{background:var(--card-line);border-color:var(--card);}
 .chron-title{font-size:13px;color:var(--accent-deep);font-weight:600;margin-bottom:2px;}
 .chron-tag{font-size:11px;color:var(--text-sub);}
 .chron-event{font-size:12px;color:var(--text);line-height:1.7;margin-top:2px;}
 .chron-lock{font-size:12px;color:var(--text-sub);}
 
 /* —— 小镇群像总图 SVG 弹窗 —— */
-#town-map-mask .town-map-box{
-  width:min(94vw,760px);max-height:88vh;overflow:auto;
-  background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);
-  padding:18px 16px 22px;transform:scale(.92);
-  transition:transform .25s ease;
-}
-#town-map-mask.show .town-map-box{transform:scale(1);}
+/* town-map-box 通用样式已在上面 #lore/chronicle/town-map 三处共用块定义，此处只补 SVG/节点视觉 */
 .town-map-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
 .town-map-head h3{font-size:16px;color:var(--accent-deep);}
 .town-map-close{
@@ -1115,8 +1320,8 @@ input{font-family:inherit;}
 }
 .tm-tooltip.show{opacity:1;}
 
-/* —— 全收集成就纪念弹窗 —— */
-.achievement-mask{z-index:260;}
+/* 全收集成就纪念弹窗：层级在普通 mask 之上，但低于 toast-tip 提示（z 序稳定） */
+.achievement-mask{z-index:280;}
 .achievement-box{
   width:min(90vw,420px);text-align:center;
   background:linear-gradient(160deg,#fffaf0,#fdf6e8);
@@ -1187,6 +1392,7 @@ input{font-family:inherit;}
   /* 主区域上下堆叠；游戏区改为随内容高度展开，不再锁死视口高度 */
   .game-main{flex-direction:column;flex:0 0 auto;min-height:0;}
   .residents-panel{flex:0 0 auto;max-height:44vh;border-radius:var(--radius);}
+  body.touch .town-joystick{display:block;}
   .clues-pool{flex:1 1 auto;min-height:0;border-radius:var(--radius);}
   .case-header h2{font-size:16px;}
   .clue-card{width:calc(50% - 6px);}
@@ -1215,9 +1421,11 @@ input{font-family:inherit;}
   .bio-related-tag{min-height:44px;padding:8px 16px;font-size:13px;}
   .bio-close{width:40px;height:40px;font-size:20px;}
   .town-map-close{width:40px;height:40px;font-size:18px;}
+  /* 人物关系/大事记 窄屏：单列布局，避免卡片挤换行 */
+  .lore-grid{grid-template-columns:1fr;}
 
-  /* 2. 拖拽幽灵卡片放大 1.2 倍 + 上移避开手指，降低遮挡看不清 */
-  .drag-ghost{transform:rotate(2deg) scale(1.2) translateY(-72px);}
+  /* 2. 拖拽幽灵卡片轻微放大 + 适度上移避开手指；落点以视觉中心判定，无需过大偏移 */
+  .drag-ghost{transform:rotate(2deg) scale(1.15) translateY(-40px);}
 
   /* 3. 人物档案弹窗：压缩上下边距，轻微放大文字行高 */
   #bio-mask .bio-box{padding:16px;}
@@ -1237,3 +1445,145 @@ input{font-family:inherit;}
 /* ============================================================
    九·补：底部弹层与提示弹窗通用样式
    ============================================================ */
+
+.world-hud,#world-dossier,#world-dossier-shade{display:none;}
+#page-game.world-mode{
+  --text:#244a4c;--text-sub:#617b79;--accent:#b9934b;--accent-deep:#355e5c;
+  --card-line:rgba(70,104,100,.18);--soft:#edf3ef;
+  overflow:hidden;background:#c9ded6;
+}
+#page-game.world-mode>.page-inner,
+#page-game.world-mode .game-main,
+#page-game.world-mode #residents-panel{
+  position:absolute;inset:0;width:100%;height:100%;max-width:none;max-height:none;
+  min-width:0;min-height:0;margin:0;padding:0;border:0;border-radius:0;
+  background:transparent;box-shadow:none;overflow:hidden;display:block;
+}
+#page-game.world-mode #residents-panel{z-index:0;}
+#page-game.world-mode .town-stage,
+#page-game.world-mode .town-stage.town-open,
+#page-game.world-mode .town-canvas-wrap{
+  position:absolute;inset:0;width:100%;height:100%;min-height:0;border:0;border-radius:0;
+  margin:0;padding:0;overflow:hidden;
+}
+#page-game.world-mode .town-canvas{width:100%;height:100%;display:block;touch-action:none;}
+#page-game.world-mode .world-hud{position:absolute;inset:0;display:block;z-index:20;pointer-events:none;}
+.world-task{
+  position:absolute;top:max(20px,env(safe-area-inset-top));left:max(20px,env(safe-area-inset-left));
+  display:flex;flex-direction:column;gap:5px;width:min(340px,calc(100vw - 200px));
+  padding:15px 20px;border:1px solid rgba(255,255,255,.75);border-radius:16px;
+  color:#244a4c;background:rgba(255,255,251,.88);backdrop-filter:blur(14px);
+  box-shadow:0 6px 24px rgba(38,73,67,.08);
+}
+.world-eyebrow{font-size:10px;letter-spacing:3px;color:#947539;}
+.world-task strong{font:600 19px var(--font-title);}
+#world-task-goal{font-size:12px;line-height:1.6;}
+.world-actions{position:absolute;right:max(20px,env(safe-area-inset-right));top:max(20px,env(safe-area-inset-top));display:flex;gap:8px;pointer-events:auto;}
+.world-actions button,.world-dossier-head button{
+  min-width:64px;min-height:44px;padding:10px 16px;border-radius:12px;
+  border:1px solid rgba(103,135,126,.24);background:rgba(255,255,251,.93);color:#244a4c;
+  box-shadow:0 4px 15px rgba(38,73,67,.07);
+}
+#btn-world-dossier{border-color:#c8ad73;color:#725621;}
+.world-actions button:focus-visible,.world-dossier-head button:focus-visible{outline:2px solid #b9934b;outline-offset:3px;}
+#world-minimap-slot{position:absolute;top:84px;right:max(20px,env(safe-area-inset-right));width:154px;height:154px;pointer-events:none;}
+#page-game.world-mode .town-minimap{border:1px solid rgba(255,255,255,.8);border-radius:16px;background:rgba(255,255,251,.88);box-shadow:0 6px 24px rgba(38,73,67,.1);}
+#page-game.world-mode #world-minimap-slot .town-minimap{position:static!important;width:100%!important;height:100%!important;border:1px solid rgba(255,255,255,.8)!important;border-radius:16px!important;background:rgba(255,255,251,.88)!important;}
+#page-game.world-mode .town-tip{color:#355e5c;background:rgba(255,255,251,.88);border:0;padding:8px 12px;max-width:min(420px,calc(100% - 150px));bottom:24px;left:136px;}
+#page-game.world-mode .town-tip{color:#355e5c!important;background:rgba(255,255,251,.9)!important;border:0!important;border-radius:12px!important;}
+#page-game.world-mode .town-zoom-btn{min-height:44px;min-width:44px;color:#244a4c;}
+#page-game.world-mode #world-dossier-shade:not([hidden]){display:block;position:absolute;inset:0;background:rgba(26,53,51,.18);z-index:35;}
+#page-game.world-mode #world-dossier:not([hidden]){
+  display:block;position:absolute;inset:16px 16px 16px auto;z-index:40;
+  width:min(800px,calc(100vw - 48px));padding:0 22px 22px;overflow:auto;overscroll-behavior:contain;
+  border:1px solid rgba(255,255,255,.9);border-radius:20px;
+  background:rgba(250,253,249,.97);box-shadow:0 16px 64px rgba(28,61,54,.22);backdrop-filter:blur(18px);
+}
+.world-dossier-head{display:flex;align-items:center;justify-content:space-between;gap:14px;position:sticky;top:0;padding:16px 0;background:rgba(250,253,249,.98);z-index:4;}
+.world-dossier-head h2{font:600 21px var(--font-title);color:#244a4c;}
+#world-dossier-empty{padding:48px 12px;color:#617b79;text-align:center;}
+#page-game.world-mode #world-dossier-content:not([hidden]){display:flex;flex-direction:column;gap:18px;}
+#page-game.world-mode #world-dossier-content[hidden],#world-dossier-empty[hidden]{display:none;}
+#page-game.world-mode .case-header{border:0;box-shadow:none;background:none;padding:8px 0;}
+#page-game.world-mode .case-back{display:none;}
+#page-game.world-mode .case-header .row{flex-wrap:wrap;}
+#page-game.world-mode .case-header h2{min-width:160px;}
+#page-game.world-mode #clues-pool{flex:none;overflow:visible;max-height:none;padding:16px;background:#fff;border:1px solid var(--card-line);box-shadow:none;}
+#page-game.world-mode .pool-hint{display:none;}
+#page-game.world-mode .clue-list{overflow:visible;}
+#page-game.world-mode .timeline-panel{flex:none;max-height:none;padding:16px;background:#fff;box-shadow:none;}
+#page-game.world-mode .timeline-track{max-height:none;min-height:112px;overflow:visible;}
+#page-game.world-mode .timeline-tip{font-size:11px;letter-spacing:0;}
+#page-game.world-mode .bottom-bar{position:static;inset:auto;z-index:auto;background:transparent;padding:8px 0 calc(8px + env(safe-area-inset-bottom));box-shadow:none;gap:14px;}
+#page-game.world-mode .case-progress,#page-game.world-mode .bb-row{max-width:none;justify-content:flex-start;}
+#page-game.world-mode .case-file-bar{width:100%;max-width:none;}
+#page-game.world-mode .cfb-hint{display:none;}
+#page-game.world-mode .action-btn.primary{background:#ac863f;}
+#page-game.world-mode #world-dossier button{min-height:44px;}
+#page-game.world-mode .clue-card{width:calc(50% - 6px);}
+
+#bio-mask.world-dialog{
+  align-items:flex-end;padding:0 max(24px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom));
+  background:linear-gradient(180deg,rgba(19,45,44,.04) 25%,rgba(19,45,44,.30));
+  color:#244a4c;--text:#244a4c;--text-sub:#617b79;--accent-deep:#355e5c;--soft:#edf3ef;
+}
+#bio-mask.world-dialog .bio-box{
+  position:relative;width:min(1160px,100%);max-width:none;max-height:none;
+  overflow:visible;padding:0;display:block;background:none;border-radius:0;box-shadow:none;transform:none;
+}
+.world-portrait{position:absolute;left:0;bottom:0;width:clamp(220px,28vw,360px);height:min(68vh,610px);z-index:1;pointer-events:none;display:flex;align-items:flex-end;justify-content:center;}
+.world-portrait .avatar-portrait{display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;filter:drop-shadow(0 8px 20px rgba(21,47,39,.16));}
+.world-portrait .avatar-svg{width:100%;height:auto;max-height:100%;border-radius:0;outline:none;}
+.world-portrait .avatar-svg.fallback{display:none;}
+.world-dialog-band{
+  position:relative;min-height:215px;max-height:65vh;overflow:auto;overscroll-behavior:contain;
+  padding:22px 28px 22px clamp(220px,29vw,380px);border:1px solid rgba(255,255,255,.9);
+  border-radius:20px;background:rgba(255,255,250,.96);box-shadow:0 12px 46px rgba(27,59,52,.18);
+}
+.world-dialog-band .bio-head{gap:12px;}
+.world-dialog-band .bio-name{font:600 23px var(--font-title);color:#244a4c;}
+.world-dialog-band .bio-tag{padding:0;background:none;color:#7a8c82;}
+.world-dialog-band .bio-close{width:44px;height:44px;align-self:flex-start;background:#f0f3ed;color:#355e5c;}
+.world-dialog-topic{font-size:11px;color:#9d7d3f;margin-top:8px;}
+.world-dialog-advance{display:flex;flex-direction:column;align-items:stretch;text-align:left;gap:14px;width:100%;min-height:96px;padding:8px 0 0;cursor:pointer;}
+.world-dialog-advance[hidden],.world-dialog-choices[hidden]{display:none;}
+#world-dialog-line{font-size:18px;line-height:1.9;white-space:pre-wrap;min-height:2em;color:#244a4c;}
+.world-dialog-next{font-size:11px;letter-spacing:1px;text-align:right;color:#9d7d3f;}
+.world-dialog-choices{display:flex;flex-direction:column;gap:8px;margin-top:8px;}
+.world-dialog-choices button{min-height:44px;text-align:left;padding:10px 14px;border:1px solid rgba(70,104,100,.2);border-radius:10px;background:#f3f6ef;color:#355e5c;line-height:1.6;}
+.world-dialog-choices button:disabled{opacity:.5;cursor:not-allowed;}
+.world-dialog-choices .world-dialog-finish{color:#957238;border-color:#d8c292;background:#fbf7ed;}
+
+@media (max-width:768px){
+  .world-task{top:max(12px,env(safe-area-inset-top));left:12px;width:calc(100vw - 168px);padding:12px 14px;gap:4px;}
+  .world-task strong{font-size:16px;}
+  #world-task-goal{font-size:11px;max-height:3.2em;overflow:hidden;}
+  .world-actions{top:max(12px,env(safe-area-inset-top));right:12px;gap:6px;}
+  .world-actions button{min-width:60px;padding:10px 12px;}
+  #world-minimap-slot{right:12px;top:70px;width:112px;height:112px;}
+  #page-game.world-mode #world-dossier:not([hidden]){inset:0;width:100%;height:100%;border:0;border-radius:0;padding:env(safe-area-inset-top) 14px env(safe-area-inset-bottom);}
+  #page-game.world-mode .town-tip{bottom:12px;left:126px;max-width:calc(100% - 200px);font-size:11px;}
+  #page-game.world-mode .timeline-head{flex-wrap:wrap;gap:8px;}
+  #bio-mask.world-dialog{padding:0 12px max(12px,env(safe-area-inset-bottom));}
+  .world-portrait{left:-10px;bottom:0;width:160px;height:min(56vh,350px);}
+  .world-dialog-band{padding:16px 16px 16px 142px;min-height:190px;max-height:65vh;border-radius:16px;}
+  .world-dialog-band .bio-name{font-size:20px;}
+  #world-dialog-line{font-size:16px;line-height:1.8;}
+}
+@media (max-width:480px){
+  #page-game.world-mode .clue-card{width:100%;}
+  .world-portrait{bottom:calc(100% - 55px);left:-4px;width:150px;height:min(35vh,260px);}
+  .world-dialog-band{padding:16px;max-height:55vh;}
+  .world-dialog-band .bio-head{padding-left:106px;min-height:48px;}
+  .world-dialog-band .bio-name{font-size:18px;}
+  .world-dialog-band .bio-tag{font-size:10px;}
+}
+@media (max-height:500px) and (orientation:landscape){
+  .world-task{padding:9px 14px;}
+  .world-eyebrow{display:none;}
+  #world-minimap-slot{width:96px;height:96px;}
+  .world-portrait{width:180px;height:80vh;}
+  .world-dialog-band{padding:12px 18px 12px 180px;min-height:150px;max-height:80vh;}
+  #world-dialog-line{font-size:15px;line-height:1.65;}
+  .world-dialog-advance{min-height:64px;gap:8px;}
+}

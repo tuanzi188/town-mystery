@@ -21,8 +21,8 @@
 const fs = require("fs");
 const path = require("path");
 
-const HTML_PATH = path.join(__dirname, "..", "index.html");
-const TOWN_PATH = path.join(__dirname, "..", "town_data.js");
+const HTML_PATH = path.join(__dirname, "..", "..", "index.html");
+const TOWN_PATH = path.join(__dirname, "..", "..", "src", "town_data.js");
 
 const MARKER_LEVELDATA_START = "const LevelData = ";
 const MARKER_NEXT_CONST = "const GameFlow";
@@ -39,13 +39,14 @@ function loadScriptCode() {
   const jsRefs = [];
   let refMatch;
   while ((refMatch = refRe.exec(html)) !== null) {
+    if (refMatch[1] === "src/town_data.js") continue; // 数据模块由 loadTownData 单独加载
     jsRefs.push(refMatch[1]);
   }
   if (!jsRefs.length) {
     throw new Error("index.html 未找到 src/ 目录下的脚本引用");
   }
   return jsRefs.map((rel) => {
-    const file = path.join(__dirname, "..", rel);
+    const file = path.join(__dirname, "..", "..", rel);
     return fs.readFileSync(file, "utf8");
   }).join("\n");
 }
